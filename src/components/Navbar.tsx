@@ -1,0 +1,150 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Shield, Menu, X, Ticket } from 'lucide-react';
+
+export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 30);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'bg-[#06140F]/90 backdrop-blur-md border-b border-[#AFF8DB]/20 shadow-[0_4px_30px_rgba(0,0,0,0.5)] py-3'
+          : 'bg-transparent py-5'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        {/* Brand */}
+        <Link href="/" className="group flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-full border border-[#FFF3B0]/60 bg-gradient-to-br from-[#12382B] to-[#0A1F18] flex items-center justify-center p-1.5 shadow-[0_0_15px_rgba(255,243,176,0.3)] group-hover:scale-105 transition-transform overflow-hidden">
+            <Image src="/logo.png" alt="Logo FAN 2026" width={32} height={32} className="w-full h-full object-contain" />
+          </div>
+          <div>
+            <span className="font-cinzel font-bold text-lg sm:text-xl tracking-wider text-[#FFF3B0] block group-hover:text-[#AFF8DB] transition-colors">
+              FASILKOM
+            </span>
+            <span className="text-[10px] tracking-[0.25em] text-[#AFF8DB]/80 uppercase font-sans font-medium block -mt-1">
+              Awarding Night 2026
+            </span>
+          </div>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-8 text-sm font-medium">
+          <a
+            href="#tentang"
+            className="text-[#EDE8DF]/80 hover:text-[#AFF8DB] transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-[#AFF8DB] hover:after:w-full after:transition-all"
+          >
+            Tentang Acara
+          </a>
+          <a
+            href="#rundown"
+            className="text-[#EDE8DF]/80 hover:text-[#AFF8DB] transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-[#AFF8DB] hover:after:w-full after:transition-all"
+          >
+            Rundown & Venue
+          </a>
+          <a
+            href="#insight"
+            className="text-[#EDE8DF]/80 hover:text-[#AFF8DB] transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-[#AFF8DB] hover:after:w-full after:transition-all"
+          >
+            Kilas Balik
+          </a>
+          <a
+            href="#galeri"
+            className="text-[#EDE8DF]/80 hover:text-[#AFF8DB] transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-[#AFF8DB] hover:after:w-full after:transition-all"
+          >
+            Dokumentasi
+          </a>
+          <Link
+            href="/admin/scan"
+            className="text-[#E7C6FF]/70 hover:text-[#E7C6FF] flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[#E7C6FF]/30 text-xs transition-colors hover:border-[#E7C6FF]/60"
+            title="Portal Scanner Panitia"
+          >
+            <Shield className="w-3.5 h-3.5" />
+            Panitia
+          </Link>
+        </nav>
+
+        {/* Registration CTA */}
+        <div className="hidden md:flex items-center">
+          <a
+            href="#registrasi"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#AFF8DB] to-[#8fe7c4] text-[#082016] font-semibold text-sm tracking-wide shadow-[0_0_20px_rgba(175,248,219,0.4)] hover:shadow-[0_0_30px_rgba(175,248,219,0.7)] hover:scale-105 active:scale-95 transition-all"
+          >
+            <Ticket className="w-4 h-4" />
+            Registrasi Tiket
+          </a>
+        </div>
+
+        {/* Mobile menu toggle */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden p-2 text-[#FFF3B0] hover:text-[#AFF8DB]"
+          aria-label="Toggle Menu"
+        >
+          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {/* Mobile dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-[#0A1F18]/95 border-b border-[#AFF8DB]/20 px-6 py-5 space-y-4 shadow-xl">
+          <a
+            href="#tentang"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block text-[#EDE8DF] hover:text-[#AFF8DB] text-base"
+          >
+            Tentang Acara
+          </a>
+          <a
+            href="#rundown"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block text-[#EDE8DF] hover:text-[#AFF8DB] text-base"
+          >
+            Rundown & Venue
+          </a>
+          <a
+            href="#insight"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block text-[#EDE8DF] hover:text-[#AFF8DB] text-base"
+          >
+            Kilas Balik
+          </a>
+          <a
+            href="#galeri"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block text-[#EDE8DF] hover:text-[#AFF8DB] text-base"
+          >
+            Dokumentasi
+          </a>
+          <Link
+            href="/admin/scan"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 text-[#E7C6FF] text-sm py-1"
+          >
+            <Shield className="w-4 h-4" /> Portal Panitia
+          </Link>
+          <a
+            href="#registrasi"
+            onClick={() => setMobileMenuOpen(false)}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#AFF8DB] text-[#082016] font-bold text-center mt-3 shadow-md"
+          >
+            <Ticket className="w-4 h-4" /> Ambil Undangan & Tiket
+          </a>
+        </div>
+      )}
+    </header>
+  );
+}

@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-serif: var(--font-cinzel), Georgia, serif;
+  --font-sans: var(--font-sans), system-ui, sans-serif;
+
+  --color-fairy-pink: #FFB5E8;
+  --color-mint-green: #AFF8DB;
+  --color-lavender: #E7C6FF;
+  --color-starlight-gold: #FFF3B0;
+
+  --color-emerald-950: #05100c;
+  --color-emerald-900: #0a1f18;
+  --color-emerald-850: #0f2c22;
+  --color-emerald-800: #143d30;
+  --color-emerald-700: #1c5241;
+  --color-emerald-600: #2a735c;
+
+  --color-gold-400: #ffd768;
+  --color-gold-300: #ffe89e;
+  --color-gold-200: #fff3b0;
+
+  --color-parchment-bg: #FAF7F0;
+  --color-parchment-card: #F2ECE0;
+  --color-parchment-border: #D8CCA8;
+  --color-parchment-text: #2A362E;
+}
+
+/* Custom enchanted glow & typography */
+.font-cinzel {
+  font-family: var(--font-cinzel), serif;
+}
+
+.glow-mint {
+  box-shadow: 0 0 25px rgba(175, 248, 219, 0.25), inset 0 0 15px rgba(175, 248, 219, 0.1);
+}
+
+.glow-gold {
+  box-shadow: 0 0 30px rgba(255, 243, 176, 0.25);
+}
+
+.text-glow-mint {
+  text-shadow: 0 0 16px rgba(175, 248, 219, 0.5);
+}
+
+.text-glow-gold {
+  text-shadow: 0 0 18px rgba(255, 243, 176, 0.6);
+}
+
+/* Botanical vines / branch pattern styling */
+.bg-vignette {
+  background: radial-gradient(circle at 50% 30%, rgba(15, 44, 34, 0.5) 0%, rgba(6, 18, 14, 0.95) 85%);
+}
+
+.bg-parchment-pattern {
+  background-color: #FAF6EE;
+  background-image: radial-gradient(#d3c5a3 0.75px, transparent 0.75px), radial-gradient(#d3c5a3 0.75px, #FAF6EE 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+/* Floating animation */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+@keyframes gentleSway {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50% { transform: rotate(-5deg) translateY(-4px); }
+}
+
+@keyframes leafFlutter {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  33% { transform: rotate(-8deg) scale(1.05) translateX(-2px); }
+  66% { transform: rotate(5deg) scale(0.96) translateX(1px); }
+}
+
+@keyframes lanternSwing {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3.5s ease-in-out infinite;
+}
+
+.animate-sway {
+  animation: sway 5s ease-in-out infinite;
+}
+
+.animate-gentle-sway {
+  animation: gentleSway 6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: left bottom;
+}
+
+.animate-leaf-flutter {
+  animation: leafFlutter 4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.animate-lantern-swing {
+  animation: lanternSwing 12s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* Print styling for VIP ticket */
+@media print {
+  body {
+    background-color: #061510 !important;
+    color: #FAF7F0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print, nav, footer, canvas {
+    display: none !important;
+  }
+
+  #ticket-pass {
+    box-shadow: none !important;
+    border-color: #FFF3B0 !important;
+    page-break-inside: avoid !important;
+  }
+}
+
