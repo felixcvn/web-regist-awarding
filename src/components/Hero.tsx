@@ -63,7 +63,7 @@ export default function Hero() {
         <div className="flex flex-wrap items-center justify-center gap-3.5 sm:gap-6 text-xs sm:text-sm text-[#EDE8DF]/90 font-medium mb-10">
           <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-[#091F18]/85 border border-[#AFF8DB]/25 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur-md hover:border-[#AFF8DB]/50 transition-colors">
             <Calendar className="w-4 h-4 text-[#AFF8DB]" />
-            <span>Jumat, 20 November 2026</span>
+            <span>Selasa, 1 Desember 2026</span>
           </div>
           <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-[#091F18]/85 border border-[#AFF8DB]/25 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur-md hover:border-[#AFF8DB]/50 transition-colors">
             <MapPin className="w-4 h-4 text-[#FFB5E8]" />
@@ -74,7 +74,7 @@ export default function Hero() {
         {/* Countdown Component */}
         <div className="mb-10">
           <Card3D glowColor="rgba(175, 248, 219, 0.2)">
-            <Countdown targetDate="2026-11-20T18:00:00" />
+            <Countdown targetDate="2026-12-01T18:00:00" />
           </Card3D>
         </div>
 

@@ -152,7 +152,7 @@ export default function EventDetails() {
                 <Calendar className="w-6 h-6" />
               </div>
               <h3 className="font-cinzel text-xl font-bold text-[#FFF3B0] mb-2">Tanggal & Waktu</h3>
-              <p className="text-sm text-[#EDE8DF]/90 font-medium">Jumat, 20 November 2026</p>
+              <p className="text-sm text-[#EDE8DF]/90 font-medium">Selasa, 1 Desember 2026</p>
               <p className="text-xs text-[#AFF8DB] mt-1 font-mono">17:30 WIB — 22:00 WIB</p>
               <p className="text-xs text-[#EDE8DF]/60 mt-3 leading-relaxed">
                 Open gate dimulai pukul 17:30 WIB. Harap hadir tepat waktu untuk registrasi & sesi red carpet.

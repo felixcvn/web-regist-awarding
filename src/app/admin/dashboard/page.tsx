@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Participant } from '@/lib/types';
-import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter } from 'lucide-react';
+import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import Dialog from '@/components/Dialog';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -13,6 +14,9 @@ export default function AdminDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [target, setTarget] = useState<Participant | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const fetchParticipants = async () => {
     setLoading(true);
@@ -62,6 +66,28 @@ export default function AdminDashboardPage() {
     router.push('/admin/login');
   };
 
+  const handleDelete = async (participant: Participant) => {
+    setDeletingId(participant.id);
+    try {
+      const res = await fetch(`/api/admin/participants/${participant.id}`, { method: 'DELETE' });
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setNotice(data.error || 'Gagal menghapus peserta.');
+        return;
+      }
+      setTarget(null);
+      await fetchParticipants();
+    } catch {
+      setNotice('Koneksi gagal saat menghapus peserta.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#061510] text-[#EDE8DF] p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -90,6 +116,7 @@ export default function AdminDashboardPage() {
               Refresh
             </button>
 
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download from API route */}
             <a
               href="/api/admin/participants?format=csv"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#AFF8DB] text-[#061811] text-xs font-bold hover:bg-[#8ee9c4] transition-colors shadow-md"
@@ -241,6 +268,9 @@ export default function AdminDashboardPage() {
                       <td className="py-3.5 px-4">
                         <span className="font-bold text-[#EDE8DF]">{p.role}</span>
                         <span className="block text-[10px] text-[#EDE8DF]/60">{p.prodi}</span>
+                        <span className="block text-[10px] text-[#AFF8DB]/70">
+                          {p.category || '-'}{p.batch && p.batch !== '-' ? ` • ${p.batch}` : ''}
+                        </span>
                       </td>
                       <td className="py-3.5 px-4 text-[#EDE8DF]/70">
                         <div>{p.email}</div>
@@ -261,13 +291,28 @@ export default function AdminDashboardPage() {
                         {p.checkedInAt ? new Date(p.checkedInAt).toLocaleTimeString('id-ID') : '-'}
                       </td>
                       <td className="py-3.5 px-4 text-right">
-                        <Link
-                          href={`/ticket/${p.qrToken}`}
-                          target="_blank"
-                          className="text-[#AFF8DB] hover:text-[#FFF3B0] underline font-semibold text-[11px]"
-                        >
-                          Lihat Tiket
-                        </Link>
+                        <div className="flex items-center justify-end gap-3">
+                          <Link
+                            href={`/ticket/${p.qrToken}`}
+                            target="_blank"
+                            className="text-[#AFF8DB] hover:text-[#FFF3B0] underline font-semibold text-[11px]"
+                          >
+                            Lihat Tiket
+                          </Link>
+                          <button
+                            onClick={() => setTarget(p)}
+                            disabled={deletingId === p.id}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-950/50 border border-red-500/40 text-red-300 hover:bg-red-900/60 hover:text-red-200 transition-colors text-[11px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Hapus peserta"
+                          >
+                            {deletingId === p.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                            Hapus
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -278,6 +323,30 @@ export default function AdminDashboardPage() {
         </div>
 
       </div>
+
+      <Dialog
+        open={!!target}
+        variant="danger"
+        title="Hapus Peserta"
+        message={
+          target
+            ? `Hapus permanen peserta "${target.name}" (${target.nimNip})?\nTindakan ini tidak bisa dibatalkan.`
+            : ''
+        }
+        confirmLabel="Hapus"
+        busy={deletingId === target?.id}
+        onClose={() => deletingId === null && setTarget(null)}
+        onConfirm={() => target && handleDelete(target)}
+      />
+
+      <Dialog
+        open={!!notice}
+        variant="info"
+        title="Tidak Dapat Dilanjutkan"
+        message={notice || ''}
+        confirmLabel="Mengerti"
+        onClose={() => setNotice(null)}
+      />
     </main>
   );
 }

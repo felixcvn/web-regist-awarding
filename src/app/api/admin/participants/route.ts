@@ -14,12 +14,14 @@ export async function GET(request: Request) {
     const participants = await getAllParticipants();
 
     if (format === 'csv') {
-      const headers = ['ID Tiket', 'NIM/NIP', 'Nama Lengkap', 'Peran', 'Program Studi', 'Email', 'No. WA', 'Status Kehadiran', 'Waktu Check-In', 'Waktu Daftar'];
+      const headers = ['ID Tiket', 'NIM/NIP', 'Nama Lengkap', 'Peran', 'Kategori', 'Angkatan', 'Program Studi', 'Email', 'No. WA', 'Status Kehadiran', 'Waktu Check-In', 'Waktu Daftar'];
       const rows = participants.map((p) => [
         `"${p.id}"`,
         `"${p.nimNip}"`,
         `"${p.name.replace(/"/g, '""')}"`,
         `"${p.role}"`,
+        `"${p.category || '-'}"`,
+        `"${p.batch || '-'}"`,
         `"${p.prodi || '-'}"`,
         `"${p.email}"`,
         `"${p.phone || '-'}"`,

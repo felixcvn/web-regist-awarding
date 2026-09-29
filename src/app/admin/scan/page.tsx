@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Html5Qrcode } from 'html5-qrcode';
 import { QrCode, CheckCircle2, AlertTriangle, XCircle, LayoutDashboard, LogOut, Camera, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import Dialog from '@/components/Dialog';
 
 export default function AdminScanPage() {
   const router = useRouter();
   const [manualCode, setManualCode] = useState('');
   const [scanning, setScanning] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<{
     status: 'idle' | 'success' | 'warning' | 'error';
     message: string;
@@ -18,6 +20,14 @@ export default function AdminScanPage() {
   }>({ status: 'idle', message: '' });
 
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  // ponytail: ignore re-decodes of the same token within cooldown so a held QR isn't scanned repeatedly.
+  const SCAN_COOLDOWN_MS = 3000;
+  const lastScanRef = useRef<{ token: string; at: number }>({ token: '', at: 0 });
+
+  const shouldIgnoreScan = (token: string): boolean => {
+    const { token: lastToken, at } = lastScanRef.current;
+    return token === lastToken && Date.now() - at < SCAN_COOLDOWN_MS;
+  };
 
   const triggerBeep = (type: 'success' | 'error') => {
     try {
@@ -47,6 +57,8 @@ export default function AdminScanPage() {
 
   const processCheckIn = async (token: string) => {
     if (!token || loading) return;
+    if (shouldIgnoreScan(token)) return;
+    lastScanRef.current = { token, at: Date.now() };
     setLoading(true);
 
     try {
@@ -95,7 +107,10 @@ export default function AdminScanPage() {
 
       await qrScanner.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { fps: 10, qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.7);
+          return { width: edge, height: edge };
+        } },
         (decodedText) => {
           processCheckIn(decodedText);
         },
@@ -106,7 +121,7 @@ export default function AdminScanPage() {
       setScanning(true);
     } catch (err) {
       console.warn('Camera start error:', err);
-      alert('Tidak dapat mengakses kamera. Silakan periksa izin browser atau gunakan input manual.');
+      setCameraError('Tidak dapat mengakses kamera. Silakan periksa izin browser atau gunakan input manual.');
     }
   };
 
@@ -146,7 +161,7 @@ export default function AdminScanPage() {
 
   return (
     <main className="min-h-screen bg-[#061510] text-[#EDE8DF] p-4 sm:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         
         {/* Header panitia */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-[#AFF8DB]/20 gap-4">
@@ -210,8 +225,8 @@ export default function AdminScanPage() {
           </div>
         )}
 
-        {/* Scanner & Manual Input Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Scanner (full-width) & Manual Input */}
+        <div className="space-y-6">
           
           {/* Camera Scanner Box */}
           <div className="rounded-3xl p-6 bg-gradient-to-b from-[#0F2D23] to-[#0A1F18] border border-[#AFF8DB]/30 shadow-xl flex flex-col items-center justify-between">
@@ -225,7 +240,7 @@ export default function AdminScanPage() {
             </div>
 
             {/* Video preview target */}
-            <div className="w-full aspect-square max-w-xs bg-black/60 rounded-2xl overflow-hidden border-2 border-[#AFF8DB]/40 relative flex items-center justify-center">
+            <div className="w-full aspect-square max-w-2xl bg-black/60 rounded-2xl overflow-hidden border-2 border-[#AFF8DB]/40 relative flex items-center justify-center">
               <div id="qr-reader" className="w-full h-full" />
               {!scanning && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#071711]/90">
@@ -238,7 +253,7 @@ export default function AdminScanPage() {
             </div>
 
             {/* Camera Control Button */}
-            <div className="w-full mt-5">
+            <div className="w-full max-w-2xl mt-5">
               {!scanning ? (
                 <button
                   onClick={startCamera}
@@ -315,6 +330,15 @@ export default function AdminScanPage() {
         </div>
 
       </div>
+
+      <Dialog
+        open={!!cameraError}
+        variant="info"
+        title="Kamera Tidak Tersedia"
+        message={cameraError || ''}
+        confirmLabel="Mengerti"
+        onClose={() => setCameraError(null)}
+      />
     </main>
   );
 }

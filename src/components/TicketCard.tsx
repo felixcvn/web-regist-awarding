@@ -160,7 +160,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       // Status Civitas & Program Studi
       ctx.font = '600 18px sans-serif';
       ctx.fillStyle = '#EDE8DF';
-      ctx.fillText(`Mahasiswa S1  •  ${participant.prodi}`, width / 2, 405);
+      ctx.fillText(`${participant.category || participant.role}${participant.batch && participant.batch !== '-' ? ` ${participant.batch}` : ''}  •  ${participant.prodi}`, width / 2, 405);
 
       // NIM & Status Box
       const infoBoxY = 440;
@@ -248,7 +248,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       ctx.textAlign = 'left';
       ctx.font = '16px sans-serif';
       ctx.fillStyle = '#FAF7F0';
-      ctx.fillText('📅  Jumat, 20 November 2026 • 17:30 WIB', 120, 1150);
+      ctx.fillText('📅  Selasa, 1 Desember 2026 • 17:30 WIB', 120, 1150);
 
       ctx.textAlign = 'right';
       ctx.fillText('📍  Auditorium Gedung Biru, Fasilkom UNEJ', width - 120, 1150);
@@ -289,8 +289,8 @@ export default function TicketCard({ participant }: TicketCardProps) {
           value={participant.qrToken}
           size={512}
           level="H"
-          marginSize={0}
-          fgColor="#061811"
+          marginSize={5}
+          fgColor="#000000"
           bgColor="#ffffff"
         />
       </div>
@@ -350,7 +350,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
               </h3>
               <div className="flex items-center justify-center gap-2 mt-2">
                 <span className="px-3 py-0.5 rounded-full bg-[#174837] text-[#AFF8DB] text-xs font-bold border border-[#AFF8DB]/40">
-                  Mahasiswa S1
+                  {participant.category || participant.role}{participant.batch && participant.batch !== '-' ? ` ${participant.batch}` : ''}
                 </span>
                 <span className="text-xs text-[#EDE8DF]/80 font-medium">
                   {participant.prodi}
@@ -390,7 +390,8 @@ export default function TicketCard({ participant }: TicketCardProps) {
                   value={participant.qrToken}
                   size={180}
                   level="H"
-                  fgColor="#061811"
+                  marginSize={5}
+                  fgColor="#000000"
                   bgColor="#ffffff"
                 />
               </div>
@@ -406,7 +407,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
             <div className="pt-4 border-t border-[#AFF8DB]/20 grid grid-cols-2 gap-2 text-[11px] text-[#EDE8DF]/80">
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-[#AFF8DB] shrink-0" />
-                <span>Jumat, 20 Nov 2026 &bull; 17:30 WIB</span>
+                <span>Selasa, 1 Des 2026 &bull; 17:30 WIB</span>
               </div>
               <div className="flex items-center gap-1.5 justify-end">
                 <MapPin className="w-3.5 h-3.5 text-[#FFB5E8] shrink-0" />

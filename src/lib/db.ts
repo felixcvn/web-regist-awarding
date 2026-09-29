@@ -4,6 +4,10 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
+function normalizeNim(nim: string): string {
+  return nim.trim().toLowerCase();
+}
+
 // ponytail: fallback file storage when PostgreSQL server is unreachable in local dev. Switch fully to PG connection in production.
 const fallbackFilePath = path.join(process.cwd(), '.participants_data.json');
 
@@ -24,6 +28,8 @@ function loadFallbackData(): Participant[] {
       nimNip: '232410101001',
       name: 'Raden Arjuna Dewantara',
       role: 'Mahasiswa',
+      category: 'HIMASIF',
+      batch: '2023',
       prodi: 'Informatika',
       email: 'arjuna@mail.unej.ac.id',
       phone: '081234567891',
@@ -37,6 +43,8 @@ function loadFallbackData(): Participant[] {
       nimNip: '198205142008121001',
       name: 'Dr. Ir. Dian Kusuma Wardani, M.Kom.',
       role: 'Dosen',
+      category: 'Mahasiswa Fasilkom',
+      batch: '-',
       prodi: 'Sistem Informasi',
       email: 'dian.kusuma@unej.ac.id',
       phone: '081987654321',
@@ -82,6 +90,8 @@ async function initPostgresTable(p: Pool): Promise<boolean> {
         nim_nip VARCHAR(50) UNIQUE NOT NULL,
         name VARCHAR(120) NOT NULL,
         role VARCHAR(40) NOT NULL,
+        category VARCHAR(40),
+        batch VARCHAR(4) DEFAULT '-',
         prodi VARCHAR(80),
         email VARCHAR(120) NOT NULL,
         phone VARCHAR(30),
@@ -90,6 +100,8 @@ async function initPostgresTable(p: Pool): Promise<boolean> {
         checked_in_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE participants ADD COLUMN IF NOT EXISTS category VARCHAR(40);
+      ALTER TABLE participants ADD COLUMN IF NOT EXISTS batch VARCHAR(4) DEFAULT '-';
       CREATE INDEX IF NOT EXISTS idx_qr_token ON participants(qr_token);
       CREATE INDEX IF NOT EXISTS idx_nim_nip ON participants(nim_nip);
     `);
@@ -112,16 +124,16 @@ export async function createParticipant(input: RegistrationInput): Promise<{ par
     try {
       const ready = await initPostgresTable(p);
       if (ready) {
-        const existing = await p.query('SELECT nim_nip FROM participants WHERE nim_nip = $1 LIMIT 1', [input.nimNip.trim()]);
+        const existing = await p.query('SELECT nim_nip FROM participants WHERE LOWER(nim_nip) = $1 LIMIT 1', [normalizeNim(input.nimNip)]);
         if (existing.rows.length > 0) {
           return { error: 'NIM / NIP ini sudah terdaftar sebelumnya!' };
         }
 
         const res = await p.query(
-          `INSERT INTO participants (id, nim_nip, name, role, prodi, email, phone, qr_token, is_checked_in, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, NOW())
-           RETURNING id, nim_nip AS "nimNip", name, role, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"`,
-          [id, input.nimNip.trim(), input.name.trim(), input.role, input.prodi.trim(), input.email.trim(), input.phone.trim(), qrToken]
+          `INSERT INTO participants (id, nim_nip, name, role, category, batch, prodi, email, phone, qr_token, is_checked_in, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, NOW())
+           RETURNING id, nim_nip AS "nimNip", name, role, category, batch, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"`,
+          [id, normalizeNim(input.nimNip), input.name.trim(), input.role, input.category, input.batch, input.prodi.trim(), input.email.trim(), input.phone.trim(), qrToken]
         );
 
         return { participant: res.rows[0] };
@@ -136,15 +148,17 @@ export async function createParticipant(input: RegistrationInput): Promise<{ par
 
   // Fallback store
   const list = loadFallbackData();
-  if (list.some((item) => item.nimNip.toLowerCase() === input.nimNip.trim().toLowerCase())) {
+  if (list.some((item) => normalizeNim(item.nimNip) === normalizeNim(input.nimNip))) {
     return { error: 'NIM / NIP ini sudah terdaftar sebelumnya!' };
   }
 
   const newRecord: Participant = {
     id,
-    nimNip: input.nimNip.trim(),
+    nimNip: normalizeNim(input.nimNip),
     name: input.name.trim(),
     role: input.role,
+    category: input.category,
+    batch: input.batch,
     prodi: input.prodi.trim(),
     email: input.email.trim(),
     phone: input.phone.trim(),
@@ -166,7 +180,7 @@ export async function getParticipantByToken(qrToken: string): Promise<Participan
       const ready = await initPostgresTable(p);
       if (ready) {
         const res = await p.query(
-          `SELECT id, nim_nip AS "nimNip", name, role, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"
+          `SELECT id, nim_nip AS "nimNip", name, role, category, batch, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"
            FROM participants WHERE qr_token = $1 LIMIT 1`,
           [qrToken.trim()]
         );
@@ -190,7 +204,7 @@ export async function checkInParticipant(qrToken: string): Promise<{ success: bo
       const ready = await initPostgresTable(p);
       if (ready) {
         const queryRes = await p.query(
-          `SELECT id, nim_nip AS "nimNip", name, role, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"
+          `SELECT id, nim_nip AS "nimNip", name, role, category, batch, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"
            FROM participants WHERE qr_token = $1 LIMIT 1`,
           [qrToken.trim()]
         );
@@ -208,13 +222,30 @@ export async function checkInParticipant(qrToken: string): Promise<{ success: bo
           };
         }
 
+        // ponytail: atomic guard so concurrent scans can't both flip the flag.
         const updateRes = await p.query(
           `UPDATE participants 
            SET is_checked_in = TRUE, checked_in_at = NOW() 
-           WHERE qr_token = $1
-           RETURNING id, nim_nip AS "nimNip", name, role, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"`,
+           WHERE qr_token = $1 AND is_checked_in = FALSE
+           RETURNING id, nim_nip AS "nimNip", name, role, category, batch, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"`,
           [qrToken.trim()]
         );
+
+        if (updateRes.rows.length === 0) {
+          const refetch = await p.query(
+            `SELECT id, nim_nip AS "nimNip", name, role, category, batch, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"
+             FROM participants WHERE qr_token = $1 LIMIT 1`,
+            [qrToken.trim()]
+          );
+          const dup = refetch.rows[0];
+          return {
+            success: false,
+            message: dup?.checkedInAt
+              ? `Tiket sudah pernah check-in pada ${new Date(dup.checkedInAt).toLocaleTimeString('id-ID')}!`
+              : 'Tiket sudah pernah check-in!',
+            participant: dup,
+          };
+        }
 
         return { success: true, message: 'Check-in berhasil! Selamat datang.', participant: updateRes.rows[0] };
       }
@@ -251,7 +282,7 @@ export async function getAllParticipants(): Promise<Participant[]> {
       const ready = await initPostgresTable(p);
       if (ready) {
         const res = await p.query(
-          `SELECT id, nim_nip AS "nimNip", name, role, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"
+          `SELECT id, nim_nip AS "nimNip", name, role, category, batch, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"
            FROM participants ORDER BY created_at DESC`
         );
         return res.rows;
@@ -262,4 +293,45 @@ export async function getAllParticipants(): Promise<Participant[]> {
   }
 
   return loadFallbackData().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function isNimRegistered(nimNip: string): Promise<boolean> {
+  const normalized = normalizeNim(nimNip);
+  if (!normalized) return false;
+
+  const p = getPool();
+  if (p) {
+    try {
+      const ready = await initPostgresTable(p);
+      if (ready) {
+        const res = await p.query('SELECT nim_nip FROM participants WHERE LOWER(nim_nip) = $1 LIMIT 1', [normalized]);
+        return res.rows.length > 0;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return loadFallbackData().some((item) => normalizeNim(item.nimNip) === normalized);
+}
+
+export async function deleteParticipant(id: string): Promise<boolean> {
+  const p = getPool();
+  if (p) {
+    try {
+      const ready = await initPostgresTable(p);
+      if (ready) {
+        const res = await p.query('DELETE FROM participants WHERE id = $1 RETURNING id', [id.trim()]);
+        return res.rows.length > 0;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  const list = loadFallbackData();
+  const next = list.filter((item) => item.id !== id.trim());
+  if (next.length === list.length) return false;
+  saveFallbackData(next);
+  return true;
 }

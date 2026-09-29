@@ -1,8 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme inline {
-  --font-serif: var(--font-cinzel), Georgia, serif;
-  --font-sans: var(--font-sans), system-ui, sans-serif;
+  --font-serif: 'Cinzel', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 
   --color-fairy-pink: #FFB5E8;
   --color-mint-green: #AFF8DB;
@@ -28,7 +29,7 @@
 
 /* Custom enchanted glow & typography */
 .font-cinzel {
-  font-family: var(--font-cinzel), serif;
+  font-family: 'Cinzel', serif;
 }
 
 .glow-mint {
@@ -89,6 +90,16 @@
 @keyframes lanternSwing {
   0%, 100% { transform: rotate(-3deg); }
   50% { transform: rotate(3deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dialogIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .animate-float-slow {

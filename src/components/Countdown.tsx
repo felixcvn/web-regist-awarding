@@ -7,7 +7,7 @@ interface CountdownProps {
   targetDate?: string;
 }
 
-export default function Countdown({ targetDate = '2026-11-20T18:00:00' }: CountdownProps) {
+export default function Countdown({ targetDate = '2026-12-01T18:00:00' }: CountdownProps) {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number }>({
     days: 0,
     hours: 0,

@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import confetti from 'canvas-confetti';
-import { Sparkles, Ticket, User, Mail, Phone, BookOpen, AlertCircle, CheckCircle, Loader2, ChevronDown, Check } from 'lucide-react';
-import { RoleType } from '@/lib/types';
+import { Ticket, User, Mail, Phone, BookOpen, AlertCircle, CheckCircle, Loader2, ChevronDown, Check, Users, CalendarDays } from 'lucide-react';
+import { RoleType, CategoryType, BatchType, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/types';
 import { StarlightGlow, BotanicalCornerFiligree } from './BotanicalDecoration';
 import ScrollReveal from './ScrollReveal';
+
+type DropdownKey = 'prodi' | 'category' | 'batch';
 
 export default function RegistrationForm() {
   const router = useRouter();
@@ -15,6 +17,8 @@ export default function RegistrationForm() {
     name: '',
     role: 'Mahasiswa' as RoleType,
     nimNip: '',
+    category: 'HIMASIF' as CategoryType,
+    batch: '-' as BatchType,
     prodi: 'Informatika',
     email: '',
     phone: '',
@@ -22,14 +26,16 @@ export default function RegistrationForm() {
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [nimError, setNimError] = useState('');
+  const [checkingNim, setCheckingNim] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [isProdiOpen, setIsProdiOpen] = useState(false);
-  const prodiRef = useRef<HTMLDivElement>(null);
+
+  const [openDropdown, setOpenDropdown] = useState<DropdownKey | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (prodiRef.current && !prodiRef.current.contains(e.target as Node)) {
-        setIsProdiOpen(false);
+      if (!(e.target as Element).closest('[data-dropdown]')) {
+        setOpenDropdown(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -42,9 +48,64 @@ export default function RegistrationForm() {
     'Teknologi Informasi',
   ];
 
+  const isStudentBatch = formData.category === 'Mahasiswa Fasilkom' || formData.category === 'Perwakilan Angkatan';
+
+  const prodiFromNim = (nim: string): string | null => {
+    const digits = nim.replace(/\D/g, '');
+    if (digits.length < 4) return null;
+    const last4 = digits.slice(-4);
+    if (last4.startsWith('10')) return 'Sistem Informasi';
+    if (last4.startsWith('20')) return 'Teknologi Informasi';
+    if (last4.startsWith('30')) return 'Informatika';
+    return null;
+  };
+
+  useEffect(() => {
+    const nim = formData.nimNip.trim();
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (!nim) {
+        setNimError('');
+        setCheckingNim(false);
+        return;
+      }
+      setCheckingNim(true);
+
+      const detectedProdi = prodiFromNim(nim);
+      if (detectedProdi) {
+        setFormData((prev) => (prev.prodi === detectedProdi ? prev : { ...prev, prodi: detectedProdi }));
+      }
+
+      try {
+        const res = await fetch(`/api/register/check?nim=${encodeURIComponent(nim)}`);
+        const data = await res.json();
+        if (cancelled) return;
+        setNimError(data.available === false ? 'NIM ini sudah terdaftar. Satu NIM hanya untuk satu registrasi.' : '');
+      } catch {
+        if (!cancelled) setNimError('');
+      } finally {
+        if (!cancelled) setCheckingNim(false);
+      }
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [formData.nimNip]);
+
+  const toggleDropdown = (key: DropdownKey) => {
+    setOpenDropdown((prev) => (prev === key ? null : key));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (nimError) {
+      setErrorMsg(nimError);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -77,6 +138,20 @@ export default function RegistrationForm() {
       setLoading(false);
     }
   };
+
+  const dropdownClass = (key: DropdownKey) =>
+    `w-full flex items-center justify-between pl-11 pr-4 py-3.5 rounded-xl bg-[#071A13] border text-sm text-[#FAF7F0] transition-all cursor-pointer text-left ${
+      openDropdown === key
+        ? 'border-[#AFF8DB] ring-2 ring-[#AFF8DB]/20 shadow-[0_0_15px_rgba(175,248,219,0.2)]'
+        : 'border-[#AFF8DB]/30 hover:border-[#AFF8DB]/60'
+    }`;
+
+  const optionClass = (selected: boolean) =>
+    `w-full flex items-center justify-between px-4 py-3 text-sm text-left transition-all cursor-pointer ${
+      selected
+        ? 'bg-[#AFF8DB]/20 text-[#AFF8DB] font-semibold pl-5 border-l-4 border-[#AFF8DB]'
+        : 'text-[#EDE8DF]/90 hover:bg-[#AFF8DB]/10 hover:text-[#FAF7F0]'
+    }`;
 
   return (
     <section id="registrasi" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#061510] text-[#EDE8DF] overflow-hidden">
@@ -159,55 +234,157 @@ export default function RegistrationForm() {
                   placeholder="Contoh: 232410101055"
                   value={formData.nimNip}
                   onChange={(e) => setFormData({ ...formData, nimNip: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-[#071A13] border border-[#AFF8DB]/30 focus:border-[#AFF8DB] focus:ring-2 focus:ring-[#AFF8DB]/20 text-sm text-[#FAF7F0] placeholder-[#EDE8DF]/40 outline-hidden transition-all font-mono"
+                  className={`w-full pl-11 pr-10 py-3.5 rounded-xl bg-[#071A13] border text-sm text-[#FAF7F0] placeholder-[#EDE8DF]/40 outline-hidden transition-all font-mono ${
+                    nimError ? 'border-red-500/70 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-[#AFF8DB]/30 focus:border-[#AFF8DB] focus:ring-2 focus:ring-[#AFF8DB]/20'
+                  }`}
                 />
+                {checkingNim && (
+                  <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB] animate-spin" />
+                )}
+              </div>
+              {nimError && (
+                <p className="mt-2 text-[11px] text-red-300 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  {nimError}
+                </p>
+              )}
+            </div>
+
+            {/* Kategori Civitas & Angkatan Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="relative" data-dropdown>
+                <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
+                  Datang Sebagai <span className="text-[#FFB5E8]">*</span>
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => toggleDropdown('category')}
+                    aria-haspopup="listbox"
+                    aria-expanded={openDropdown === 'category'}
+                    className={dropdownClass('category')}
+                  >
+                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+                    <span className="truncate">{formData.category}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-[#AFF8DB] transition-transform duration-200 shrink-0 ml-2 ${
+                        openDropdown === 'category' ? 'rotate-180 text-[#FFF3B0]' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {openDropdown === 'category' && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-[#082017]/95 backdrop-blur-xl border border-[#AFF8DB]/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
+                      <div className="divide-y divide-[#AFF8DB]/10">
+                        {CATEGORY_OPTIONS.map((c) => {
+                          const isSelected = formData.category === c;
+                          return (
+                            <button
+                              key={c}
+                              type="button"
+                                onClick={() => {
+                                  const keepsBatch = c === 'Mahasiswa Fasilkom' || c === 'Perwakilan Angkatan';
+                                  setFormData({ ...formData, category: c, batch: keepsBatch ? formData.batch : '-' });
+                                  setOpenDropdown(null);
+                                }}
+                              className={optionClass(isSelected)}
+                            >
+                              <span className="truncate">{c}</span>
+                              {isSelected && <Check className="w-4 h-4 text-[#AFF8DB] shrink-0 ml-2" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="relative" data-dropdown>
+                <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
+                  Angkatan {isStudentBatch && <span className="text-[#FFB5E8]">*</span>}
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled={!isStudentBatch}
+                    onClick={() => toggleDropdown('batch')}
+                    aria-haspopup="listbox"
+                    aria-expanded={openDropdown === 'batch'}
+                    className={`${dropdownClass('batch')} disabled:opacity-40 disabled:cursor-not-allowed`}
+                  >
+                    <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+                    <span className="truncate">{isStudentBatch ? formData.batch : '—'}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-[#AFF8DB] transition-transform duration-200 shrink-0 ml-2 ${
+                        openDropdown === 'batch' ? 'rotate-180 text-[#FFF3B0]' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {openDropdown === 'batch' && isStudentBatch && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-[#082017]/95 backdrop-blur-xl border border-[#AFF8DB]/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
+                      <div className="divide-y divide-[#AFF8DB]/10">
+                        {BATCH_OPTIONS.map((b) => {
+                          const isSelected = formData.batch === b;
+                          return (
+                            <button
+                              key={b}
+                              type="button"
+                              onClick={() => {
+                                setFormData({ ...formData, batch: b });
+                                setOpenDropdown(null);
+                              }}
+                              className={optionClass(isSelected)}
+                            >
+                              <span className="truncate">{b}</span>
+                              {isSelected && <Check className="w-4 h-4 text-[#AFF8DB] shrink-0 ml-2" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Program Studi */}
-            <div className="relative">
+            <div className="relative" data-dropdown>
               <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
                 Program Studi (S1) <span className="text-[#FFB5E8]">*</span>
               </label>
-              <div className="relative" ref={prodiRef}>
+              <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setIsProdiOpen(!isProdiOpen)}
+                  onClick={() => toggleDropdown('prodi')}
                   aria-haspopup="listbox"
-                  aria-expanded={isProdiOpen}
-                  className={`w-full flex items-center justify-between pl-11 pr-4 py-3.5 rounded-xl bg-[#071A13] border text-sm text-[#FAF7F0] transition-all cursor-pointer text-left ${
-                    isProdiOpen
-                      ? 'border-[#AFF8DB] ring-2 ring-[#AFF8DB]/20 shadow-[0_0_15px_rgba(175,248,219,0.2)]'
-                      : 'border-[#AFF8DB]/30 hover:border-[#AFF8DB]/60'
-                  }`}
+                  aria-expanded={openDropdown === 'prodi'}
+                  className={dropdownClass('prodi')}
                 >
                   <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
                   <span className="truncate">{formData.prodi}</span>
                   <ChevronDown
                     className={`w-4 h-4 text-[#AFF8DB] transition-transform duration-200 shrink-0 ml-2 ${
-                      isProdiOpen ? 'rotate-180 text-[#FFF3B0]' : ''
+                      openDropdown === 'prodi' ? 'rotate-180 text-[#FFF3B0]' : ''
                     }`}
                   />
                 </button>
 
-                {isProdiOpen && (
-                  <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-[#082017]/95 backdrop-blur-xl border border-[#AFF8DB]/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-hidden">
+                {openDropdown === 'prodi' && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-[#082017]/95 backdrop-blur-xl border border-[#AFF8DB]/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
                     <div className="divide-y divide-[#AFF8DB]/10">
-                      {prodiOptions.map((p, idx) => {
+                      {prodiOptions.map((p) => {
                         const isSelected = formData.prodi === p;
                         return (
                           <button
-                            key={idx}
+                            key={p}
                             type="button"
                             onClick={() => {
                               setFormData({ ...formData, prodi: p });
-                              setIsProdiOpen(false);
+                              setOpenDropdown(null);
                             }}
-                            className={`w-full flex items-center justify-between px-4 py-3 text-sm text-left transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-[#AFF8DB]/20 text-[#AFF8DB] font-semibold pl-5 border-l-4 border-[#AFF8DB]'
-                                : 'text-[#EDE8DF]/90 hover:bg-[#AFF8DB]/10 hover:text-[#FAF7F0]'
-                            }`}
+                            className={optionClass(isSelected)}
                           >
                             <span className="truncate">{p}</span>
                             {isSelected && <Check className="w-4 h-4 text-[#AFF8DB] shrink-0 ml-2" />}
@@ -260,8 +437,8 @@ export default function RegistrationForm() {
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={loading || success}
-                className="w-full py-4 px-6 rounded-2xl bg-[#AFF8DB] hover:bg-[#86efc3] text-[#061811] font-bold text-base tracking-wide shadow-[0_0_30px_rgba(175,248,219,0.6)] hover:shadow-[0_0_45px_rgba(175,248,219,0.9)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer"
+                disabled={loading || success || !!nimError}
+                className="w-full py-4 px-6 rounded-2xl bg-[#AFF8DB] hover:bg-[#86efc3] text-[#061811] font-bold text-base tracking-wide shadow-[0_0_30px_rgba(175,248,219,0.6)] hover:shadow-[0_0_45px_rgba(175,248,219,0.9)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer"
               >
                 {loading ? (
                   <>
