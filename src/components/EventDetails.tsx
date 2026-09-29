@@ -81,31 +81,31 @@ export default function EventDetails() {
   ];
 
   return (
-    <section id="tentang" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#081913] text-[#EDE8DF] overflow-hidden">
+    <section id="tentang" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-vignette-soft text-ink overflow-hidden">
       
       {/* Botanical Corner Filigrees */}
       <BotanicalCornerFiligree position="top-left" className="opacity-45" />
       <BotanicalCornerFiligree position="bottom-right" className="opacity-45" />
 
       {/* Ambient background glows */}
-      <StarlightGlow className="absolute top-10 right-10 w-96 h-96 bg-[#AFF8DB]/10" />
-      <StarlightGlow className="absolute bottom-10 left-10 w-96 h-96 bg-[#FFB5E8]/10" />
-      <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-[#0E2C21]/30" />
+      <StarlightGlow className="absolute top-10 right-10 w-96 h-96 bg-bloom-pink/10" />
+      <StarlightGlow className="absolute bottom-10 left-10 w-96 h-96 bg-bloom-pink/10" />
+      <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-surface-card/30" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         
         {/* Section Title */}
         <ScrollReveal animation="fade-up">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#12382B] text-[#AFF8DB] text-xs font-semibold tracking-widest uppercase mb-3 border border-[#AFF8DB]/30">
-              <span className=" h-3.5 text-[#FFF3B0]" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-card text-bloom-pink text-xs font-semibold tracking-widest uppercase mb-3 border border-bloom-pink/30">
+              <span className=" h-3.5 text-gold" />
               The Secret Garden of Dreams
             </div>
-            <h2 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#FAF7F0] tracking-wide">
+            <h2 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-extrabold text-ivory tracking-wide">
               Jadwal & Panduan Undangan
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#AFF8DB] to-transparent mx-auto mt-4" />
-            <p className="text-sm sm:text-base text-[#EDE8DF]/80 mt-4 leading-relaxed font-light">
+            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent mx-auto mt-4" />
+            <p className="text-sm sm:text-base text-ink/80 mt-4 leading-relaxed font-light">
               Saksikan mekarnya perjuangan, dedikasi, dan karya mahasiswa, UKM, serta Ormawa dalam panggung kehormatan Fasilkom Universitas Jember.
             </p>
           </div>
@@ -114,28 +114,28 @@ export default function EventDetails() {
         {/* 2 Philosophy Cards based on Theme */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           <ScrollReveal animation="fade-right" delay={100}>
-            <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#0e2c21] to-[#071912] border border-[#AFF8DB]/30 shadow-xl overflow-hidden group h-full">
-              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#AFF8DB] bg-[#143D30] px-3 py-1 rounded-full border border-[#AFF8DB]/30">
+            <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-surface-card to-surface-base border border-bloom-pink/30 shadow-xl overflow-hidden group h-full">
+              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-bloom-pink bg-surface-card px-3 py-1 rounded-full border border-bloom-pink/30">
                 Filosofi Utama
               </span>
-              <h3 className="font-cinzel text-xl sm:text-2xl font-bold text-[#FFF3B0] mt-3 mb-2">
+              <h3 className="font-cinzel text-xl sm:text-2xl font-bold text-gold mt-3 mb-2">
                 The Secret Garden of Dreams
               </h3>
-              <p className="text-xs sm:text-sm text-[#EDE8DF]/80 leading-relaxed font-light">
+              <p className="text-xs sm:text-sm text-ink/80 leading-relaxed font-light">
                 Melambangkan sebuah taman yang menjadi ruang bertumbuhnya mimpi, harapan, dan potensi. Layaknya bunga yang mekar melalui proses yang panjang, setiap insan menempuh perjalanan yang dipenuhi dedikasi, kerja keras, kolaborasi, serta semangat untuk terus berkembang hingga mampu meraih prestasi yang membanggakan.
               </p>
             </div>
           </ScrollReveal>
 
           <ScrollReveal animation="fade-left" delay={200}>
-            <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#0e2c21] to-[#071912] border border-[#FFB5E8]/30 shadow-xl overflow-hidden group h-full">
-              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#FFB5E8] bg-[#143D30] px-3 py-1 rounded-full border border-[#FFB5E8]/30">
+            <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-surface-card to-surface-base border border-bloom-pink/30 shadow-xl overflow-hidden group h-full">
+              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-bloom-pink bg-surface-card px-3 py-1 rounded-full border border-bloom-pink/30">
                 Visi & Apresiasi
               </span>
-              <h3 className="font-cinzel text-xl sm:text-2xl font-bold text-[#FFF3B0] mt-3 mb-2">
+              <h3 className="font-cinzel text-xl sm:text-2xl font-bold text-gold mt-3 mb-2">
                 Every Dream Blooms into History
               </h3>
-              <p className="text-xs sm:text-sm text-[#EDE8DF]/80 leading-relaxed font-light">
+              <p className="text-xs sm:text-sm text-ink/80 leading-relaxed font-light">
                 Menggambarkan bahwa setiap mimpi yang diperjuangkan memiliki kesempatan berkembang menjadi pencapaian berarti. Prestasi yang diraih bukan sekadar keberhasilan sesaat, melainkan jejak sejarah yang abadi bagi individu maupun Fakultas Ilmu Komputer, menjadi inspirasi bagi lahirnya prestasi-prestasi baru.
               </p>
             </div>
@@ -147,14 +147,14 @@ export default function EventDetails() {
           
           {/* Card 1: Waktu & Tanggal */}
           <ScrollReveal animation="fade-up" delay={100}>
-            <div className="bg-gradient-to-b from-[#0F2D23]/90 to-[#0A1F18]/90 border border-[#AFF8DB]/25 rounded-3xl p-7 shadow-xl hover:border-[#AFF8DB]/50 transition-all group h-full">
-              <div className="w-12 h-12 rounded-2xl bg-[#154234] border border-[#AFF8DB]/40 flex items-center justify-center text-[#AFF8DB] mb-5 group-hover:scale-110 transition-transform">
+            <div className="bg-gradient-to-b from-surface-card/90 to-surface-card-2/90 border border-bloom-pink/25 rounded-3xl p-7 shadow-xl hover:border-bloom-pink/50 transition-all group h-full">
+              <div className="w-12 h-12 rounded-2xl bg-surface-card border border-bloom-pink/40 flex items-center justify-center text-bloom-pink mb-5 group-hover:scale-110 transition-transform">
                 <Calendar className="w-6 h-6" />
               </div>
-              <h3 className="font-cinzel text-xl font-bold text-[#FFF3B0] mb-2">Tanggal & Waktu</h3>
-              <p className="text-sm text-[#EDE8DF]/90 font-medium">Selasa, 1 Desember 2026</p>
-              <p className="text-xs text-[#AFF8DB] mt-1 font-mono">17:30 WIB — 22:00 WIB</p>
-              <p className="text-xs text-[#EDE8DF]/60 mt-3 leading-relaxed">
+              <h3 className="font-cinzel text-xl font-bold text-gold mb-2">Tanggal & Waktu</h3>
+              <p className="text-sm text-ink/90 font-medium">Selasa, 1 Desember 2026</p>
+              <p className="text-xs text-bloom-pink mt-1 font-mono">17:30 WIB — 22:00 WIB</p>
+              <p className="text-xs text-ink/60 mt-3 leading-relaxed">
                 Open gate dimulai pukul 17:30 WIB. Harap hadir tepat waktu untuk registrasi & sesi red carpet.
               </p>
             </div>
@@ -162,14 +162,14 @@ export default function EventDetails() {
 
           {/* Card 2: Lokasi & Venue */}
           <ScrollReveal animation="fade-up" delay={200}>
-            <div className="bg-gradient-to-b from-[#0F2D23]/90 to-[#0A1F18]/90 border border-[#AFF8DB]/25 rounded-3xl p-7 shadow-xl hover:border-[#AFF8DB]/50 transition-all group h-full">
-              <div className="w-12 h-12 rounded-2xl bg-[#154234] border border-[#FFB5E8]/40 flex items-center justify-center text-[#FFB5E8] mb-5 group-hover:scale-110 transition-transform">
+            <div className="bg-gradient-to-b from-surface-card/90 to-surface-card-2/90 border border-bloom-pink/25 rounded-3xl p-7 shadow-xl hover:border-bloom-pink/50 transition-all group h-full">
+              <div className="w-12 h-12 rounded-2xl bg-surface-card border border-bloom-pink/40 flex items-center justify-center text-bloom-pink mb-5 group-hover:scale-110 transition-transform">
                 <MapPin className="w-6 h-6" />
               </div>
-              <h3 className="font-cinzel text-xl font-bold text-[#FFF3B0] mb-2">Lokasi & Venue</h3>
-              <p className="text-sm text-[#EDE8DF]/90 font-medium">Auditorium Gedung Biru</p>
-              <p className="text-xs text-[#FFB5E8] mt-1">Fakultas Ilmu Komputer, Universitas Jember</p>
-              <p className="text-xs text-[#EDE8DF]/60 mt-3 leading-relaxed">
+              <h3 className="font-cinzel text-xl font-bold text-gold mb-2">Lokasi & Venue</h3>
+              <p className="text-sm text-ink/90 font-medium">Auditorium Gedung Biru</p>
+              <p className="text-xs text-bloom-pink mt-1">Fakultas Ilmu Komputer, Universitas Jember</p>
+              <p className="text-xs text-ink/60 mt-3 leading-relaxed">
                 Jl. Kalimantan No. 37, Kampus Tegalboto, Sumbersari, Jember, Jawa Timur.
               </p>
             </div>
@@ -177,14 +177,14 @@ export default function EventDetails() {
 
           {/* Card 3: Dress Code Quick Info */}
           <ScrollReveal animation="fade-up" delay={300}>
-            <div className="bg-gradient-to-b from-[#0F2D23]/90 to-[#0A1F18]/90 border border-[#AFF8DB]/25 rounded-3xl p-7 shadow-xl hover:border-[#AFF8DB]/50 transition-all group h-full">
-              <div className="w-12 h-12 rounded-2xl bg-[#154234] border border-[#E7C6FF]/40 flex items-center justify-center text-[#E7C6FF] mb-5 group-hover:scale-110 transition-transform">
+            <div className="bg-gradient-to-b from-surface-card/90 to-surface-card-2/90 border border-bloom-pink/25 rounded-3xl p-7 shadow-xl hover:border-bloom-pink/50 transition-all group h-full">
+              <div className="w-12 h-12 rounded-2xl bg-surface-card border border-lavender/40 flex items-center justify-center text-lavender mb-5 group-hover:scale-110 transition-transform">
                 <Shirt className="w-6 h-6" />
               </div>
-              <h3 className="font-cinzel text-xl font-bold text-[#FFF3B0] mb-2">Kode Busana (Dress Code)</h3>
-              <p className="text-sm text-[#EDE8DF]/90 font-medium">Secret Garden Gala & Fairy Tale</p>
-              <p className="text-xs text-[#E7C6FF] mt-1">Jas / Gaun / Batik Formal Tematik</p>
-              <p className="text-xs text-[#EDE8DF]/60 mt-3 leading-relaxed">
+              <h3 className="font-cinzel text-xl font-bold text-gold mb-2">Kode Busana (Dress Code)</h3>
+              <p className="text-sm text-ink/90 font-medium">Secret Garden Gala & Fairy Tale</p>
+              <p className="text-xs text-lavender mt-1">Jas / Gaun / Batik Formal Tematik</p>
+              <p className="text-xs text-ink/60 mt-3 leading-relaxed">
                 Dominasi warna Deep Emerald, Starlight Gold, Fairy Pink, dan Lavender bernuansa taman magis.
               </p>
             </div>
@@ -196,10 +196,10 @@ export default function EventDetails() {
         <div id="rundown" className="mt-20">
           <ScrollReveal animation="fade-up">
             <div className="text-center mb-12">
-              <span className="text-[#AFF8DB] font-cinzel text-xs uppercase tracking-[0.25em] font-semibold block mb-2">
+              <span className="text-bloom-pink font-cinzel text-xs uppercase tracking-[0.25em] font-semibold block mb-2">
                 Timeline of The Night
               </span>
-              <h3 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-[#FAF7F0]">
+              <h3 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-ivory">
                 Susunan Acara (Rundown)
               </h3>
             </div>
@@ -210,24 +210,24 @@ export default function EventDetails() {
               const IconComponent = item.icon;
               return (
                 <ScrollReveal key={index} animation="fade-up" delay={index * 80}>
-                  <div className="relative flex flex-col sm:flex-row sm:items-center justify-between p-5 sm:p-6 rounded-2xl bg-[#0B241C]/80 border border-[#AFF8DB]/20 hover:border-[#AFF8DB]/60 hover:bg-[#103025] transition-all duration-300 shadow-md group">
+                  <div className="relative flex flex-col sm:flex-row sm:items-center justify-between p-5 sm:p-6 rounded-2xl bg-surface-card/80 border border-bloom-pink/20 hover:border-bloom-pink/60 hover:bg-surface-card transition-all duration-300 shadow-md group">
                     <div className="flex items-start sm:items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-[#144234] border border-[#AFF8DB]/40 flex items-center justify-center text-[#AFF8DB] shrink-0 group-hover:scale-110 transition-transform">
+                      <div className="w-10 h-10 rounded-xl bg-surface-card border border-bloom-pink/40 flex items-center justify-center text-bloom-pink shrink-0 group-hover:scale-110 transition-transform">
                         <IconComponent className="w-5 h-5" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2.5 mb-1">
-                          <span className="text-xs font-mono font-semibold text-[#FFF3B0] bg-[#1a4032] px-2.5 py-0.5 rounded-full border border-[#FFF3B0]/30">
+                          <span className="text-xs font-mono font-semibold text-gold bg-surface-card px-2.5 py-0.5 rounded-full border border-gold/30">
                             {item.time}
                           </span>
-                          <span className="text-[10px] uppercase font-semibold text-[#FFB5E8] tracking-wider">
+                          <span className="text-[10px] uppercase font-semibold text-bloom-pink tracking-wider">
                             {item.tag}
                           </span>
                         </div>
-                        <h4 className="font-cinzel text-base sm:text-lg font-bold text-[#FAF7F0] group-hover:text-[#AFF8DB] transition-colors">
+                        <h4 className="font-cinzel text-base sm:text-lg font-bold text-ivory group-hover:text-bloom-pink transition-colors">
                           {item.title}
                         </h4>
-                        <p className="text-xs sm:text-sm text-[#EDE8DF]/70 mt-1 leading-relaxed">
+                        <p className="text-xs sm:text-sm text-ink/70 mt-1 leading-relaxed">
                           {item.desc}
                         </p>
                       </div>
@@ -243,14 +243,14 @@ export default function EventDetails() {
         <div className="mt-24">
           <ScrollReveal animation="fade-up">
             <div className="text-center max-w-3xl mx-auto mb-12">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#12382B] text-[#FFF3B0] text-xs font-semibold tracking-widest uppercase mb-3 border border-[#FFF3B0]/30">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-card text-gold text-xs font-semibold tracking-widest uppercase mb-3 border border-gold/30">
                 Inspirasi Busana Undangan
               </div>
-              <h3 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-[#FAF7F0]">
+              <h3 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-ivory">
                 Inspirasi Dresscode: Secret Garden Gala
               </h3>
-              <div className="w-20 h-1 bg-gradient-to-r from-transparent via-[#AFF8DB] to-transparent mx-auto mt-3" />
-              <p className="text-xs sm:text-sm text-[#EDE8DF]/80 mt-3 font-light leading-relaxed">
+              <div className="w-20 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent mx-auto mt-3" />
+              <p className="text-xs sm:text-sm text-ink/80 mt-3 font-light leading-relaxed">
                 Rekomendasi paduan busana formal & tematik yang selaras dengan nuansa malam Secret Garden Fasilkom Awarding Night 2026.
               </p>
             </div>
@@ -259,9 +259,9 @@ export default function EventDetails() {
           <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             {outfitInspirations.map((outfit, index) => (
               <ScrollReveal key={index} animation="zoom-in" delay={index * 80}>
-                <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#0e2c21] via-[#091f18] to-[#061510] border border-[#AFF8DB]/30 hover:border-[#FFF3B0]/80 transition-all duration-300 shadow-lg hover:-translate-y-1.5 h-full flex flex-col justify-between">
+                <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base border border-bloom-pink/30 hover:border-gold/80 transition-all duration-300 shadow-lg hover:-translate-y-1.5 h-full flex flex-col justify-between">
                   {/* Photo Container - Square */}
-                  <div className="relative aspect-square w-full overflow-hidden bg-[#061510]">
+                  <div className="relative aspect-square w-full overflow-hidden bg-surface-base">
                     <Image
                       src={outfit.image}
                       alt={outfit.title}
@@ -271,16 +271,16 @@ export default function EventDetails() {
                     />
                     
                     {/* Atmospheric Dark Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#091F18] via-transparent to-black/30" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-surface-card-2 via-transparent to-black/30" />
                   </div>
 
                   {/* Description Box */}
                   <div className="p-4 relative z-10 flex-1 flex flex-col justify-between">
                     <div>
-                      <h4 className="font-cinzel text-xs sm:text-sm font-bold text-[#FAF7F0] group-hover:text-[#AFF8DB] transition-colors mb-1">
+                      <h4 className="font-cinzel text-xs sm:text-sm font-bold text-ivory group-hover:text-bloom-pink transition-colors mb-1">
                         {outfit.title}
                       </h4>
-                      <p className="text-[11px] text-[#EDE8DF]/70 font-light leading-relaxed">
+                      <p className="text-[11px] text-ink/70 font-light leading-relaxed">
                         {outfit.desc}
                       </p>
                     </div>

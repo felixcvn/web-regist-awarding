@@ -28,5 +28,20 @@
     "isCheckedIn": true,
     "checkedInAt": "2026-09-29T01:48:40.029Z",
     "createdAt": "2026-09-29T01:42:09.357Z"
+  },
+  {
+    "id": "TKT-C06F7EC2",
+    "nimNip": "232410103030",
+    "name": "Dimas Arya",
+    "role": "Mahasiswa",
+    "category": "Mahasiswa Fasilkom",
+    "batch": "2026",
+    "prodi": "Informatika",
+    "email": "berniismyclub@gmail.com",
+    "phone": "0877171615161",
+    "qrToken": "FAN26-97c37973-aa41-49d5-9381-9817ddff2534",
+    "isCheckedIn": true,
+    "checkedInAt": "2026-09-29T16:35:42.839Z",
+    "createdAt": "2026-09-29T16:35:00.291Z"
   }
 ]

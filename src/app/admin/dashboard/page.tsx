@@ -89,19 +89,19 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#061510] text-[#EDE8DF] p-4 sm:p-6 lg:p-8">
+    <main className="min-h-screen bg-garden bg-vignette-soft text-ink p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-[#AFF8DB]/20 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-bloom-pink/20 gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-[#AFF8DB]" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#AFF8DB]">
+              <Sparkles className="w-4 h-4 text-bloom-pink" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-bloom-pink">
                 Admin Rekapitulasi
               </span>
             </div>
-            <h1 className="font-cinzel text-2xl sm:text-3xl font-bold text-[#FAF7F0]">
+            <h1 className="font-cinzel text-2xl sm:text-3xl font-bold text-ivory">
               Dashboard Kehadiran Acara
             </h1>
           </div>
@@ -109,7 +109,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={fetchParticipants}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0F2D23] border border-[#AFF8DB]/30 text-xs font-semibold text-[#AFF8DB] hover:bg-[#154234] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-card border border-bloom-pink/30 text-xs font-semibold text-bloom-pink hover:bg-surface-card transition-colors cursor-pointer"
               title="Perbarui Data"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -119,7 +119,7 @@ export default function AdminDashboardPage() {
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download from API route */}
             <a
               href="/api/admin/participants?format=csv"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#AFF8DB] text-[#061811] text-xs font-bold hover:bg-[#8ee9c4] transition-colors shadow-md"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-bloom-pink text-on-accent text-xs font-bold hover:bg-bloom-pink-deep transition-colors shadow-md"
             >
               <Download className="w-3.5 h-3.5" />
               Export CSV
@@ -127,7 +127,7 @@ export default function AdminDashboardPage() {
 
             <Link
               href="/admin/scan"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#184535] border border-[#FFF3B0]/40 text-[#FFF3B0] text-xs font-bold hover:bg-[#205743] transition-colors shadow-md"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-surface-card border border-gold/40 text-gold text-xs font-bold hover:bg-surface-card transition-colors shadow-md"
             >
               <QrCode className="w-3.5 h-3.5" />
               Buka Scanner
@@ -146,73 +146,73 @@ export default function AdminDashboardPage() {
         {/* 4 Big Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           
-          <div className="rounded-3xl p-5 bg-gradient-to-b from-[#0F2D23] to-[#0A1F18] border border-[#AFF8DB]/25 shadow-lg">
+          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-lg">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase font-bold tracking-wider text-[#EDE8DF]/60">Total Terdaftar</span>
-              <Users className="w-5 h-5 text-[#AFF8DB]" />
+              <span className="text-xs uppercase font-bold tracking-wider text-ink/60">Total Terdaftar</span>
+              <Users className="w-5 h-5 text-bloom-pink" />
             </div>
-            <div className="font-cinzel text-3xl sm:text-4xl font-black text-[#FAF7F0]">
+            <div className="font-cinzel text-3xl sm:text-4xl font-black text-ivory">
               {totalRegistered}
             </div>
-            <span className="text-[11px] text-[#EDE8DF]/50 block mt-1">Akumulasi seluruh civitas</span>
+            <span className="text-[11px] text-ink/50 block mt-1">Akumulasi seluruh civitas</span>
           </div>
 
-          <div className="rounded-3xl p-5 bg-gradient-to-b from-[#0F2D23] to-[#0A1F18] border border-[#AFF8DB]/25 shadow-lg">
+          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-lg">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase font-bold tracking-wider text-[#AFF8DB]">Sudah Hadir</span>
-              <UserCheck className="w-5 h-5 text-[#AFF8DB]" />
+              <span className="text-xs uppercase font-bold tracking-wider text-mint">Sudah Hadir</span>
+              <UserCheck className="w-5 h-5 text-mint" />
             </div>
-            <div className="font-cinzel text-3xl sm:text-4xl font-black text-[#AFF8DB]">
+            <div className="font-cinzel text-3xl sm:text-4xl font-black text-mint">
               {totalCheckedIn}
             </div>
-            <span className="text-[11px] text-[#AFF8DB]/70 block mt-1">Telah check-in di venue</span>
+            <span className="text-[11px] text-mint/70 block mt-1">Telah check-in di venue</span>
           </div>
 
-          <div className="rounded-3xl p-5 bg-gradient-to-b from-[#0F2D23] to-[#0A1F18] border border-[#AFF8DB]/25 shadow-lg">
+          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-lg">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase font-bold tracking-wider text-[#FFB5E8]">Belum Hadir</span>
-              <UserX className="w-5 h-5 text-[#FFB5E8]" />
+              <span className="text-xs uppercase font-bold tracking-wider text-bloom-pink">Belum Hadir</span>
+              <UserX className="w-5 h-5 text-bloom-pink" />
             </div>
-            <div className="font-cinzel text-3xl sm:text-4xl font-black text-[#FFB5E8]">
+            <div className="font-cinzel text-3xl sm:text-4xl font-black text-bloom-pink">
               {totalRemaining}
             </div>
-            <span className="text-[11px] text-[#FFB5E8]/70 block mt-1">Menunggu kehadiran</span>
+            <span className="text-[11px] text-bloom-pink/70 block mt-1">Menunggu kehadiran</span>
           </div>
 
-          <div className="rounded-3xl p-5 bg-gradient-to-b from-[#0F2D23] to-[#0A1F18] border border-[#FFF3B0]/30 shadow-lg">
+          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-gold/30 shadow-lg">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase font-bold tracking-wider text-[#FFF3B0]">Tingkat Kehadiran</span>
-              <Sparkles className="w-5 h-5 text-[#FFF3B0]" />
+              <span className="text-xs uppercase font-bold tracking-wider text-gold">Tingkat Kehadiran</span>
+              <Sparkles className="w-5 h-5 text-gold" />
             </div>
-            <div className="font-cinzel text-3xl sm:text-4xl font-black text-[#FFF3B0]">
+            <div className="font-cinzel text-3xl sm:text-4xl font-black text-gold">
               {attendanceRate}%
             </div>
-            <span className="text-[11px] text-[#FFF3B0]/70 block mt-1">Persentase pendaftar hadir</span>
+            <span className="text-[11px] text-gold/70 block mt-1">Persentase pendaftar hadir</span>
           </div>
 
         </div>
 
         {/* Filters & Search Toolbar */}
-        <div className="p-4 rounded-2xl bg-[#091F18] border border-[#AFF8DB]/20 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="p-4 rounded-2xl bg-surface-card-2 border border-bloom-pink/20 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
             <input
               type="text"
               placeholder="Cari berdasarkan Nama, NIM/NIP, atau Email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#061811] border border-[#AFF8DB]/20 text-xs text-[#FAF7F0] placeholder-[#EDE8DF]/40 outline-hidden focus:border-[#AFF8DB]"
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory placeholder-ink/40 outline-hidden focus:border-bloom-pink"
             />
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5 text-[#AFF8DB]" />
+              <Filter className="w-3.5 h-3.5 text-bloom-pink" />
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="py-2 px-3 rounded-xl bg-[#061811] border border-[#AFF8DB]/20 text-xs text-[#FAF7F0] outline-hidden cursor-pointer"
+                className="py-2 px-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory outline-hidden cursor-pointer"
               >
                 <option value="ALL">Semua Peran</option>
                 <option value="Mahasiswa">Mahasiswa</option>
@@ -225,7 +225,7 @@ export default function AdminDashboardPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="py-2 px-3 rounded-xl bg-[#061811] border border-[#AFF8DB]/20 text-xs text-[#FAF7F0] outline-hidden cursor-pointer"
+              className="py-2 px-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory outline-hidden cursor-pointer"
             >
               <option value="ALL">Semua Status</option>
               <option value="CHECKED_IN">Hadir (Checked-In)</option>
@@ -236,10 +236,10 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Attendee Table */}
-        <div className="rounded-3xl border border-[#AFF8DB]/20 bg-[#081C15] overflow-hidden shadow-xl">
+        <div className="rounded-3xl border border-bloom-pink/20 bg-surface-base overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#0D281E] text-[#FFF3B0] uppercase tracking-wider font-semibold border-b border-[#AFF8DB]/20">
+              <thead className="bg-surface-card text-gold uppercase tracking-wider font-semibold border-b border-bloom-pink/20">
                 <tr>
                   <th className="py-3.5 px-4">Nama Lengkap</th>
                   <th className="py-3.5 px-4">NIM / NIP</th>
@@ -253,41 +253,41 @@ export default function AdminDashboardPage() {
               <tbody className="divide-y divide-white/5">
                 {filteredList.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-[#EDE8DF]/50">
+                    <td colSpan={7} className="py-12 text-center text-ink/50">
                       {loading ? 'Memuat data peserta...' : 'Tidak ada data peserta yang cocok.'}
                     </td>
                   </tr>
                 ) : (
                   filteredList.map((p) => (
-                    <tr key={p.id} className="hover:bg-[#0E2C21]/60 transition-colors">
-                      <td className="py-3.5 px-4 font-medium text-[#FAF7F0]">
+                    <tr key={p.id} className="hover:bg-surface-card/60 transition-colors">
+                      <td className="py-3.5 px-4 font-medium text-ivory">
                         {p.name}
-                        <span className="block text-[10px] text-[#EDE8DF]/50 font-mono">{p.id}</span>
+                        <span className="block text-[10px] text-ink/50 font-mono">{p.id}</span>
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-[#AFF8DB]">{p.nimNip}</td>
+                      <td className="py-3.5 px-4 font-mono text-bloom-pink">{p.nimNip}</td>
                       <td className="py-3.5 px-4">
-                        <span className="font-bold text-[#EDE8DF]">{p.role}</span>
-                        <span className="block text-[10px] text-[#EDE8DF]/60">{p.prodi}</span>
-                        <span className="block text-[10px] text-[#AFF8DB]/70">
+                        <span className="font-bold text-ink">{p.role}</span>
+                        <span className="block text-[10px] text-ink/60">{p.prodi}</span>
+                        <span className="block text-[10px] text-bloom-pink/70">
                           {p.category || '-'}{p.batch && p.batch !== '-' ? ` • ${p.batch}` : ''}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-[#EDE8DF]/70">
+                      <td className="py-3.5 px-4 text-ink/70">
                         <div>{p.email}</div>
                         <div className="text-[10px]">{p.phone}</div>
                       </td>
                       <td className="py-3.5 px-4">
                         {p.isCheckedIn ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#154636] text-[#AFF8DB] border border-[#AFF8DB]/40">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-card text-mint border border-mint/40">
                             Hadir
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-[#EDE8DF]/60 border border-white/10">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-ink/60 border border-white/10">
                             Belum Hadir
                           </span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-[#EDE8DF]/70">
+                      <td className="py-3.5 px-4 font-mono text-[11px] text-ink/70">
                         {p.checkedInAt ? new Date(p.checkedInAt).toLocaleTimeString('id-ID') : '-'}
                       </td>
                       <td className="py-3.5 px-4 text-right">
@@ -295,7 +295,7 @@ export default function AdminDashboardPage() {
                           <Link
                             href={`/ticket/${p.qrToken}`}
                             target="_blank"
-                            className="text-[#AFF8DB] hover:text-[#FFF3B0] underline font-semibold text-[11px]"
+                            className="text-bloom-pink hover:text-gold underline font-semibold text-[11px]"
                           >
                             Lihat Tiket
                           </Link>

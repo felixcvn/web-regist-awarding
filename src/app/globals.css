@@ -5,9 +5,29 @@
   --font-serif: 'Cinzel', Georgia, serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 
+  /* Secret Garden: Emerald + Pink Gradient */
+  --color-bloom-pink: #FFB5E8;
+  --color-bloom-pink-deep: #F58AD4;
+  --color-pink-ink: #C2478F;
+  --color-blush: #FFD9F0;
+  --color-petal: #FFE8F6;
+  --color-mint: #AFF8DB;
+  --color-mint-ink: #1F8A63;
+  --color-gold: #FFF3B0;
+  --color-gold-ink: #A9791C;
+  --color-lavender: #E7C6FF;
+  --color-lavender-ink: #7A4FB0;
+  --color-ink: #EDE8DF;
+  --color-ivory: #FAF7F0;
+  --color-surface-base: #061510;
+  --color-surface-card: #0F2D23;
+  --color-surface-card-2: #0A1F18;
+  --color-field: #082017;
+  --color-field-2: #0E2A20;
+  --color-on-accent: #061811;
+
   --color-fairy-pink: #FFB5E8;
   --color-mint-green: #AFF8DB;
-  --color-lavender: #E7C6FF;
   --color-starlight-gold: #FFF3B0;
 
   --color-emerald-950: #05100c;
@@ -32,25 +52,51 @@
   font-family: 'Cinzel', serif;
 }
 
+.glow-pink {
+  box-shadow: 0 0 25px rgba(255, 181, 232, 0.45), inset 0 0 15px rgba(255, 181, 232, 0.15);
+}
+
 .glow-mint {
-  box-shadow: 0 0 25px rgba(175, 248, 219, 0.25), inset 0 0 15px rgba(175, 248, 219, 0.1);
+  box-shadow: 0 0 25px rgba(175, 248, 219, 0.4), inset 0 0 15px rgba(175, 248, 219, 0.15);
 }
 
 .glow-gold {
-  box-shadow: 0 0 30px rgba(255, 243, 176, 0.25);
+  box-shadow: 0 0 30px rgba(255, 230, 150, 0.5);
+}
+
+.text-glow-pink {
+  text-shadow: 0 0 16px rgba(255, 181, 232, 0.7);
 }
 
 .text-glow-mint {
-  text-shadow: 0 0 16px rgba(175, 248, 219, 0.5);
+  text-shadow: 0 0 16px rgba(175, 248, 219, 0.6);
 }
 
 .text-glow-gold {
-  text-shadow: 0 0 18px rgba(255, 243, 176, 0.6);
+  text-shadow: 0 0 18px rgba(255, 220, 130, 0.7);
 }
 
 /* Botanical vines / branch pattern styling */
+.bg-garden {
+  background-color: #061510;
+  background-image:
+    radial-gradient(circle at 78% 12%, rgba(245, 138, 212, 0.28) 0%, transparent 42%),
+    radial-gradient(circle at 12% 88%, rgba(255, 181, 232, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(175, 248, 219, 0.06) 0%, transparent 60%),
+    linear-gradient(160deg, #061510 0%, #0C2018 45%, #2A1424 100%);
+}
+
 .bg-vignette {
-  background: radial-gradient(circle at 50% 30%, rgba(15, 44, 34, 0.5) 0%, rgba(6, 18, 14, 0.95) 85%);
+  background: radial-gradient(circle at 70% 25%, rgba(245, 138, 212, 0.35) 0%, transparent 45%), linear-gradient(160deg, #061510 0%, #0C2018 50%, #2A1424 100%);
+}
+
+/* Soft per-section vignette: transparent so the global .bg-garden gradient flows through,
+   with a pink/gold light bloom like the Hero section. */
+.bg-vignette-soft {
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 181, 232, 0.14) 0%, transparent 55%),
+    radial-gradient(circle at 85% 18%, rgba(255, 243, 176, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 12% 82%, rgba(245, 138, 212, 0.1) 0%, transparent 45%);
 }
 
 .bg-parchment-pattern {

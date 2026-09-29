@@ -9,7 +9,7 @@ import Enchanted3DCanvas from '@/components/Enchanted3DCanvas';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#071510] text-[#EDE8DF] selection:bg-[#AFF8DB] selection:text-[#061510] overflow-x-hidden relative">
+    <main className="min-h-screen bg-garden text-ink selection:bg-bloom-pink selection:text-on-accent overflow-x-hidden relative">
       <Enchanted3DCanvas />
       <Navbar />
       <Hero />

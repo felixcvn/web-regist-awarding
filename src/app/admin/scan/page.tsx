@@ -160,16 +160,16 @@ export default function AdminScanPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#061510] text-[#EDE8DF] p-4 sm:p-6 lg:p-8">
+    <main className="min-h-screen bg-garden bg-vignette-soft text-ink p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         
         {/* Header panitia */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-[#AFF8DB]/20 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-bloom-pink/20 gap-4">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#AFF8DB] block mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-bloom-pink block mb-1">
               Check-In Pintu Masuk
             </span>
-            <h1 className="font-cinzel text-2xl sm:text-3xl font-bold text-[#FAF7F0]">
+            <h1 className="font-cinzel text-2xl sm:text-3xl font-bold text-ivory">
               Scanner Tiket Audiens
             </h1>
           </div>
@@ -177,7 +177,7 @@ export default function AdminScanPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/admin/dashboard"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0F2D23] border border-[#AFF8DB]/30 text-xs font-semibold text-[#AFF8DB] hover:bg-[#154234] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-card border border-bloom-pink/30 text-xs font-semibold text-bloom-pink hover:bg-surface-card transition-colors"
             >
               <LayoutDashboard className="w-4 h-4" />
               Lihat Dashboard
@@ -197,7 +197,7 @@ export default function AdminScanPage() {
           <div
             className={`mb-6 p-5 rounded-2xl border transition-all ${
               scanResult.status === 'success'
-                ? 'bg-[#103829] border-[#AFF8DB] text-[#AFF8DB]'
+                ? 'bg-surface-card border-mint text-mint'
                 : scanResult.status === 'warning'
                 ? 'bg-amber-950/80 border-amber-500/60 text-amber-200'
                 : 'bg-red-950/80 border-red-500/60 text-red-200'
@@ -213,11 +213,11 @@ export default function AdminScanPage() {
                   {scanResult.message}
                 </h3>
                 {scanResult.participant && (
-                  <div className="mt-2 text-xs sm:text-sm grid grid-cols-1 sm:grid-cols-2 gap-1 text-[#EDE8DF]/90 font-mono">
-                    <p><span className="text-[#AFF8DB]">Nama:</span> {scanResult.participant.name}</p>
-                    <p><span className="text-[#AFF8DB]">NIM/NIP:</span> {scanResult.participant.nimNip}</p>
-                    <p><span className="text-[#AFF8DB]">Peran:</span> {scanResult.participant.role}</p>
-                    <p><span className="text-[#AFF8DB]">Prodi:</span> {scanResult.participant.prodi}</p>
+                  <div className="mt-2 text-xs sm:text-sm grid grid-cols-1 sm:grid-cols-2 gap-1 text-ink/90 font-mono">
+                    <p><span className="text-bloom-pink">Nama:</span> {scanResult.participant.name}</p>
+                    <p><span className="text-bloom-pink">NIM/NIP:</span> {scanResult.participant.nimNip}</p>
+                    <p><span className="text-bloom-pink">Peran:</span> {scanResult.participant.role}</p>
+                    <p><span className="text-bloom-pink">Prodi:</span> {scanResult.participant.prodi}</p>
                   </div>
                 )}
               </div>
@@ -229,23 +229,23 @@ export default function AdminScanPage() {
         <div className="space-y-6">
           
           {/* Camera Scanner Box */}
-          <div className="rounded-3xl p-6 bg-gradient-to-b from-[#0F2D23] to-[#0A1F18] border border-[#AFF8DB]/30 shadow-xl flex flex-col items-center justify-between">
+          <div className="rounded-3xl p-6 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/30 shadow-xl flex flex-col items-center justify-between">
             <div className="w-full text-center mb-4">
-              <span className="font-cinzel font-bold text-base text-[#FFF3B0] block">
+              <span className="font-cinzel font-bold text-base text-gold block">
                 Kamera QR Scanner
               </span>
-              <p className="text-xs text-[#EDE8DF]/60 mt-1">
+              <p className="text-xs text-ink/60 mt-1">
                 Arahkan kamera ke QR Code pada ponsel audiens
               </p>
             </div>
 
             {/* Video preview target */}
-            <div className="w-full aspect-square max-w-2xl bg-black/60 rounded-2xl overflow-hidden border-2 border-[#AFF8DB]/40 relative flex items-center justify-center">
+            <div className="w-full aspect-square max-w-2xl bg-black/60 rounded-2xl overflow-hidden border-2 border-bloom-pink/40 relative flex items-center justify-center">
               <div id="qr-reader" className="w-full h-full" />
               {!scanning && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-[#071711]/90">
-                  <QrCode className="w-16 h-16 text-[#AFF8DB]/40 mb-3" />
-                  <p className="text-xs text-[#EDE8DF]/70 mb-4">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-surface-base/90">
+                  <QrCode className="w-16 h-16 text-bloom-pink/40 mb-3" />
+                  <p className="text-xs text-ink/70 mb-4">
                     Kamera belum aktif. Tekan tombol di bawah untuk mulai scan.
                   </p>
                 </div>
@@ -257,7 +257,7 @@ export default function AdminScanPage() {
               {!scanning ? (
                 <button
                   onClick={startCamera}
-                  className="w-full py-3 rounded-xl bg-[#AFF8DB] text-[#061811] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                  className="w-full py-3 rounded-xl bg-bloom-pink text-on-accent font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                 >
                   <Camera className="w-4 h-4" /> Buka Kamera Scanner
                 </button>
@@ -273,18 +273,18 @@ export default function AdminScanPage() {
           </div>
 
           {/* Manual Input Box */}
-          <div className="rounded-3xl p-6 bg-gradient-to-b from-[#0F2D23] to-[#0A1F18] border border-[#AFF8DB]/30 shadow-xl flex flex-col justify-between">
+          <div className="rounded-3xl p-6 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/30 shadow-xl flex flex-col justify-between">
             <div>
-              <span className="font-cinzel font-bold text-base text-[#FFF3B0] block">
+              <span className="font-cinzel font-bold text-base text-gold block">
                 Input Kode Tiket Manual
               </span>
-              <p className="text-xs text-[#EDE8DF]/60 mt-1 mb-6">
+              <p className="text-xs text-ink/60 mt-1 mb-6">
                 Alternatif jika kamera terkendala atau menggunakan barcode scanner USB
               </p>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
+                  <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
                     Kode Tiket / QR Token
                   </label>
                   <input
@@ -297,14 +297,14 @@ export default function AdminScanPage() {
                         processCheckIn(manualCode);
                       }
                     }}
-                    className="w-full px-4 py-3.5 rounded-xl bg-[#061811] border border-[#AFF8DB]/30 focus:border-[#AFF8DB] focus:ring-2 focus:ring-[#AFF8DB]/20 text-sm text-[#FAF7F0] font-mono outline-hidden"
+                    className="w-full px-4 py-3.5 rounded-xl bg-field border border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20 text-sm text-ivory font-mono outline-hidden"
                   />
                 </div>
 
                 <button
                   onClick={() => processCheckIn(manualCode)}
                   disabled={loading || !manualCode}
-                  className="w-full py-3.5 rounded-xl bg-[#144234] border border-[#AFF8DB]/50 text-[#AFF8DB] font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#1a5543] transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl bg-surface-card border border-bloom-pink/50 text-bloom-pink font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-surface-card transition-all cursor-pointer disabled:opacity-50"
                 >
                   {loading ? (
                     <>
@@ -320,9 +320,9 @@ export default function AdminScanPage() {
               </div>
             </div>
 
-            <div className="mt-6 p-4 rounded-2xl bg-[#061811]/60 border border-white/5 text-[11px] text-[#EDE8DF]/60 leading-relaxed">
-              <p className="font-bold text-[#AFF8DB] mb-1">Panduan Panitia:</p>
-              Setiap tiket hanya dapat diverifikasi <span className="text-[#FFF3B0]">satu kali</span>. Jika peserta sudah pernah check-in, sistem akan menolak dan menampilkan stempel waktu check-in sebelumnya.
+            <div className="mt-6 p-4 rounded-2xl bg-field-2/60 border border-white/5 text-[11px] text-ink/60 leading-relaxed">
+              <p className="font-bold text-bloom-pink mb-1">Panduan Panitia:</p>
+              Setiap tiket hanya dapat diverifikasi <span className="text-gold">satu kali</span>. Jika peserta sudah pernah check-in, sistem akan menolak dan menampilkan stempel waktu check-in sebelumnya.
             </div>
 
           </div>

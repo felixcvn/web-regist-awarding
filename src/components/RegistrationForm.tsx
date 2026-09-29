@@ -126,7 +126,7 @@ export default function RegistrationForm() {
         particleCount: 120,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#AFF8DB', '#FFF3B0', '#FFB5E8', '#E7C6FF'],
+        colors: ['#FFB5E8', '#FFF3B0', '#AFF8DB', '#E7C6FF'],
       });
 
       setTimeout(() => {
@@ -140,44 +140,44 @@ export default function RegistrationForm() {
   };
 
   const dropdownClass = (key: DropdownKey) =>
-    `w-full flex items-center justify-between pl-11 pr-4 py-3.5 rounded-xl bg-[#071A13] border text-sm text-[#FAF7F0] transition-all cursor-pointer text-left ${
+    `w-full flex items-center justify-between pl-11 pr-4 py-3.5 rounded-xl bg-surface-card-2 border text-sm text-ivory transition-all cursor-pointer text-left ${
       openDropdown === key
-        ? 'border-[#AFF8DB] ring-2 ring-[#AFF8DB]/20 shadow-[0_0_15px_rgba(175,248,219,0.2)]'
-        : 'border-[#AFF8DB]/30 hover:border-[#AFF8DB]/60'
+        ? 'border-bloom-pink ring-2 ring-bloom-pink/20 shadow-[0_0_15px_rgba(255, 181, 232,0.2)]'
+        : 'border-bloom-pink/30 hover:border-bloom-pink/60'
     }`;
 
   const optionClass = (selected: boolean) =>
     `w-full flex items-center justify-between px-4 py-3 text-sm text-left transition-all cursor-pointer ${
       selected
-        ? 'bg-[#AFF8DB]/20 text-[#AFF8DB] font-semibold pl-5 border-l-4 border-[#AFF8DB]'
-        : 'text-[#EDE8DF]/90 hover:bg-[#AFF8DB]/10 hover:text-[#FAF7F0]'
+        ? 'bg-bloom-pink/20 text-bloom-pink font-semibold pl-5 border-l-4 border-bloom-pink'
+        : 'text-ink/90 hover:bg-bloom-pink/10 hover:text-ivory'
     }`;
 
   return (
-    <section id="registrasi" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#061510] text-[#EDE8DF] overflow-hidden">
+    <section id="registrasi" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-vignette-soft text-ink overflow-hidden">
       
       {/* Botanical corner filigrees */}
       <BotanicalCornerFiligree position="bottom-left" className="opacity-45" />
       <BotanicalCornerFiligree position="bottom-right" className="opacity-45" />
 
       {/* Ambient Starlight Glows */}
-      <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-[#AFF8DB]/15" />
-      <StarlightGlow className="absolute -bottom-16 -left-16 w-80 h-80 bg-[#FFF3B0]/10" />
-      <StarlightGlow className="absolute -bottom-16 -right-16 w-80 h-80 bg-[#FFB5E8]/10" />
+      <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-bloom-pink/15" />
+      <StarlightGlow className="absolute -bottom-16 -left-16 w-80 h-80 bg-gold/10" />
+      <StarlightGlow className="absolute -bottom-16 -right-16 w-80 h-80 bg-bloom-pink/10" />
 
       <div className="max-w-3xl mx-auto relative z-20">
         
         {/* Title Header */}
         <ScrollReveal animation="fade-up">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#12382B] text-[#AFF8DB] text-xs font-semibold tracking-widest uppercase mb-3 border border-[#AFF8DB]/30 shadow-md">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-card text-bloom-pink text-xs font-semibold tracking-widest uppercase mb-3 border border-bloom-pink/30 shadow-md">
               Gerbang Secret Garden
             </div>
-            <h2 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#FAF7F0] tracking-wide">
+            <h2 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-extrabold text-ivory tracking-wide">
               Konfirmasi Kehadiran
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#AFF8DB] to-transparent mx-auto mt-4" />
-            <p className="text-xs sm:text-sm text-[#EDE8DF]/80 mt-4 leading-relaxed font-light">
+            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent mx-auto mt-4" />
+            <p className="text-xs sm:text-sm text-ink/80 mt-4 leading-relaxed font-light">
               Jadilah saksi lahirnya sejarah baru. Lengkapi data diri Anda untuk mendapatkan Tiket Masuk Resmi & QR Code kehadiran.
             </p>
           </div>
@@ -185,7 +185,7 @@ export default function RegistrationForm() {
 
         {/* Card Form */}
         <ScrollReveal animation="zoom-in" delay={150}>
-          <div className="relative rounded-3xl p-6 sm:p-10 bg-gradient-to-b from-[#0E2A20]/95 via-[#0A1F18]/95 to-[#061510]/95 border border-[#AFF8DB]/30 shadow-[0_0_50px_rgba(6,21,16,0.9)] backdrop-blur-md">
+          <div className="relative rounded-3xl p-6 sm:p-10 bg-gradient-to-b from-surface-card/95 via-surface-card-2/95 to-surface-base/95 border border-bloom-pink/30 shadow-[0_0_50px_rgba(6,21,16,0.9)] backdrop-blur-md">
             
             {errorMsg && (
             <div className="mb-6 p-4 rounded-2xl bg-red-950/80 border border-red-500/40 text-red-200 text-xs sm:text-sm flex items-center gap-3">
@@ -195,8 +195,8 @@ export default function RegistrationForm() {
           )}
 
           {success && (
-            <div className="mb-6 p-4 rounded-2xl bg-[#144234]/90 border border-[#AFF8DB]/60 text-[#AFF8DB] text-xs sm:text-sm flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 text-[#AFF8DB] shrink-0 animate-bounce" />
+            <div className="mb-6 p-4 rounded-2xl bg-surface-card/90 border border-bloom-pink/60 text-bloom-pink text-xs sm:text-sm flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-bloom-pink shrink-0 animate-bounce" />
               <span>Pendaftaran berhasil! Mengalihkan ke Tiket Digital Anda...</span>
             </div>
           )}
@@ -205,41 +205,41 @@ export default function RegistrationForm() {
             
             {/* Nama Lengkap */}
             <div>
-              <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
-                Nama Lengkap Mahasiswa <span className="text-[#FFB5E8]">*</span>
+              <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
+                Nama Lengkap Mahasiswa <span className="text-bloom-pink">*</span>
               </label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
                 <input
                   type="text"
                   required
                   placeholder="Contoh: Arya Yudhistira"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-[#071A13] border border-[#AFF8DB]/30 focus:border-[#AFF8DB] focus:ring-2 focus:ring-[#AFF8DB]/20 text-sm text-[#FAF7F0] placeholder-[#EDE8DF]/40 outline-hidden transition-all"
+                  className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-surface-card-2 border border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20 text-sm text-ivory placeholder-ink/40 outline-hidden transition-all"
                 />
               </div>
             </div>
 
             {/* NIM */}
             <div>
-              <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
-                Nomor Induk Mahasiswa (NIM) <span className="text-[#FFB5E8]">*</span>
+              <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
+                Nomor Induk Mahasiswa (NIM) <span className="text-bloom-pink">*</span>
               </label>
               <div className="relative">
-                <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+                <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
                 <input
                   type="text"
                   required
                   placeholder="Contoh: 232410101055"
                   value={formData.nimNip}
                   onChange={(e) => setFormData({ ...formData, nimNip: e.target.value })}
-                  className={`w-full pl-11 pr-10 py-3.5 rounded-xl bg-[#071A13] border text-sm text-[#FAF7F0] placeholder-[#EDE8DF]/40 outline-hidden transition-all font-mono ${
-                    nimError ? 'border-red-500/70 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-[#AFF8DB]/30 focus:border-[#AFF8DB] focus:ring-2 focus:ring-[#AFF8DB]/20'
+                  className={`w-full pl-11 pr-10 py-3.5 rounded-xl bg-surface-card-2 border text-sm text-ivory placeholder-ink/40 outline-hidden transition-all font-mono ${
+                    nimError ? 'border-red-500/70 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20'
                   }`}
                 />
                 {checkingNim && (
-                  <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB] animate-spin" />
+                  <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink animate-spin" />
                 )}
               </div>
               {nimError && (
@@ -253,8 +253,8 @@ export default function RegistrationForm() {
             {/* Kategori Civitas & Angkatan Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="relative" data-dropdown>
-                <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
-                  Datang Sebagai <span className="text-[#FFB5E8]">*</span>
+                <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
+                  Datang Sebagai <span className="text-bloom-pink">*</span>
                 </label>
                 <div className="relative">
                   <button
@@ -264,18 +264,18 @@ export default function RegistrationForm() {
                     aria-expanded={openDropdown === 'category'}
                     className={dropdownClass('category')}
                   >
-                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
                     <span className="truncate">{formData.category}</span>
                     <ChevronDown
-                      className={`w-4 h-4 text-[#AFF8DB] transition-transform duration-200 shrink-0 ml-2 ${
-                        openDropdown === 'category' ? 'rotate-180 text-[#FFF3B0]' : ''
+                      className={`w-4 h-4 text-bloom-pink transition-transform duration-200 shrink-0 ml-2 ${
+                        openDropdown === 'category' ? 'rotate-180 text-gold' : ''
                       }`}
                     />
                   </button>
 
                   {openDropdown === 'category' && (
-                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-[#082017]/95 backdrop-blur-xl border border-[#AFF8DB]/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
-                      <div className="divide-y divide-[#AFF8DB]/10">
+                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-surface-card-2/95 backdrop-blur-xl border border-bloom-pink/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
+                      <div className="divide-y divide-bloom-pink/10">
                         {CATEGORY_OPTIONS.map((c) => {
                           const isSelected = formData.category === c;
                           return (
@@ -290,7 +290,7 @@ export default function RegistrationForm() {
                               className={optionClass(isSelected)}
                             >
                               <span className="truncate">{c}</span>
-                              {isSelected && <Check className="w-4 h-4 text-[#AFF8DB] shrink-0 ml-2" />}
+                              {isSelected && <Check className="w-4 h-4 text-bloom-pink shrink-0 ml-2" />}
                             </button>
                           );
                         })}
@@ -301,8 +301,8 @@ export default function RegistrationForm() {
               </div>
 
               <div className="relative" data-dropdown>
-                <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
-                  Angkatan {isStudentBatch && <span className="text-[#FFB5E8]">*</span>}
+                <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
+                  Angkatan {isStudentBatch && <span className="text-bloom-pink">*</span>}
                 </label>
                 <div className="relative">
                   <button
@@ -313,18 +313,18 @@ export default function RegistrationForm() {
                     aria-expanded={openDropdown === 'batch'}
                     className={`${dropdownClass('batch')} disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
-                    <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+                    <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
                     <span className="truncate">{isStudentBatch ? formData.batch : '—'}</span>
                     <ChevronDown
-                      className={`w-4 h-4 text-[#AFF8DB] transition-transform duration-200 shrink-0 ml-2 ${
-                        openDropdown === 'batch' ? 'rotate-180 text-[#FFF3B0]' : ''
+                      className={`w-4 h-4 text-bloom-pink transition-transform duration-200 shrink-0 ml-2 ${
+                        openDropdown === 'batch' ? 'rotate-180 text-gold' : ''
                       }`}
                     />
                   </button>
 
                   {openDropdown === 'batch' && isStudentBatch && (
-                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-[#082017]/95 backdrop-blur-xl border border-[#AFF8DB]/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
-                      <div className="divide-y divide-[#AFF8DB]/10">
+                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-surface-card-2/95 backdrop-blur-xl border border-bloom-pink/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
+                      <div className="divide-y divide-bloom-pink/10">
                         {BATCH_OPTIONS.map((b) => {
                           const isSelected = formData.batch === b;
                           return (
@@ -338,7 +338,7 @@ export default function RegistrationForm() {
                               className={optionClass(isSelected)}
                             >
                               <span className="truncate">{b}</span>
-                              {isSelected && <Check className="w-4 h-4 text-[#AFF8DB] shrink-0 ml-2" />}
+                              {isSelected && <Check className="w-4 h-4 text-bloom-pink shrink-0 ml-2" />}
                             </button>
                           );
                         })}
@@ -351,8 +351,8 @@ export default function RegistrationForm() {
 
             {/* Program Studi */}
             <div className="relative" data-dropdown>
-              <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
-                Program Studi (S1) <span className="text-[#FFB5E8]">*</span>
+              <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
+                Program Studi (S1) <span className="text-bloom-pink">*</span>
               </label>
               <div className="relative">
                 <button
@@ -362,18 +362,18 @@ export default function RegistrationForm() {
                   aria-expanded={openDropdown === 'prodi'}
                   className={dropdownClass('prodi')}
                 >
-                  <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+                  <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
                   <span className="truncate">{formData.prodi}</span>
                   <ChevronDown
-                    className={`w-4 h-4 text-[#AFF8DB] transition-transform duration-200 shrink-0 ml-2 ${
-                      openDropdown === 'prodi' ? 'rotate-180 text-[#FFF3B0]' : ''
+                    className={`w-4 h-4 text-bloom-pink transition-transform duration-200 shrink-0 ml-2 ${
+                      openDropdown === 'prodi' ? 'rotate-180 text-gold' : ''
                     }`}
                   />
                 </button>
 
                 {openDropdown === 'prodi' && (
-                  <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-[#082017]/95 backdrop-blur-xl border border-[#AFF8DB]/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
-                    <div className="divide-y divide-[#AFF8DB]/10">
+                  <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-surface-card-2/95 backdrop-blur-xl border border-bloom-pink/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
+                    <div className="divide-y divide-bloom-pink/10">
                       {prodiOptions.map((p) => {
                         const isSelected = formData.prodi === p;
                         return (
@@ -387,7 +387,7 @@ export default function RegistrationForm() {
                             className={optionClass(isSelected)}
                           >
                             <span className="truncate">{p}</span>
-                            {isSelected && <Check className="w-4 h-4 text-[#AFF8DB] shrink-0 ml-2" />}
+                            {isSelected && <Check className="w-4 h-4 text-bloom-pink shrink-0 ml-2" />}
                           </button>
                         );
                       })}
@@ -400,34 +400,34 @@ export default function RegistrationForm() {
             {/* Email & Phone Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
-                  Email Aktif <span className="text-[#FFB5E8]">*</span>
+                <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
+                  Email Aktif <span className="text-bloom-pink">*</span>
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
                   <input
                     type="email"
                     required
                     placeholder="nama@mail.unej.ac.id"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-[#071A13] border border-[#AFF8DB]/30 focus:border-[#AFF8DB] focus:ring-2 focus:ring-[#AFF8DB]/20 text-sm text-[#FAF7F0] placeholder-[#EDE8DF]/40 outline-hidden transition-all"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-surface-card-2 border border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20 text-sm text-ivory placeholder-ink/40 outline-hidden transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-widest text-[#FFF3B0] font-semibold mb-2">
+                <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
                   No. WhatsApp (Untuk Konfirmasi)
                 </label>
                 <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#AFF8DB]" />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
                   <input
                     type="tel"
                     placeholder="081234567890"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-[#071A13] border border-[#AFF8DB]/30 focus:border-[#AFF8DB] focus:ring-2 focus:ring-[#AFF8DB]/20 text-sm text-[#FAF7F0] placeholder-[#EDE8DF]/40 outline-hidden transition-all"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-surface-card-2 border border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20 text-sm text-ivory placeholder-ink/40 outline-hidden transition-all"
                   />
                 </div>
               </div>
@@ -438,11 +438,11 @@ export default function RegistrationForm() {
               <button
                 type="submit"
                 disabled={loading || success || !!nimError}
-                className="w-full py-4 px-6 rounded-2xl bg-[#AFF8DB] hover:bg-[#86efc3] text-[#061811] font-bold text-base tracking-wide shadow-[0_0_30px_rgba(175,248,219,0.6)] hover:shadow-[0_0_45px_rgba(175,248,219,0.9)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer"
+                className="w-full py-4 px-6 rounded-2xl bg-bloom-pink hover:bg-bloom-pink-deep text-on-accent font-bold text-base tracking-wide shadow-[0_0_30px_rgba(255, 181, 232,0.6)] hover:shadow-[0_0_45px_rgba(255, 181, 232,0.9)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin text-[#061811]" />
+                    <Loader2 className="w-5 h-5 animate-spin text-on-accent" />
                     Sedang Memproses Tiket...
                   </>
                 ) : (
@@ -453,7 +453,7 @@ export default function RegistrationForm() {
               </button>
             </div>
 
-            <p className="text-[11px] text-center text-[#EDE8DF]/50 mt-3">
+            <p className="text-[11px] text-center text-ink/50 mt-3">
               Dengan mendaftar, Anda menyatakan kesediaan hadir pada perhelatan Fasilkom Awarding Night 2026.
             </p>
           </form>

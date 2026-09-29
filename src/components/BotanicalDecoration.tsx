@@ -201,19 +201,19 @@ export function Lantern({ className = '' }: { className?: string }) {
   return (
     <div className={`relative flex flex-col items-center pointer-events-none select-none animate-lantern-swing ${className}`}>
       {/* Slender Golden Chain */}
-      <div className="w-[1.2px] h-14 sm:h-20 bg-gradient-to-b from-[#FFF3B0]/10 via-[#FFF3B0]/70 to-[#d4af37] shadow-[0_0_8px_rgba(255,243,176,0.6)]" />
+      <div className="w-[1.2px] h-14 sm:h-20 bg-gradient-to-b from-gold/10 via-gold/70 to-[#d4af37] shadow-[0_0_8px_rgba(255,243,176,0.6)]" />
       
       {/* Ornate Gold Filigree Cap */}
-      <div className="w-7 sm:w-9 h-2.5 bg-gradient-to-b from-[#755d21] via-[#4d3b12] to-[#241a08] rounded-t-full border-t border-[#FFF3B0]/80 relative shadow-md">
-        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-1.5 rounded-full border border-[#FFF3B0]/70" />
+      <div className="w-7 sm:w-9 h-2.5 bg-gradient-to-b from-[#755d21] via-[#4d3b12] to-[#241a08] rounded-t-full border-t border-gold/80 relative shadow-md">
+        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-1.5 rounded-full border border-gold/70" />
       </div>
       
       {/* Glass Body with Warm Starlight Glow */}
-      <div className="w-6 sm:w-8 h-9 sm:h-11 bg-gradient-to-b from-[#FFF3B0]/25 via-[#FFE79A]/15 to-[#AFF8DB]/10 rounded-b-lg border border-[#FFF3B0]/75 backdrop-blur-md flex items-center justify-center relative overflow-hidden shadow-[0_0_35px_rgba(255,243,176,0.85)]">
+      <div className="w-6 sm:w-8 h-9 sm:h-11 bg-gradient-to-b from-gold/25 via-[#FFE79A]/15 to-bloom-pink/10 rounded-b-lg border border-gold/75 backdrop-blur-md flex items-center justify-center relative overflow-hidden shadow-[0_0_35px_rgba(255,243,176,0.85)]">
         {/* Pulsing Core Starlight */}
-        <div className="w-3 sm:w-4 h-4 sm:h-5 bg-[#FFF3B0] rounded-full blur-[1.5px] animate-pulse shadow-[0_0_20px_#FFF3B0]" />
+        <div className="w-3 sm:w-4 h-4 sm:h-5 bg-gold rounded-full blur-[1.5px] animate-pulse shadow-[0_0_20px_#FFF3B0]" />
         {/* Soft bioluminescent aura */}
-        <div className="absolute inset-0 bg-[#AFF8DB]/10" />
+        <div className="absolute inset-0 bg-bloom-pink/10" />
       </div>
       
       {/* Brass Bottom Finial */}

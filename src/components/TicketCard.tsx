@@ -41,14 +41,14 @@ export default function TicketCard({ participant }: TicketCardProps) {
 
       // 2. Ambient Magical Lighting Glows
       const glowTop = ctx.createRadialGradient(width / 2, 200, 10, width / 2, 200, 450);
-      glowTop.addColorStop(0, 'rgba(175, 248, 219, 0.15)');
+      glowTop.addColorStop(0, 'rgba(255, 181, 232, 0.2)');
       glowTop.addColorStop(0.5, 'rgba(255, 243, 176, 0.08)');
       glowTop.addColorStop(1, 'transparent');
       ctx.fillStyle = glowTop;
       ctx.fillRect(0, 0, width, 500);
 
       const glowCenter = ctx.createRadialGradient(width / 2, 820, 20, width / 2, 820, 400);
-      glowCenter.addColorStop(0, 'rgba(175, 248, 219, 0.18)');
+      glowCenter.addColorStop(0, 'rgba(245, 138, 212, 0.22)');
       glowCenter.addColorStop(1, 'transparent');
       ctx.fillStyle = glowCenter;
       ctx.fillRect(0, 500, width, 600);
@@ -62,9 +62,9 @@ export default function TicketCard({ participant }: TicketCardProps) {
       // Rounded rect path
       ctx.beginPath();
       ctx.roundRect(margin, margin, cardW, cardH, radius);
-      ctx.strokeStyle = '#FFF3B0';
+      ctx.strokeStyle = '#FFB5E8';
       ctx.lineWidth = 3.5;
-      ctx.shadowColor = 'rgba(255, 243, 176, 0.5)';
+      ctx.shadowColor = 'rgba(255, 181, 232, 0.5)';
       ctx.shadowBlur = 20;
       ctx.stroke();
       ctx.shadowBlur = 0; // reset shadow
@@ -72,7 +72,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       // Inner hairline border
       ctx.beginPath();
       ctx.roundRect(margin + 12, margin + 12, cardW - 24, cardH - 24, radius - 8);
-      ctx.strokeStyle = 'rgba(175, 248, 219, 0.35)';
+      ctx.strokeStyle = 'rgba(255, 181, 232, 0.35)';
       ctx.lineWidth = 1.2;
       ctx.stroke();
 
@@ -81,7 +81,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate((angle * Math.PI) / 180);
-        ctx.strokeStyle = '#AFF8DB';
+        ctx.strokeStyle = '#FFB5E8';
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(0, 30);
@@ -111,11 +111,11 @@ export default function TicketCard({ participant }: TicketCardProps) {
       ctx.beginPath();
       ctx.roundRect((width - badgeW) / 2, badgeY, badgeW, badgeH, 20);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 243, 176, 0.6)';
+      ctx.strokeStyle = 'rgba(255, 181, 232, 0.7)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      ctx.fillStyle = '#FFF3B0';
+      ctx.fillStyle = '#FFB5E8';
       ctx.font = 'bold 15px sans-serif';
       ctx.fillText('✦  OFFICIAL VIP PASS  ✦', width / 2, badgeY + 26);
 
@@ -128,7 +128,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       ctx.shadowBlur = 0;
 
       ctx.font = '600 18px serif';
-      ctx.fillStyle = '#AFF8DB';
+      ctx.fillStyle = '#FFB5E8';
       ctx.letterSpacing = '4px';
       ctx.fillText('SECRET GARDEN : DREAMS TO HISTORY', width / 2, 235);
       ctx.letterSpacing = '0px';
@@ -136,7 +136,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       // Header divider line
       const lineGrad = ctx.createLinearGradient(120, 0, width - 120, 0);
       lineGrad.addColorStop(0, 'transparent');
-      lineGrad.addColorStop(0.5, 'rgba(175, 248, 219, 0.6)');
+      lineGrad.addColorStop(0.5, 'rgba(255, 181, 232, 0.7)');
       lineGrad.addColorStop(1, 'transparent');
       ctx.strokeStyle = lineGrad;
       ctx.lineWidth = 1.5;
@@ -151,8 +151,8 @@ export default function TicketCard({ participant }: TicketCardProps) {
       ctx.fillText('NAMA LENGKAP MAHASISWA', width / 2, 315);
 
       ctx.font = 'bold 36px serif';
-      ctx.fillStyle = '#FFF3B0';
-      ctx.shadowColor = 'rgba(255, 243, 176, 0.4)';
+      ctx.fillStyle = '#FFB5E8';
+      ctx.shadowColor = 'rgba(255, 181, 232, 0.5)';
       ctx.shadowBlur = 15;
       ctx.fillText(participant.name, width / 2, 365);
       ctx.shadowBlur = 0;
@@ -170,7 +170,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       ctx.beginPath();
       ctx.roundRect((width - infoBoxW) / 2, infoBoxY, infoBoxW, infoBoxH, 20);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(175, 248, 219, 0.25)';
+      ctx.strokeStyle = 'rgba(255, 181, 232, 0.3)';
       ctx.lineWidth = 1.2;
       ctx.stroke();
 
@@ -188,7 +188,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       ctx.fillStyle = 'rgba(237, 232, 223, 0.6)';
       ctx.fillText('STATUS TIKET', width / 2 + 180, infoBoxY + 30);
       ctx.font = 'bold 18px sans-serif';
-      ctx.fillStyle = '#AFF8DB';
+      ctx.fillStyle = '#FFB5E8';
       ctx.fillText('✓ Terverifikasi (Aktif)', width / 2 + 180, infoBoxY + 58);
 
       // 7. QR Code Canvas Rendering
@@ -199,15 +199,15 @@ export default function TicketCard({ participant }: TicketCardProps) {
       // QR White Container Box with Glow
       const pad = 24;
       ctx.fillStyle = '#FFFFFF';
-      ctx.shadowColor = 'rgba(175, 248, 219, 0.5)';
+      ctx.shadowColor = 'rgba(255, 181, 232, 0.5)';
       ctx.shadowBlur = 35;
       ctx.beginPath();
       ctx.roundRect(qrX - pad, qrY - pad, qrSize + pad * 2, qrSize + pad * 2, 28);
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Outer mint rim
-      ctx.strokeStyle = '#AFF8DB';
+      // Outer pink rim
+      ctx.strokeStyle = '#FFB5E8';
       ctx.lineWidth = 6;
       ctx.stroke();
 
@@ -220,7 +220,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       // 8. Token & Instructions Below QR
       ctx.textAlign = 'center';
       ctx.font = 'bold 16px monospace';
-      ctx.fillStyle = '#AFF8DB';
+      ctx.fillStyle = '#FFB5E8';
       ctx.fillText(participant.qrToken, width / 2, 990);
 
       ctx.font = '300 15px sans-serif';
@@ -299,11 +299,11 @@ export default function TicketCard({ participant }: TicketCardProps) {
       <div className="mb-6 flex items-center justify-between no-print">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-[#AFF8DB] hover:text-[#FFF3B0] transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-bloom-pink hover:text-gold transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Kembali ke Beranda
         </Link>
-        <span className="text-[11px] font-mono text-[#EDE8DF]/60 bg-[#12382B] px-3 py-1 rounded-full border border-[#AFF8DB]/30">
+        <span className="text-[11px] font-mono text-ink/60 bg-surface-card px-3 py-1 rounded-full border border-bloom-pink/30">
           ID: {participant.id}
         </span>
       </div>
@@ -312,27 +312,27 @@ export default function TicketCard({ participant }: TicketCardProps) {
       <Card3D glowColor="rgba(255, 243, 176, 0.25)">
         <div
           id="ticket-pass"
-          className="relative rounded-3xl overflow-hidden bg-gradient-to-b from-[#0F2D23] via-[#0A2019] to-[#061510] border-2 border-[#FFF3B0]/60 shadow-[0_0_50px_rgba(255,243,176,0.25)] p-6 sm:p-8"
+          className="relative rounded-3xl overflow-hidden bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base border-2 border-gold/60 shadow-[0_0_50px_rgba(255,243,176,0.25)] p-6 sm:p-8"
         >
           {/* Decorative corner borders */}
-          <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-[#AFF8DB]" />
-          <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-[#AFF8DB]" />
-          <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-[#AFF8DB]" />
-          <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-[#AFF8DB]" />
+          <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-bloom-pink" />
+          <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-bloom-pink" />
+          <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-bloom-pink" />
+          <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-bloom-pink" />
 
           {/* Ambient watermark glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#AFF8DB]/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-bloom-pink/10 rounded-full blur-2xl pointer-events-none" />
 
           {/* Ticket Header */}
-          <div className="text-center relative z-10 pb-6 border-b border-[#AFF8DB]/20">
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#184535] text-[#FFF3B0] text-[10px] uppercase font-bold tracking-[0.25em] mb-2 border border-[#FFF3B0]/40">
-              <Sparkles className="w-3 h-3 text-[#AFF8DB]" />
+          <div className="text-center relative z-10 pb-6 border-b border-bloom-pink/20">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-surface-card text-gold text-[10px] uppercase font-bold tracking-[0.25em] mb-2 border border-gold/40">
+              <Sparkles className="w-3 h-3 text-bloom-pink" />
               Official VIP Pass
             </div>
-            <h2 className="font-cinzel text-xl sm:text-2xl font-black tracking-wider text-[#FAF7F0]">
+            <h2 className="font-cinzel text-xl sm:text-2xl font-black tracking-wider text-ivory">
               FASILKOM AWARDING NIGHT
             </h2>
-            <span className="font-cinzel text-xs tracking-[0.25em] text-[#AFF8DB] block font-semibold mt-0.5">
+            <span className="font-cinzel text-xs tracking-[0.25em] text-bloom-pink block font-semibold mt-0.5">
               SECRET GARDEN : DREAMS TO HISTORY
             </span>
           </div>
@@ -342,39 +342,39 @@ export default function TicketCard({ participant }: TicketCardProps) {
             
             {/* Attendee Name & Role */}
             <div className="text-center">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-[#EDE8DF]/60 block mb-1">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-ink/60 block mb-1">
                 Nama Lengkap Mahasiswa
               </span>
-              <h3 className="font-cinzel text-xl sm:text-2xl font-bold text-[#FFF3B0]">
+              <h3 className="font-cinzel text-xl sm:text-2xl font-bold text-gold">
                 {participant.name}
               </h3>
               <div className="flex items-center justify-center gap-2 mt-2">
-                <span className="px-3 py-0.5 rounded-full bg-[#174837] text-[#AFF8DB] text-xs font-bold border border-[#AFF8DB]/40">
+                <span className="px-3 py-0.5 rounded-full bg-surface-card text-bloom-pink text-xs font-bold border border-bloom-pink/40">
                   {participant.category || participant.role}{participant.batch && participant.batch !== '-' ? ` ${participant.batch}` : ''}
                 </span>
-                <span className="text-xs text-[#EDE8DF]/80 font-medium">
+                <span className="text-xs text-ink/80 font-medium">
                   {participant.prodi}
                 </span>
               </div>
             </div>
 
             {/* Identifier Details */}
-            <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#061811]/90 border border-white/10 text-center text-xs">
+            <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-field-2/90 border border-white/10 text-center text-xs">
               <div>
-                <span className="text-[10px] text-[#EDE8DF]/60 block uppercase tracking-wider">
+                <span className="text-[10px] text-ink/60 block uppercase tracking-wider">
                   NIM
                 </span>
-                <span className="font-mono font-bold text-[#FAF7F0] mt-0.5 block">
+                <span className="font-mono font-bold text-ivory mt-0.5 block">
                   {participant.nimNip}
                 </span>
               </div>
               <div>
-                <span className="text-[10px] text-[#EDE8DF]/60 block uppercase tracking-wider">
+                <span className="text-[10px] text-ink/60 block uppercase tracking-wider">
                   Status Tiket
                 </span>
                 <span
                   className={`font-bold mt-0.5 inline-flex items-center gap-1 ${
-                    participant.isCheckedIn ? 'text-amber-400' : 'text-[#AFF8DB]'
+                    participant.isCheckedIn ? 'text-amber-400' : 'text-bloom-pink'
                   }`}
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
@@ -385,7 +385,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
 
             {/* QR Code Container */}
             <div className="flex flex-col items-center justify-center pt-2">
-              <div className="p-4 bg-white rounded-2xl shadow-[0_0_25px_rgba(255,243,176,0.3)] border-4 border-[#AFF8DB]">
+              <div className="p-4 bg-white rounded-2xl shadow-[0_0_25px_rgba(255,243,176,0.3)] border-4 border-bloom-pink">
                 <QRCodeCanvas
                   value={participant.qrToken}
                   size={180}
@@ -395,22 +395,22 @@ export default function TicketCard({ participant }: TicketCardProps) {
                   bgColor="#ffffff"
                 />
               </div>
-              <span className="text-[11px] font-mono text-[#AFF8DB] mt-3 tracking-wider font-semibold">
+              <span className="text-[11px] font-mono text-bloom-pink mt-3 tracking-wider font-semibold">
                 {participant.qrToken}
               </span>
-              <p className="text-[11px] text-[#EDE8DF]/60 text-center mt-1 max-w-xs font-light">
+              <p className="text-[11px] text-ink/60 text-center mt-1 max-w-xs font-light">
                 Tunjukkan QR Code ini kepada panitia registrasi di pintu masuk Gedung Biru Fasilkom UNEJ.
               </p>
             </div>
 
             {/* Event Quick Info Footer on Pass */}
-            <div className="pt-4 border-t border-[#AFF8DB]/20 grid grid-cols-2 gap-2 text-[11px] text-[#EDE8DF]/80">
+            <div className="pt-4 border-t border-bloom-pink/20 grid grid-cols-2 gap-2 text-[11px] text-ink/80">
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-[#AFF8DB] shrink-0" />
+                <Calendar className="w-3.5 h-3.5 text-bloom-pink shrink-0" />
                 <span>Selasa, 1 Des 2026 &bull; 17:30 WIB</span>
               </div>
               <div className="flex items-center gap-1.5 justify-end">
-                <MapPin className="w-3.5 h-3.5 text-[#FFB5E8] shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-bloom-pink shrink-0" />
                 <span>Auditorium Fasilkom</span>
               </div>
             </div>
@@ -425,16 +425,16 @@ export default function TicketCard({ participant }: TicketCardProps) {
         <button
           onClick={handleDownloadTicketImage}
           disabled={downloading}
-          className="w-full py-4 px-6 rounded-2xl bg-[#AFF8DB] hover:bg-[#86efc3] text-[#061811] font-bold text-base tracking-wide shadow-[0_0_30px_rgba(175,248,219,0.6)] hover:shadow-[0_0_45px_rgba(175,248,219,0.9)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer"
+          className="w-full py-4 px-6 rounded-2xl bg-bloom-pink hover:bg-bloom-pink-deep text-on-accent font-bold text-base tracking-wide shadow-[0_0_30px_rgba(255, 181, 232,0.6)] hover:shadow-[0_0_45px_rgba(255, 181, 232,0.9)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer"
         >
           {downloading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin text-[#061811]" />
+              <Loader2 className="w-5 h-5 animate-spin text-on-accent" />
               Menyiapkan Gambar Tiket...
             </>
           ) : (
             <>
-              <Download className="w-5 h-5 text-[#061811]" />
+              <Download className="w-5 h-5 text-on-accent" />
               Unduh Gambar Tiket (PNG)
             </>
           )}

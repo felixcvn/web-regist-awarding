@@ -11,7 +11,7 @@ interface Card3DProps {
 export default function Card3D({
   children,
   className = '',
-  glowColor = 'rgba(175, 248, 219, 0.3)',
+  glowColor = 'rgba(255, 181, 232, 0.3)',
 }: Card3DProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [transformStyle, setTransformStyle] = useState('');

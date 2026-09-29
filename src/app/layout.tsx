@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className="scroll-smooth">
-      <body className="font-sans antialiased bg-[#071510] text-[#EDE8DF] selection:bg-[#AFF8DB] selection:text-[#061510] min-h-screen relative">
+      <body className="font-sans antialiased bg-garden text-ink selection:bg-bloom-pink selection:text-on-accent min-h-screen relative">
         {children}
         <AudioPlayer />
       </body>

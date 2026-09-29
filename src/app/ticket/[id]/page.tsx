@@ -18,7 +18,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[#061510] text-[#EDE8DF] flex flex-col justify-between selection:bg-[#AFF8DB] selection:text-[#061510] relative">
+    <main className="min-h-screen bg-garden bg-vignette-soft text-ink flex flex-col justify-between selection:bg-bloom-pink selection:text-on-accent relative">
       <Enchanted3DCanvas />
       <Navbar />
       <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 flex-1 flex items-center justify-center relative z-20">

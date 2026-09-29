@@ -44,7 +44,7 @@ export default function Countdown({ targetDate = '2026-12-01T18:00:00' }: Countd
   if (!mounted) {
     return (
       <div className="flex items-center justify-center gap-3 py-4">
-        <div className="h-16 w-64 bg-[#143D30]/30 rounded-2xl animate-pulse" />
+        <div className="h-16 w-64 bg-surface-card/30 rounded-2xl animate-pulse" />
       </div>
     );
   }
@@ -59,12 +59,12 @@ export default function Countdown({ targetDate = '2026-12-01T18:00:00' }: Countd
   return (
     <div className="relative inline-block w-full max-w-2xl mx-auto">
       {/* Decorative magical border frame */}
-      <div className="relative rounded-3xl p-5 sm:p-6 bg-gradient-to-b from-[#102e23]/90 via-[#0a1e17]/95 to-[#061510]/95 border border-[#AFF8DB]/30 shadow-[0_0_40px_rgba(10,35,26,0.8)] backdrop-blur-md">
+      <div className="relative rounded-3xl p-5 sm:p-6 bg-gradient-to-b from-surface-card/90 via-surface-card-2/95 to-surface-base/95 border border-bloom-pink/30 shadow-[0_0_40px_rgba(10,35,26,0.8)] backdrop-blur-md">
         
         {/* Header inside countdown card */}
-        <div className="flex items-center justify-center gap-2 mb-4 text-[#FFF3B0]">
-          <Clock className="w-4 h-4 text-[#AFF8DB] animate-spin" style={{ animationDuration: '12s' }} />
-          <span className="font-cinzel text-xs sm:text-sm tracking-[0.2em] uppercase font-semibold text-[#FFF3B0]">
+        <div className="flex items-center justify-center gap-2 mb-4 text-gold">
+          <Clock className="w-4 h-4 text-bloom-pink animate-spin" style={{ animationDuration: '12s' }} />
+          <span className="font-cinzel text-xs sm:text-sm tracking-[0.2em] uppercase font-semibold text-gold">
             Hitung Mundur Malam Anugerah
           </span>
         </div>
@@ -74,16 +74,16 @@ export default function Countdown({ targetDate = '2026-12-01T18:00:00' }: Countd
           {units.map((unit, idx) => (
             <div
               key={idx}
-              className="group relative bg-[#071712]/80 border border-[#AFF8DB]/20 hover:border-[#AFF8DB]/50 rounded-2xl p-3 sm:p-4 transition-all duration-300 hover:shadow-[0_0_15px_rgba(175,248,219,0.2)]"
+              className="group relative bg-surface-card-2/80 border border-bloom-pink/20 hover:border-bloom-pink/50 rounded-2xl p-3 sm:p-4 transition-all duration-300 hover:shadow-[0_0_15px_rgba(255, 181, 232,0.2)]"
             >
               {/* Corner starlight accents */}
-              <div className="absolute top-1.5 left-1.5 w-1 h-1 bg-[#FFF3B0]/60 rounded-full" />
-              <div className="absolute top-1.5 right-1.5 w-1 h-1 bg-[#FFF3B0]/60 rounded-full" />
+              <div className="absolute top-1.5 left-1.5 w-1 h-1 bg-gold/60 rounded-full" />
+              <div className="absolute top-1.5 right-1.5 w-1 h-1 bg-gold/60 rounded-full" />
 
-              <span className="font-cinzel font-black text-2xl sm:text-4xl lg:text-5xl text-[#AFF8DB] block tracking-tight text-glow-mint">
+              <span className="font-cinzel font-black text-2xl sm:text-4xl lg:text-5xl text-bloom-pink block tracking-tight text-glow-pink">
                 {String(unit.value).padStart(2, '0')}
               </span>
-              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] text-[#EDE8DF]/70 block mt-1">
+              <span className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] text-ink/70 block mt-1">
                 {unit.label}
               </span>
             </div>

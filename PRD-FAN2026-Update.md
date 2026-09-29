@@ -172,6 +172,33 @@ EDIT .env.example
 EDIT package.json
 ```
 
+### 6.1 Perubahan File (Pembaruan Palette — Seksi 9)
+
+```
+EDIT src/app/globals.css        token warna baru + .bg-vignette/.glow/print
+EDIT src/app/layout.tsx         surface base
+EDIT src/app/page.tsx           surface base
+EDIT src/app/ticket/[id]/page.tsx  surface base
+EDIT src/components/Navbar.tsx
+EDIT src/components/Hero.tsx
+EDIT src/components/EventDetails.tsx
+EDIT src/components/PastInsights.tsx
+EDIT src/components/Gallery.tsx
+EDIT src/components/Footer.tsx
+EDIT src/components/RegistrationForm.tsx
+EDIT src/components/TicketCard.tsx   (JSX + canvas literals)
+EDIT src/components/Countdown.tsx
+EDIT src/components/FloatingRunes.tsx
+EDIT src/components/BotanicalDecoration.tsx
+EDIT src/components/AudioPlayer.tsx
+EDIT src/components/Dialog.tsx
+EDIT src/components/Enchanted3DCanvas.tsx
+EDIT src/app/admin/dashboard/page.tsx
+EDIT src/app/admin/scan/page.tsx
+EDIT src/app/admin/login/page.tsx
+EDIT src/lib/mailer.ts          warna email (inline, manual)
+```
+
 ---
 
 ## 7. Risiko & Mitigasi
@@ -195,3 +222,83 @@ EDIT package.json
 - `npm run lint` hijau.
 - `npm run build` hijau.
 - Uji manual: NIM duplikat diblokir di UI; kategori+angkatan tersimpan & tampil di CSV; email terkirim berisi QR + link tiket valid.
+
+---
+
+## 9. Pembaruan Palette Warna — "Emerald Base + Pink Gradient"
+
+### 9.1 Latar Belakang
+Tema awal (mint dominan, dark emerald) → percobaan pink dominan di atas base gelap → percobaan light theme penuh (pink pucat). Evaluasi akhir: light theme membuat pink terlalu mengambil alih dan menghilangkan identitas hijau emerald. Arah final: **kembali ke base emerald gelap sebagai warna dominan**, dengan **pink sebagai sekunder/aksen CTA**, dan **gradasi pink pada background seluruh halaman** agar terasa florid tanpa kehilangan emerald.
+
+### 9.2 Prinsip Desain
+- **Emerald gelap = dominan** (surface & latar).
+- **Pink = sekunder** — warna CTA/highlight/border/glow.
+- **Gradasi pink** di background global (radial + linear emerald→plum).
+- **Mint, gold, lavender** = aksen.
+- Teks terang (`ink`/`ivory`) di atas surface gelap.
+
+### 9.3 Token Warna (`@theme` di `src/app/globals.css`)
+
+```css
+--color-bloom-pink:      #FFB5E8;  /* pink primer (CTA/highlight) */
+--color-bloom-pink-deep: #F58AD4;  /* hover/active CTA */
+--color-blush:           #FFD9F0;  /* pink lembut */
+--color-petal:           #FFE8F6;
+--color-mint:            #AFF8DB;  /* aksen sekunder */
+--color-gold:            #FFF3B0;  /* aksen */
+--color-lavender:        #E7C6FF;  /* aksen */
+--color-ink:             #EDE8DF;  /* teks body (terang) */
+--color-ivory:           #FAF7F0;  /* teks heading (terang) */
+--color-surface-base:    #061510;  /* emerald gelap (latar) */
+--color-surface-card:    #0F2D23;  /* permukaan kartu */
+--color-surface-card-2:  #0A1F18;
+--color-field:           #082017;  /* latar input */
+--color-field-2:         #0E2A20;
+--color-on-accent:       #061811;  /* teks di atas pink */
+```
+
+### 9.4 Gradasi Background Global (`.bg-garden`)
+```css
+.bg-garden {
+  background-color: #061510;
+  background-image:
+    radial-gradient(circle at 78% 12%, rgba(245,138,212,0.28) 0%, transparent 42%),
+    radial-gradient(circle at 12% 88%, rgba(255,181,232,0.18) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(175,248,219,0.06) 0%, transparent 60%),
+    linear-gradient(160deg, #061510 0%, #0C2018 45%, #2A1424 100%);
+}
+```
+Diterapkan di `<body>` (`layout.tsx`), `<main>` (`page.tsx`), dan halaman tiket. Section (EventDetails, Gallery, RegistrationForm) dibuat **transparan** agar gradasi mengalir menyatu di seluruh halaman.
+
+### 9.5 Aturan Pemetaan
+| Peran | Warna |
+|---|---|
+| Surface / latar | emerald gelap (`--color-surface-*`) |
+| Gradasi latar | `.bg-garden` (emerald → plum/pink) |
+| CTA / highlight / border fokus | `--color-bloom-pink` |
+| Hover CTA | `--color-bloom-pink-deep` |
+| Teks body / heading | `--color-ink` / `--color-ivory` (terang) |
+| Latar input | `--color-field` / `--color-field-2` |
+| Badge/pill | `bg-surface-card` |
+| Aksen | gold, mint, lavender |
+
+### 9.6 Kendala Teknis
+- **Email HTML** (`mailer.ts`) & **canvas PNG tiket** (`TicketCard`) tak baca CSS var → hex disinkronkan manual (tema gelap + aksen pink).
+- **`Enchanted3DCanvas`** pakai `mixBlendMode: 'screen'` (cocok latar gelap).
+- **Gmail dark-mode** dapat meng-invert; uji render.
+- **`AudioPlayer`** (vinyl) & **`BotanicalDecoration`** (dedaunan hijau) sengaja tetap gelap/hijau.
+
+### 9.7 Acceptance Criteria
+- Base halaman emerald gelap; gradasi pink terlihat di seluruh halaman.
+- Pink jadi warna CTA/aksen, bukan mendominasi surface.
+- Teks terang terbaca di atas latar gelap (kontras WCAG AA).
+- Email & PNG tiket sinkron (gelap + aksen pink).
+- `npm run lint` dan `npm run build` hijau.
+
+### 9.8 Risiko & Mitigasi
+| Risiko | Dampak | Mitigasi |
+|---|---|---|
+| Kontras pink di atas dark kurang | Teks sulit dibaca | Uji kontras; gunakan pink hanya untuk CTA di atas surface gelap, teks utama tetap ivory/ink |
+| Gmail dark-mode invert | Email tampak berbeda | Uji render; pakai warna solid, hindari shadow |
+| Diff besar (~22 file) | Risiko regresi visual | Kerjakan bertahap per fase, verifikasi build tiap fase |
+| Mint tersisa tak sengaja | Palette tak konsisten | Grep `#AFF8DB` & `rgba(175,248,219` setelah migrasi, sisakan hanya yang disengaja |

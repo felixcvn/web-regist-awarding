@@ -12,7 +12,7 @@ export default function PastInsights() {
       value: '520+',
       desc: 'Mahasiswa, Dosen, Staf & Alumni Fasilkom',
       icon: Users,
-      accent: '#AFF8DB',
+      accent: '#FFB5E8',
     },
     {
       label: 'Kategori Penghargaan',
@@ -26,7 +26,7 @@ export default function PastInsights() {
       value: '76',
       desc: 'Kandidat terkurasi dari seluruh program studi',
       icon: Award,
-      accent: '#FFB5E8',
+      accent: '#AFF8DB',
     },
     {
       label: 'Tingkat Kepuasan',
@@ -56,30 +56,30 @@ export default function PastInsights() {
   ];
 
   return (
-    <section id="insight" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#06140F] text-[#EDE8DF] overflow-hidden">
+    <section id="insight" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-vignette-soft text-ink overflow-hidden">
       
       {/* Botanical corner accents */}
       <BotanicalCornerFiligree position="top-right" className="opacity-35" />
       <BotanicalCornerFiligree position="bottom-left" className="opacity-35" />
 
       {/* Background ambient glow */}
-      <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-[#12382B]/25 via-[#E7C6FF]/10 to-transparent" />
-      <StarlightGlow className="absolute top-12 left-10 w-80 h-80 bg-[#AFF8DB]/10" />
-      <StarlightGlow className="absolute bottom-12 right-10 w-80 h-80 bg-[#FFF3B0]/10" />
+      <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-surface-card/25 via-lavender/10 to-transparent" />
+      <StarlightGlow className="absolute top-12 left-10 w-80 h-80 bg-bloom-pink/10" />
+      <StarlightGlow className="absolute bottom-12 right-10 w-80 h-80 bg-gold/10" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         
         {/* Section Header */}
         <ScrollReveal animation="fade-up">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0F2D22] text-[#FFF3B0] text-xs font-semibold tracking-widest uppercase mb-3 border border-[#FFF3B0]/30">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-card text-gold text-xs font-semibold tracking-widest uppercase mb-3 border border-gold/30">
               Blooms into History
             </div>
-            <h2 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#FAF7F0] tracking-wide">
+            <h2 className="font-cinzel text-3xl sm:text-4xl md:text-5xl font-extrabold text-ivory tracking-wide">
               Jejak & Sejarah Prestasi
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#FFF3B0] to-transparent mx-auto mt-4" />
-            <p className="text-sm sm:text-base text-[#EDE8DF]/80 mt-4 leading-relaxed font-light">
+            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-gold to-transparent mx-auto mt-4" />
+            <p className="text-sm sm:text-base text-ink/80 mt-4 leading-relaxed font-light">
               Menengok kembali taman mimpi yang telah mekar menjadi sejarah membanggakan bagi individu, UKM, dan Ormawa Fasilkom UNEJ.
             </p>
           </div>
@@ -91,7 +91,7 @@ export default function PastInsights() {
             const Icon = item.icon;
             return (
               <ScrollReveal key={index} animation="fade-up" delay={index * 100}>
-                <div className="relative rounded-3xl p-6 bg-gradient-to-b from-[#0A2219]/90 to-[#071711]/90 border border-[#AFF8DB]/20 hover:border-[#AFF8DB]/50 transition-all duration-300 shadow-xl group h-full">
+                <div className="relative rounded-3xl p-6 bg-gradient-to-b from-surface-card-2/90 to-surface-base/90 border border-bloom-pink/20 hover:border-bloom-pink/50 transition-all duration-300 shadow-xl group h-full">
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
                     style={{ backgroundColor: `${item.accent}20`, border: `1px solid ${item.accent}50`, color: item.accent }}
@@ -104,10 +104,10 @@ export default function PastInsights() {
                   >
                     {item.value}
                   </div>
-                  <div className="text-xs sm:text-sm font-bold text-[#FAF7F0] mb-1">
+                  <div className="text-xs sm:text-sm font-bold text-ivory mb-1">
                     {item.label}
                   </div>
-                  <div className="text-[11px] sm:text-xs text-[#EDE8DF]/60 leading-relaxed font-light">
+                  <div className="text-[11px] sm:text-xs text-ink/60 leading-relaxed font-light">
                     {item.desc}
                   </div>
                 </div>
@@ -120,15 +120,15 @@ export default function PastInsights() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {highlights.map((h, i) => (
             <ScrollReveal key={i} animation="fade-up" delay={i * 120}>
-              <div className="p-6 sm:p-7 rounded-3xl bg-[#091F18]/70 border border-[#FFF3B0]/20 hover:border-[#FFF3B0]/50 transition-all shadow-lg flex flex-col justify-between h-full">
+              <div className="p-6 sm:p-7 rounded-3xl bg-surface-card-2/70 border border-gold/20 hover:border-gold/50 transition-all shadow-lg flex flex-col justify-between h-full">
                 <div>
-                  <span className="inline-block text-[10px] uppercase font-bold tracking-widest text-[#FFF3B0] bg-[#143D30] px-2.5 py-1 rounded-full border border-[#FFF3B0]/30 mb-4">
+                  <span className="inline-block text-[10px] uppercase font-bold tracking-widest text-gold bg-surface-card px-2.5 py-1 rounded-full border border-gold/30 mb-4">
                     {h.tag}
                   </span>
-                  <h3 className="font-cinzel text-lg sm:text-xl font-bold text-[#FAF7F0] mb-2.5">
+                  <h3 className="font-cinzel text-lg sm:text-xl font-bold text-ivory mb-2.5">
                     {h.title}
                   </h3>
-                  <p className="text-xs sm:text-sm text-[#EDE8DF]/75 leading-relaxed font-light">
+                  <p className="text-xs sm:text-sm text-ink/75 leading-relaxed font-light">
                     {h.desc}
                   </p>
                 </div>

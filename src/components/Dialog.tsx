@@ -52,13 +52,13 @@ export default function Dialog({
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-[#020906]/80 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
+        className="absolute inset-0 bg-surface-base/80 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
         onClick={() => !busy && onClose()}
       />
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md rounded-3xl overflow-hidden border bg-gradient-to-b from-[#0F2D23] via-[#0A1F18] to-[#061510] shadow-[0_0_60px_rgba(0,0,0,0.85)] animate-[dialogIn_180ms_cubic-bezier(0.16,1,0.3,1)]"
+        className="relative w-full max-w-md rounded-3xl overflow-hidden border bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base shadow-[0_0_60px_rgba(0,0,0,0.85)] animate-[dialogIn_180ms_cubic-bezier(0.16,1,0.3,1)]"
         style={{ borderColor: `${accent}66` }}
       >
         <div
@@ -74,10 +74,10 @@ export default function Dialog({
             >
               <Icon className="w-8 h-8" style={{ color: accent }} />
             </div>
-            <h3 className="font-cinzel text-lg sm:text-xl font-bold text-[#FAF7F0] tracking-wide mt-4">
+            <h3 className="font-cinzel text-lg sm:text-xl font-bold text-ivory tracking-wide mt-4">
               {title}
             </h3>
-            <p className="mt-2 text-sm text-[#EDE8DF]/75 leading-relaxed whitespace-pre-line max-w-sm">
+            <p className="mt-2 text-sm text-ink/75 leading-relaxed whitespace-pre-line max-w-sm">
               {message}
             </p>
           </div>
@@ -88,7 +88,7 @@ export default function Dialog({
                 type="button"
                 onClick={onClose}
                 disabled={busy}
-                className="flex-1 px-5 py-2.5 rounded-xl bg-[#0F2D23] border border-[#AFF8DB]/30 text-xs font-semibold text-[#EDE8DF] hover:bg-[#154234] transition-colors disabled:opacity-50 cursor-pointer"
+                className="flex-1 px-5 py-2.5 rounded-xl bg-surface-card border border-bloom-pink/30 text-xs font-semibold text-ink hover:bg-surface-card transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {cancelLabel}
               </button>

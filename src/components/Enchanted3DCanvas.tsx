@@ -58,12 +58,13 @@ export default function Enchanted3DCanvas() {
 
     window.addEventListener('mousemove', handleMouseMove);
 
-    // Color palette for Secret Garden
+    // Color palette for Secret Garden: Pink Bloom
     const palette = [
-      { base: '#AFF8DB', glow: 'rgba(175, 248, 219, 0.45)' },
+      { base: '#FFB5E8', glow: 'rgba(255, 181, 232, 0.5)' },
+      { base: '#FFD9F0', glow: 'rgba(255, 217, 240, 0.45)' },
       { base: '#FFF3B0', glow: 'rgba(255, 243, 176, 0.5)' },
-      { base: '#FFB5E8', glow: 'rgba(255, 181, 232, 0.4)' },
       { base: '#E7C6FF', glow: 'rgba(231, 198, 255, 0.35)' },
+      { base: '#AFF8DB', glow: 'rgba(175, 248, 219, 0.4)' },
     ];
 
     const totalParticles = 40;
@@ -153,8 +154,8 @@ export default function Enchanted3DCanvas() {
           ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
           ctx.fill();
 
-          // Bright white-gold core
-          ctx.fillStyle = '#FFFFFF';
+          // Bright rose core
+          ctx.fillStyle = '#FF8FC7';
           ctx.globalAlpha = currentAlpha;
           ctx.beginPath();
           ctx.arc(0, 0, currentSize * 0.75, 0, Math.PI * 2);

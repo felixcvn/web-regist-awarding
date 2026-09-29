@@ -87,16 +87,16 @@ export default function AudioPlayer() {
             isPlaying ? 'rotate-[18deg]' : 'rotate-[-12deg]'
           }`}
         >
-          <div className="w-1.5 h-7 bg-gradient-to-b from-[#FFF3B0] via-[#c4a24d] to-[#6d5520] rounded-full shadow-md relative">
-            <div className="absolute top-0 right-0 w-3 h-3 rounded-full bg-[#3b2d13] border border-[#FFF3B0]/60 -mr-1" />
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2.5 bg-[#AFF8DB] rounded-xs shadow-[0_0_8px_#AFF8DB]" />
+          <div className="w-1.5 h-7 bg-gradient-to-b from-gold via-[#c4a24d] to-[#6d5520] rounded-full shadow-md relative">
+            <div className="absolute top-0 right-0 w-3 h-3 rounded-full bg-[#3b2d13] border border-gold/60 -mr-1" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2.5 bg-bloom-pink rounded-xs shadow-[0_0_8px_#FFB5E8]" />
           </div>
         </div>
 
         {/* Ambient Glow behind the vinyl disc */}
         <div
           className={`absolute inset-0 rounded-full transition-opacity duration-500 blur-md pointer-events-none ${
-            isPlaying ? 'opacity-80 bg-[#AFF8DB]/30 scale-110 animate-pulse-glow' : 'opacity-0'
+            isPlaying ? 'opacity-80 bg-bloom-pink/30 scale-110 animate-pulse-glow' : 'opacity-0'
           }`}
         />
 
@@ -122,20 +122,20 @@ export default function AudioPlayer() {
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-60 pointer-events-none" />
 
             {/* Center Label (Botanical Enchanted Theme) */}
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#1b4b39] via-[#0e2d22] to-[#071711] border border-[#FFF3B0]/70 flex items-center justify-center relative shadow-inner">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#1b4b39] via-surface-card to-surface-base border border-gold/70 flex items-center justify-center relative shadow-inner">
               {isPlaying ? (
-                <Sparkles className="w-3 h-3 text-[#FFF3B0] animate-pulse" />
+                <Sparkles className="w-3 h-3 text-gold animate-pulse" />
               ) : (
-                <Music className="w-3 h-3 text-[#AFF8DB]/80" />
+                <Music className="w-3 h-3 text-bloom-pink/80" />
               )}
               {/* Spindle hole */}
-              <div className="w-1.5 h-1.5 rounded-full bg-[#050b08] border border-[#AFF8DB]/50 absolute" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#050b08] border border-bloom-pink/50 absolute" />
             </div>
           </div>
         </button>
 
         {/* Tooltip badge on hover */}
-        <div className="absolute right-full mr-3 px-2.5 py-1 rounded-lg bg-[#0A1F18]/90 border border-[#AFF8DB]/30 text-[#EDE8DF] text-[10px] font-sans font-semibold tracking-wide whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none backdrop-blur-xs shadow-lg">
+        <div className="absolute right-full mr-3 px-2.5 py-1 rounded-lg bg-surface-card-2/90 border border-bloom-pink/30 text-ink text-[10px] font-sans font-semibold tracking-wide whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none backdrop-blur-xs shadow-lg">
           {isPlaying ? 'Putar: Secret Garden OST' : 'Klik untuk Memutar'}
         </div>
 
