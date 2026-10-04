@@ -5,7 +5,7 @@
   --font-serif: 'Cinzel', Georgia, serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-  /* Secret Garden: Emerald + Pink Gradient */
+  /* Secret Garden: Wisteria Garden (pink + purple, balanced — a touch more pink) */
   --color-bloom-pink: #FFB5E8;
   --color-bloom-pink-deep: #F58AD4;
   --color-pink-ink: #C2478F;
@@ -17,25 +17,28 @@
   --color-gold-ink: #A9791C;
   --color-lavender: #E7C6FF;
   --color-lavender-ink: #7A4FB0;
-  --color-ink: #EDE8DF;
-  --color-ivory: #FAF7F0;
-  --color-surface-base: #061510;
-  --color-surface-card: #0F2D23;
-  --color-surface-card-2: #0A1F18;
-  --color-field: #082017;
-  --color-field-2: #0E2A20;
-  --color-on-accent: #061811;
+  --color-wisteria: #B79CE8;
+  --color-wisteria-deep: #8E6FD1;
+  --color-wisteria-ink: #6A4CA8;
+  --color-ink: #F0E7F2;
+  --color-ivory: #FBF6FC;
+  --color-surface-base: #160f22;
+  --color-surface-card: #241835;
+  --color-surface-card-2: #1c1329;
+  --color-field: #201534;
+  --color-field-2: #2a1b3d;
+  --color-on-accent: #1a0f1f;
 
   --color-fairy-pink: #FFB5E8;
   --color-mint-green: #AFF8DB;
   --color-starlight-gold: #FFF3B0;
 
-  --color-emerald-950: #05100c;
-  --color-emerald-900: #0a1f18;
-  --color-emerald-850: #0f2c22;
-  --color-emerald-800: #143d30;
-  --color-emerald-700: #1c5241;
-  --color-emerald-600: #2a735c;
+  --color-emerald-950: #0d0a16;
+  --color-emerald-900: #160f22;
+  --color-emerald-850: #1c1329;
+  --color-emerald-800: #24183a;
+  --color-emerald-700: #33224d;
+  --color-emerald-600: #4a3570;
 
   --color-gold-400: #ffd768;
   --color-gold-300: #ffe89e;
@@ -64,6 +67,10 @@
   box-shadow: 0 0 30px rgba(255, 230, 150, 0.5);
 }
 
+.glow-wisteria {
+  box-shadow: 0 0 28px rgba(183, 156, 232, 0.45), inset 0 0 15px rgba(183, 156, 232, 0.15);
+}
+
 .text-glow-pink {
   text-shadow: 0 0 16px rgba(255, 181, 232, 0.7);
 }
@@ -76,27 +83,39 @@
   text-shadow: 0 0 18px rgba(255, 220, 130, 0.7);
 }
 
-/* Botanical vines / branch pattern styling */
+/* Secret Garden backdrop: deep wisteria-plum base with pink + purple light blooms */
 .bg-garden {
-  background-color: #061510;
+  background-color: #160f22;
   background-image:
-    radial-gradient(circle at 78% 12%, rgba(245, 138, 212, 0.28) 0%, transparent 42%),
-    radial-gradient(circle at 12% 88%, rgba(255, 181, 232, 0.18) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(175, 248, 219, 0.06) 0%, transparent 60%),
-    linear-gradient(160deg, #061510 0%, #0C2018 45%, #2A1424 100%);
+    radial-gradient(circle at 76% 10%, rgba(183, 156, 232, 0.30) 0%, transparent 44%),
+    radial-gradient(circle at 14% 86%, rgba(255, 181, 232, 0.24) 0%, transparent 46%),
+    radial-gradient(circle at 50% 46%, rgba(245, 138, 212, 0.10) 0%, transparent 60%),
+    linear-gradient(165deg, #160f22 0%, #1f1430 42%, #2d1836 74%, #3a1c38 100%);
 }
 
 .bg-vignette {
-  background: radial-gradient(circle at 70% 25%, rgba(245, 138, 212, 0.35) 0%, transparent 45%), linear-gradient(160deg, #061510 0%, #0C2018 50%, #2A1424 100%);
+  background: radial-gradient(circle at 68% 24%, rgba(255, 181, 232, 0.34) 0%, transparent 46%), linear-gradient(160deg, #140d1f 0%, #1f1430 48%, #351a3a 100%);
 }
 
 /* Soft per-section vignette: transparent so the global .bg-garden gradient flows through,
-   with a pink/gold light bloom like the Hero section. */
+   with a pink/wisteria light bloom like the Hero section. */
 .bg-vignette-soft {
   background-image:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 181, 232, 0.14) 0%, transparent 55%),
-    radial-gradient(circle at 85% 18%, rgba(255, 243, 176, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 12% 82%, rgba(245, 138, 212, 0.1) 0%, transparent 45%);
+    radial-gradient(ellipse at 50% 0%, rgba(255, 181, 232, 0.16) 0%, transparent 55%),
+    radial-gradient(circle at 86% 16%, rgba(183, 156, 232, 0.14) 0%, transparent 42%),
+    radial-gradient(circle at 12% 84%, rgba(245, 138, 212, 0.12) 0%, transparent 46%);
+}
+
+/* Cinematic finishing: subtle vignette + film grain for a vintage, dreamy mood. */
+.bg-film::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at center, transparent 55%, rgba(10, 6, 16, 0.45) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
 }
 
 .bg-parchment-pattern {
@@ -112,6 +131,31 @@
   50% { transform: translateY(-8px) rotate(1deg); }
 }
 
+/* Butterfly: wandering flight path */
+@keyframes flutterFly {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  25%  { transform: translate(18px, -22px) rotate(8deg); }
+  50%  { transform: translate(-12px, -40px) rotate(-6deg); }
+  75%  { transform: translate(22px, -16px) rotate(10deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+/* Falling petals */
+@keyframes petalFall {
+  0%   { transform: translateY(-10%) translateX(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.9; }
+  100% { transform: translateY(110%) translateX(40px) rotate(220deg); opacity: 0; }
+}
+
+/* Fireflies / stardust rising */
+@keyframes fireflyRise {
+  0%   { transform: translateY(20%) translateX(0); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 0.9; }
+  100% { transform: translateY(-120%) translateX(-24px); opacity: 0; }
+}
+
 @keyframes pulseGlow {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
@@ -120,6 +164,12 @@
 @keyframes sway {
   0%, 100% { transform: rotate(-2deg); }
   50% { transform: rotate(2deg); }
+}
+
+/* Soft wind sway for large hanging elements: gentle drift, no big swing. */
+@keyframes swaySoft {
+  0%, 100% { transform: rotate(-0.5deg) translateX(-3px); }
+  50% { transform: rotate(0.5deg) translateX(3px); }
 }
 
 @keyframes gentleSway {
@@ -152,12 +202,43 @@
   animation: floatSlow 6s ease-in-out infinite;
 }
 
+.animate-flutter-fly {
+  animation: flutterFly 9s ease-in-out infinite;
+}
+
+.animate-petal-fall {
+  animation: petalFall linear infinite;
+}
+
+.animate-firefly-rise {
+  animation: fireflyRise linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-slow,
+  .animate-pulse-glow,
+  .animate-sway,
+  .animate-sway-soft,
+  .animate-gentle-sway,
+  .animate-leaf-flutter,
+  .animate-lantern-swing,
+  .animate-flutter-fly,
+  .animate-petal-fall,
+  .animate-firefly-rise {
+    animation: none !important;
+  }
+}
+
 .animate-pulse-glow {
   animation: pulseGlow 3.5s ease-in-out infinite;
 }
 
 .animate-sway {
   animation: sway 5s ease-in-out infinite;
+}
+
+.animate-sway-soft {
+  animation: swaySoft 7s ease-in-out infinite;
 }
 
 .animate-gentle-sway {
@@ -180,7 +261,7 @@
 /* Print styling for VIP ticket */
 @media print {
   body {
-    background-color: #061510 !important;
+    background-color: #160f22 !important;
     color: #FAF7F0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

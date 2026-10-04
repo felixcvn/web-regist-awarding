@@ -3,7 +3,8 @@
 import React from 'react';
 import Image from 'next/image';
 import { Calendar, MapPin, Shirt, Award, Music, Camera } from 'lucide-react';
-import { StarlightGlow, BotanicalCornerFiligree } from './BotanicalDecoration';
+import { StarlightGlow } from './StarlightGlow';
+import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import ScrollReveal from './ScrollReveal';
 
 export default function EventDetails() {
@@ -81,15 +82,18 @@ export default function EventDetails() {
   ];
 
   return (
-    <section id="tentang" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-vignette-soft text-ink overflow-hidden">
+    <section id="tentang" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
       
-      {/* Botanical Corner Filigrees */}
-      <BotanicalCornerFiligree position="top-left" className="opacity-45" />
-      <BotanicalCornerFiligree position="bottom-right" className="opacity-45" />
+      {/* Soft real garden backdrop with faded edges for a seamless transition */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.scenePortrait}
+        objectFit="cover"
+        blur={4}
+        className="absolute inset-0 w-full h-full z-0 opacity-[0.14] [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_82%,transparent)]"
+      />
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-transparent via-surface-base/40 to-transparent" />
 
       {/* Ambient background glows */}
-      <StarlightGlow className="absolute top-10 right-10 w-96 h-96 bg-bloom-pink/10" />
-      <StarlightGlow className="absolute bottom-10 left-10 w-96 h-96 bg-bloom-pink/10" />
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-surface-card/30" />
 
       <div className="max-w-7xl mx-auto relative z-10">
@@ -192,50 +196,76 @@ export default function EventDetails() {
 
         </div>
 
-        {/* Rundown Section */}
+        {/* Rundown Section — Journey Through the Garden (stepping-stone path) */}
         <div id="rundown" className="mt-20">
           <ScrollReveal animation="fade-up">
-            <div className="text-center mb-12">
+            <div className="text-center mb-16">
               <span className="text-bloom-pink font-cinzel text-xs uppercase tracking-[0.25em] font-semibold block mb-2">
                 Timeline of The Night
               </span>
               <h3 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-ivory">
                 Susunan Acara (Rundown)
               </h3>
+              <p className="text-xs sm:text-sm text-ink/70 mt-3 font-light">
+                Susuri jalan setapak taman dari gerbang pembuka hingga penutupan malam.
+              </p>
             </div>
           </ScrollReveal>
 
-          <div className="max-w-4xl mx-auto space-y-4">
-            {rundownItems.map((item, index) => {
-              const IconComponent = item.icon;
-              return (
-                <ScrollReveal key={index} animation="fade-up" delay={index * 80}>
-                  <div className="relative flex flex-col sm:flex-row sm:items-center justify-between p-5 sm:p-6 rounded-2xl bg-surface-card/80 border border-bloom-pink/20 hover:border-bloom-pink/60 hover:bg-surface-card transition-all duration-300 shadow-md group">
-                    <div className="flex items-start sm:items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-surface-card border border-bloom-pink/40 flex items-center justify-center text-bloom-pink shrink-0 group-hover:scale-110 transition-transform">
-                        <IconComponent className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2.5 mb-1">
-                          <span className="text-xs font-mono font-semibold text-gold bg-surface-card px-2.5 py-0.5 rounded-full border border-gold/30">
-                            {item.time}
-                          </span>
-                          <span className="text-[10px] uppercase font-semibold text-bloom-pink tracking-wider">
-                            {item.tag}
-                          </span>
+          <div className="relative max-w-5xl mx-auto">
+            {/* Central winding path (desktop) */}
+            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-px bg-gradient-to-b from-transparent via-bloom-pink/40 to-transparent" />
+
+            <div className="space-y-10 md:space-y-0">
+              {rundownItems.map((item, index) => {
+                const IconComponent = item.icon;
+                const isLeft = index % 2 === 0;
+                return (
+                  <ScrollReveal key={index} animation={isLeft ? 'fade-right' : 'fade-left'} delay={index * 80}>
+                    <div className="relative md:flex md:items-center md:min-h-[8rem]">
+                      {/* Card side */}
+                      <div className={`md:w-1/2 ${isLeft ? 'md:pr-12' : 'md:order-2 md:pl-12'}`}>
+                        <div className="group relative p-5 sm:p-6 rounded-[1.75rem] bg-surface-card/85 border border-bloom-pink/25 hover:border-bloom-pink/60 hover:bg-surface-card transition-all duration-300 shadow-lg backdrop-blur-sm">
+                          {/* Stepping-stone number badge */}
+                          <div className="absolute -top-3 -left-3 w-9 h-9 rounded-full bg-gradient-to-br from-bloom-pink to-bloom-pink-deep text-on-accent font-cinzel font-black text-sm flex items-center justify-center shadow-[0_0_18px_rgba(255,181,232,0.5)]">
+                            {index + 1}
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-surface-card-2 border border-bloom-pink/40 flex items-center justify-center text-bloom-pink shrink-0 group-hover:scale-110 transition-transform">
+                              <IconComponent className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2.5 mb-1">
+                                <span className="text-xs font-mono font-semibold text-gold-ink bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/30">
+                                  {item.time}
+                                </span>
+                                <span className="text-[10px] uppercase font-semibold text-bloom-pink tracking-wider">
+                                  {item.tag}
+                                </span>
+                              </div>
+                              <h4 className="font-cinzel text-base sm:text-lg font-bold text-ivory group-hover:text-bloom-pink transition-colors">
+                                {item.title}
+                              </h4>
+                              <p className="text-xs sm:text-sm text-ink/70 mt-1 leading-relaxed">
+                                {item.desc}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <h4 className="font-cinzel text-base sm:text-lg font-bold text-ivory group-hover:text-bloom-pink transition-colors">
-                          {item.title}
-                        </h4>
-                        <p className="text-xs sm:text-sm text-ink/70 mt-1 leading-relaxed">
-                          {item.desc}
-                        </p>
                       </div>
+
+                      {/* Center marker (desktop) */}
+                      <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-surface-base border-2 border-bloom-pink/50 items-center justify-center z-10 shadow-[0_0_20px_rgba(255,181,232,0.35)]">
+                        <span className="font-cinzel font-black text-bloom-pink text-sm">{String(index + 1).padStart(2, '0')}</span>
+                      </div>
+
+                      {/* Empty opposite side (desktop) */}
+                      <div className={`hidden md:block md:w-1/2 ${isLeft ? 'md:order-2' : ''}`} />
                     </div>
-                  </div>
-                </ScrollReveal>
-              );
-            })}
+                  </ScrollReveal>
+                );
+              })}
+            </div>
           </div>
         </div>
 

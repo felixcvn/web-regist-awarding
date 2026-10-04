@@ -1,32 +1,30 @@
 import { NextResponse } from 'next/server';
 import { createParticipant } from '@/lib/db';
-import { RoleType, CategoryType, BatchType, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/types';
+import { CategoryType, BatchType, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/types';
 import { sendInvitationEmail } from '@/lib/mailer';
+import { registrationSchema } from '@/lib/validation';
+import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const limit = rateLimit(`register:${ip}`, 5, 60_000);
+  if (!limit.allowed) return tooManyResponse(limit.retryAfter);
+
   try {
     const body = await request.json();
-    const { nimNip, name, role, category, batch, prodi, email, phone } = body;
-
-    // Validation
-    if (!nimNip || !name || !role || !email || !category) {
-      return NextResponse.json(
-        { error: 'Mohon lengkapi data wajib (NIM/NIP, Nama, Peran, Kategori, Email)!' },
-        { status: 400 }
-      );
+    const parsed = registrationSchema.safeParse(body);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0]?.message || 'Data tidak valid.';
+      return NextResponse.json({ error: `Data tidak valid: ${first}` }, { status: 400 });
     }
+    const { nimNip, name, role, category, batch, prodi, email, phone } = parsed.data;
 
-    const validRoles: RoleType[] = ['Mahasiswa', 'Dosen', 'Tenaga Pendidik', 'Tamu Undangan'];
-    if (!validRoles.includes(role)) {
-      return NextResponse.json({ error: 'Peran civitas tidak valid!' }, { status: 400 });
-    }
-
-    if (!CATEGORY_OPTIONS.includes(category)) {
+    if (!CATEGORY_OPTIONS.includes(category as CategoryType)) {
       return NextResponse.json({ error: 'Kategori civitas tidak valid!' }, { status: 400 });
     }
 
     const resolvedBatch: BatchType =
-      category === 'Mahasiswa Fasilkom' && BATCH_OPTIONS.includes(batch) ? batch : '-';
+      category === 'Mahasiswa Fasilkom' && BATCH_OPTIONS.includes(batch as BatchType) ? (batch as BatchType) : '-';
 
     const result = await createParticipant({
       nimNip,
@@ -66,7 +64,7 @@ export async function POST(request: Request) {
       participant: result.participant,
       ticketUrl: `/ticket/${result.participant?.qrToken}`,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Registration API error:', err);
     return NextResponse.json(
       { error: 'Terjadi kesalahan sistem saat memproses registrasi.' },

@@ -24,6 +24,23 @@ function getTransporter(): Transporter | null {
   return transporter;
 }
 
+// Resolve the public base URL for ticket links, in order of reliability:
+// 1. NEXT_PUBLIC_APP_URL (explicit, required in production)
+// 2. VERCEL_URL (auto-injected on Vercel, no scheme)
+// 3. localhost (dev fallback)
+function resolveBaseUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_APP_URL;
+  if (explicit) return explicit.replace(/\/$/, '');
+
+  const vercel = process.env.VERCEL_URL;
+  if (vercel) return `https://${vercel.replace(/\/$/, '')}`;
+
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[Mailer] NEXT_PUBLIC_APP_URL is not set — email links may point to localhost.');
+  }
+  return 'http://localhost:3000';
+}
+
 function buildHtml({ name, category, batch, qrToken, imgSrc, ticketUrl }: { name: string; category: string; batch: string; qrToken: string; imgSrc: string; ticketUrl: string }): string {
   const batchLabel = batch !== '-' ? batch : '';
   const categoryLine = category;
@@ -122,7 +139,7 @@ export async function sendInvitationEmail({ to, name, qrToken, category, batch }
   }
 
   const mode = (process.env.QR_EMAIL_MODE as 'cid' | 'url') || 'cid';
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = resolveBaseUrl();
   const ticketUrl = `${baseUrl}/ticket/${qrToken}`;
   const imgSrc = mode === 'cid' ? 'cid:qr-invitation' : `${baseUrl}/api/qr/${qrToken}`;
 

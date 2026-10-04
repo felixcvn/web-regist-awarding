@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Award, Users, Trophy, Star, Sparkles } from 'lucide-react';
-import { StarlightGlow, BotanicalCornerFiligree } from './BotanicalDecoration';
+import { StarlightGlow } from './StarlightGlow';
+import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import ScrollReveal from './ScrollReveal';
 
 export default function PastInsights() {
@@ -56,16 +57,18 @@ export default function PastInsights() {
   ];
 
   return (
-    <section id="insight" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-vignette-soft text-ink overflow-hidden">
+    <section id="insight" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
       
-      {/* Botanical corner accents */}
-      <BotanicalCornerFiligree position="top-right" className="opacity-35" />
-      <BotanicalCornerFiligree position="bottom-left" className="opacity-35" />
+      {/* Wide wisteria canopy (distinct from Hero) */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.wisteriaA}
+        objectFit="cover"
+        interaction="swaySoft"
+        className="absolute -top-10 sm:-top-16 left-0 w-full h-40 sm:h-56 z-0 origin-top opacity-50 [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+      />
 
       {/* Background ambient glow */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-surface-card/25 via-lavender/10 to-transparent" />
-      <StarlightGlow className="absolute top-12 left-10 w-80 h-80 bg-bloom-pink/10" />
-      <StarlightGlow className="absolute bottom-12 right-10 w-80 h-80 bg-gold/10" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         

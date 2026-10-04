@@ -8,8 +8,15 @@ function normalizeNim(nim: string): string {
   return nim.trim().toLowerCase();
 }
 
-// ponytail: fallback file storage when PostgreSQL server is unreachable in local dev. Switch fully to PG connection in production.
+// In production the filesystem is ephemeral/read-only (serverless), so the JSON
+// fallback is disabled — a failed DB connection must surface, not silently lose data.
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const fallbackFilePath = path.join(process.cwd(), '.participants_data.json');
+
+// Fail fast: production cannot run without a database (no safe local persistence).
+if (IS_PRODUCTION && !process.env.DATABASE_URL) {
+  throw new Error('[DB] DATABASE_URL is required in production.');
+}
 
 function loadFallbackData(): Participant[] {
   try {
@@ -21,33 +28,33 @@ function loadFallbackData(): Participant[] {
     // ignore read error
   }
   
-  // Seed sample initial mock participants for immediate evaluation
+  // Dev-only seed with obviously fake data (no real PII).
   const seed: Participant[] = [
     {
-      id: 'TKT-A819',
-      nimNip: '232410101001',
-      name: 'Raden Arjuna Dewantara',
+      id: 'TKT-DEMO01',
+      nimNip: '000000000001',
+      name: 'Peserta Demo Satu',
       role: 'Mahasiswa',
       category: 'HIMASIF',
       batch: '2023',
       prodi: 'Informatika',
-      email: 'arjuna@mail.unej.ac.id',
-      phone: '081234567891',
+      email: 'demo1@example.test',
+      phone: '080000000001',
       qrToken: 'FAN26-DEMO-VIP-001',
       isCheckedIn: false,
       checkedInAt: null,
       createdAt: new Date().toISOString(),
     },
     {
-      id: 'TKT-B244',
-      nimNip: '198205142008121001',
-      name: 'Dr. Ir. Dian Kusuma Wardani, M.Kom.',
-      role: 'Dosen',
+      id: 'TKT-DEMO02',
+      nimNip: '000000000002',
+      name: 'Peserta Demo Dua',
+      role: 'Mahasiswa',
       category: 'Mahasiswa Fasilkom',
       batch: '-',
       prodi: 'Sistem Informasi',
-      email: 'dian.kusuma@unej.ac.id',
-      phone: '081987654321',
+      email: 'demo2@example.test',
+      phone: '080000000002',
       qrToken: 'FAN26-DEMO-VIP-002',
       isCheckedIn: true,
       checkedInAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
@@ -59,6 +66,7 @@ function loadFallbackData(): Participant[] {
 }
 
 function saveFallbackData(data: Participant[]): void {
+  if (IS_PRODUCTION) return; // never persist to local FS in production
   try {
     fs.writeFileSync(fallbackFilePath, JSON.stringify(data, null, 2), 'utf8');
   } catch {
@@ -69,11 +77,19 @@ function saveFallbackData(data: Participant[]): void {
 let pool: Pool | null = null;
 
 function getPool(): Pool | null {
-  if (!process.env.DATABASE_URL) return null;
+  if (!process.env.DATABASE_URL) {
+    if (IS_PRODUCTION) console.error('[DB] DATABASE_URL is not set in production.');
+    return null;
+  }
   if (!pool) {
+    const url = process.env.DATABASE_URL;
+    // Managed providers (Neon/Supabase/Railway) require TLS. Enable when explicitly
+    // requested via sslmode, or when the host is not localhost.
+    const isLocal = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
+    const needsSsl = url.includes('sslmode=require') || url.includes('sslmode=verify-full') || !isLocal;
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
+      connectionString: url,
+      ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
     });
   }
   return pool;
@@ -104,6 +120,23 @@ async function initPostgresTable(p: Pool): Promise<boolean> {
       ALTER TABLE participants ADD COLUMN IF NOT EXISTS batch VARCHAR(4) DEFAULT '-';
       CREATE INDEX IF NOT EXISTS idx_qr_token ON participants(qr_token);
       CREATE INDEX IF NOT EXISTS idx_nim_nip ON participants(nim_nip);
+      CREATE TABLE IF NOT EXISTS admin_sessions (
+        id VARCHAR(64) PRIMARY KEY,
+        token_hash VARCHAR(128) UNIQUE NOT NULL,
+        ip VARCHAR(64),
+        user_agent VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_admin_sessions_token ON admin_sessions(token_hash);
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id SERIAL PRIMARY KEY,
+        action VARCHAR(40) NOT NULL,
+        actor_ip VARCHAR(64),
+        target_id VARCHAR(64),
+        detail VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
     isTableInitialized = true;
     return true;
@@ -146,7 +179,12 @@ export async function createParticipant(input: RegistrationInput): Promise<{ par
     }
   }
 
-  // Fallback store
+  // Fallback store (local dev only — disabled in production to avoid silent data loss)
+  if (IS_PRODUCTION) {
+    console.error('[DB] PostgreSQL unavailable in production. Check DATABASE_URL / SSL settings.');
+    return { error: 'Layanan database sedang tidak tersedia. Silakan coba beberapa saat lagi.' };
+  }
+
   const list = loadFallbackData();
   if (list.some((item) => normalizeNim(item.nimNip) === normalizeNim(input.nimNip))) {
     return { error: 'NIM / NIP ini sudah terdaftar sebelumnya!' };
@@ -334,4 +372,83 @@ export async function deleteParticipant(id: string): Promise<boolean> {
   if (next.length === list.length) return false;
   saveFallbackData(next);
   return true;
+}
+
+// --- Admin sessions (at-rest, hashed tokens) ---
+
+export async function createSessionRecord(
+  tokenHash: string,
+  expiresAt: Date,
+  ip: string,
+  userAgent: string
+): Promise<boolean> {
+  const p = getPool();
+  if (!p) return false;
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) return false;
+    const id = 'SES-' + crypto.randomBytes(6).toString('hex');
+    await p.query(
+      `INSERT INTO admin_sessions (id, token_hash, ip, user_agent, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, NOW(), $5)`,
+      [id, tokenHash, ip.slice(0, 64), userAgent.slice(0, 255), expiresAt.toISOString()]
+    );
+    return true;
+  } catch (err) {
+    console.error('[DB] createSessionRecord failed:', (err as Error).message);
+    return false;
+  }
+}
+
+export async function getSessionRecord(tokenHash: string): Promise<{ expiresAt: string } | null> {
+  const p = getPool();
+  if (!p) return null;
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) return null;
+    const res = await p.query('SELECT expires_at AS "expiresAt" FROM admin_sessions WHERE token_hash = $1 LIMIT 1', [tokenHash]);
+    if (res.rows.length === 0) return null;
+    return res.rows[0];
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteSessionRecord(tokenHash: string): Promise<void> {
+  const p = getPool();
+  if (!p) return;
+  try {
+    const ready = await initPostgresTable(p);
+    if (ready) await p.query('DELETE FROM admin_sessions WHERE token_hash = $1', [tokenHash]);
+  } catch {
+    // ignore
+  }
+}
+
+export async function purgeExpiredSessions(): Promise<void> {
+  const p = getPool();
+  if (!p) return;
+  try {
+    const ready = await initPostgresTable(p);
+    if (ready) await p.query('DELETE FROM admin_sessions WHERE expires_at < NOW()');
+  } catch {
+    // ignore
+  }
+}
+
+// --- Audit log ---
+
+export async function writeAuditLog(action: string, actorIp: string, targetId?: string, detail?: string): Promise<void> {
+  const p = getPool();
+  if (!p) return;
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) return;
+    await p.query(
+      `INSERT INTO audit_log (action, actor_ip, target_id, detail) VALUES ($1, $2, $3, $4)`,
+      [action.slice(0, 40), actorIp.slice(0, 64), (targetId || '').slice(0, 64) || null, (detail || '').slice(0, 255) || null]
+    );
+  } catch {
+    // audit failures must never break the request
+  }
 }

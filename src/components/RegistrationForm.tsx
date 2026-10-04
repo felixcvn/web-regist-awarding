@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import confetti from 'canvas-confetti';
 import { Ticket, User, Mail, Phone, BookOpen, AlertCircle, CheckCircle, Loader2, ChevronDown, Check, Users, CalendarDays } from 'lucide-react';
 import { RoleType, CategoryType, BatchType, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/types';
-import { StarlightGlow, BotanicalCornerFiligree } from './BotanicalDecoration';
+import { StarlightGlow } from './StarlightGlow';
+import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import ScrollReveal from './ScrollReveal';
 
 type DropdownKey = 'prodi' | 'category' | 'batch';
@@ -156,14 +157,17 @@ export default function RegistrationForm() {
   return (
     <section id="registrasi" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-vignette-soft text-ink overflow-hidden">
       
-      {/* Botanical corner filigrees */}
-      <BotanicalCornerFiligree position="bottom-left" className="opacity-45" />
-      <BotanicalCornerFiligree position="bottom-right" className="opacity-45" />
+      {/* Soft real garden backdrop */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.wisteriaC}
+        objectFit="cover"
+        blur={5}
+        className="absolute inset-0 w-full h-full z-0 opacity-[0.12]"
+      />
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-surface-base/65 via-surface-base/40 to-surface-base/85" />
 
       {/* Ambient Starlight Glows */}
-      <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-bloom-pink/15" />
-      <StarlightGlow className="absolute -bottom-16 -left-16 w-80 h-80 bg-gold/10" />
-      <StarlightGlow className="absolute -bottom-16 -right-16 w-80 h-80 bg-bloom-pink/10" />
+      <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-surface-card/30" />
 
       <div className="max-w-3xl mx-auto relative z-20">
         
@@ -183,10 +187,18 @@ export default function RegistrationForm() {
           </div>
         </ScrollReveal>
 
-        {/* Card Form */}
+        {/* Card Form — framed as the Secret Gate */}
         <ScrollReveal animation="zoom-in" delay={150}>
-          <div className="relative rounded-3xl p-6 sm:p-10 bg-gradient-to-b from-surface-card/95 via-surface-card-2/95 to-surface-base/95 border border-bloom-pink/30 shadow-[0_0_50px_rgba(6,21,16,0.9)] backdrop-blur-md">
-            
+          <div className="relative">
+            {/* gate arch crown */}
+            <div className="relative mx-auto max-w-lg">
+              <div className="h-16 rounded-t-[50%] border-x-2 border-t-2 border-bloom-pink/40 bg-gradient-to-b from-surface-card/60 to-transparent" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-gradient-to-br from-gold to-bloom-pink-deep shadow-[0_0_16px_rgba(255,181,232,0.7)]" />
+            </div>
+
+            <div className="relative -mt-2 rounded-3xl p-6 sm:p-10 bg-gradient-to-b from-surface-card/95 via-surface-card-2/95 to-surface-base/95 border border-bloom-pink/30 shadow-[0_0_50px_rgba(12,6,18,0.9)] backdrop-blur-md">
+              {/* inner arch hairline */}
+              <div className="pointer-events-none absolute inset-3 rounded-[1.75rem] border border-bloom-pink/15" />
             {errorMsg && (
             <div className="mb-6 p-4 rounded-2xl bg-red-950/80 border border-red-500/40 text-red-200 text-xs sm:text-sm flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
@@ -457,8 +469,9 @@ export default function RegistrationForm() {
               Dengan mendaftar, Anda menyatakan kesediaan hadir pada perhelatan Fasilkom Awarding Night 2026.
             </p>
           </form>
-        </div>
-      </ScrollReveal>
+            </div>
+          </div>
+        </ScrollReveal>
 
       </div>
     </section>

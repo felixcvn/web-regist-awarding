@@ -6,6 +6,8 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { QrCode, CheckCircle2, AlertTriangle, XCircle, LayoutDashboard, LogOut, Camera, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Dialog from '@/components/Dialog';
+import { secureFetch } from '@/lib/csrfClient';
+import GardenArtwork from '@/components/GardenArtwork';
 
 export default function AdminScanPage() {
   const router = useRouter();
@@ -62,7 +64,7 @@ export default function AdminScanPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/admin/checkin', {
+      const res = await secureFetch('/api/admin/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qrToken: token }),
@@ -155,13 +157,15 @@ export default function AdminScanPage() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch('/api/admin/logout', { method: 'POST' });
+    await secureFetch('/api/admin/logout', { method: 'POST' });
     router.push('/admin/login');
   };
 
   return (
-    <main className="min-h-screen bg-garden bg-vignette-soft text-ink p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+    <main className="relative min-h-screen bg-garden bg-vignette-soft text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
+      <GardenArtwork asset="bush" interaction="hover" className="absolute bottom-0 left-2 sm:left-6 w-40 sm:w-52 z-0 origin-bottom opacity-40" />
+      <GardenArtwork asset="butterfly" interaction="float" className="absolute top-6 right-6 w-7 z-0 opacity-60" />
+      <div className="relative z-10 max-w-7xl mx-auto">
         
         {/* Header panitia */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-bloom-pink/20 gap-4">

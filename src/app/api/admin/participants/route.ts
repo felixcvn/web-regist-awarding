@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/auth';
-import { getAllParticipants } from '@/lib/db';
+import { getAllParticipants, writeAuditLog } from '@/lib/db';
+import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { csvSafe } from '@/lib/validation';
 
 export async function GET(request: Request) {
+  const ip = getClientIp(request);
+  const limit = rateLimit(`participants:${ip}`, 60, 60_000);
+  if (!limit.allowed) return tooManyResponse(limit.retryAfter);
+
   try {
     const isAuthed = await verifyAdminAuth();
     if (!isAuthed) {
@@ -14,17 +20,18 @@ export async function GET(request: Request) {
     const participants = await getAllParticipants();
 
     if (format === 'csv') {
+      await writeAuditLog('export_csv', ip);
       const headers = ['ID Tiket', 'NIM/NIP', 'Nama Lengkap', 'Peran', 'Kategori', 'Angkatan', 'Program Studi', 'Email', 'No. WA', 'Status Kehadiran', 'Waktu Check-In', 'Waktu Daftar'];
       const rows = participants.map((p) => [
-        `"${p.id}"`,
-        `"${p.nimNip}"`,
-        `"${p.name.replace(/"/g, '""')}"`,
-        `"${p.role}"`,
-        `"${p.category || '-'}"`,
-        `"${p.batch || '-'}"`,
-        `"${p.prodi || '-'}"`,
-        `"${p.email}"`,
-        `"${p.phone || '-'}"`,
+        `"${csvSafe(p.id)}"`,
+        `"${csvSafe(p.nimNip)}"`,
+        `"${csvSafe(p.name)}"`,
+        `"${csvSafe(p.role)}"`,
+        `"${csvSafe(p.category || '-')}"`,
+        `"${csvSafe(p.batch || '-')}"`,
+        `"${csvSafe(p.prodi || '-')}"`,
+        `"${csvSafe(p.email)}"`,
+        `"${csvSafe(p.phone || '-')}"`,
         `"${p.isCheckedIn ? 'Hadir' : 'Belum Hadir'}"`,
         `"${p.checkedInAt ? new Date(p.checkedInAt).toLocaleString('id-ID') : '-'}"`,
         `"${new Date(p.createdAt).toLocaleString('id-ID')}"`,

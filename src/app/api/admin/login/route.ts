@@ -1,24 +1,29 @@
 import { NextResponse } from 'next/server';
-import { validatePin } from '@/lib/auth';
+import { validatePin, createSession } from '@/lib/auth';
+import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { writeAuditLog } from '@/lib/db';
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+
+  const limit = rateLimit(`login:${ip}`, 5, 60_000);
+  if (!limit.allowed) {
+    await writeAuditLog('login_rate_limited', ip);
+    return tooManyResponse(limit.retryAfter);
+  }
+
   try {
     const { pin } = await request.json();
 
-    if (!pin || !validatePin(pin)) {
+    if (!pin || typeof pin !== 'string' || !validatePin(pin)) {
+      await writeAuditLog('login_failed', ip);
       return NextResponse.json({ error: 'PIN Panitia salah!' }, { status: 401 });
     }
 
-    const response = NextResponse.json({ success: true });
-    response.cookies.set('fan26_admin_token', pin.trim(), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    await createSession(ip, request.headers.get('user-agent') || '');
+    await writeAuditLog('login_success', ip);
 
-    return response;
+    return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, KeyRound, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -37,8 +38,14 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-garden bg-vignette-soft text-ink flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full">
+    <main className="relative min-h-screen bg-garden bg-vignette-soft text-ink flex flex-col items-center justify-center p-4 overflow-hidden">
+      {/* Subtle top wisteria accent only — clean login */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.wisteriaBorder}
+        interaction="swaySoft"
+        className="absolute -top-20 sm:-top-28 left-0 w-full z-0 origin-top opacity-25"
+      />
+      <div className="relative z-10 max-w-md w-full">
         
         <Link
           href="/"
@@ -47,9 +54,9 @@ export default function AdminLoginPage() {
           <ArrowLeft className="w-4 h-4" /> Kembali ke Halaman Utama
         </Link>
 
-        <div className="rounded-3xl p-8 bg-gradient-to-b from-surface-card to-surface-base border border-bloom-pink/30 shadow-2xl">
+        <div className="rounded-3xl p-8 bg-gradient-to-b from-surface-card to-surface-base border border-wisteria/30 shadow-[0_0_50px_rgba(183,156,232,0.25)]">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-surface-card border border-bloom-pink/40 text-bloom-pink flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(175,248,219,0.3)]">
+            <div className="w-14 h-14 rounded-2xl bg-surface-card border border-wisteria/40 text-wisteria flex items-center justify-center mx-auto mb-4 glow-wisteria">
               <Shield className="w-7 h-7" />
             </div>
             <h1 className="font-cinzel text-2xl font-bold text-ivory">

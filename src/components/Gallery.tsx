@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { StarlightGlow, BotanicalCornerFiligree } from './BotanicalDecoration';
+import { StarlightGlow } from './StarlightGlow';
+import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import ScrollReveal from './ScrollReveal';
 
 interface GalleryItem {
@@ -46,15 +47,18 @@ export default function Gallery() {
   ];
 
   return (
-    <section id="galeri" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-vignette-soft text-ink overflow-hidden">
+    <section id="galeri" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
       
-      {/* Botanical Corner Filigrees */}
-      <BotanicalCornerFiligree position="top-right" className="opacity-35" />
-      <BotanicalCornerFiligree position="bottom-left" className="opacity-35" />
+      {/* Wide wisteria canopy (distinct from Hero) */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.wisteriaB}
+        objectFit="cover"
+        interaction="swaySoft"
+        className="absolute -top-10 sm:-top-16 left-0 w-full h-40 sm:h-56 z-0 origin-top opacity-50 [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+      />
 
-      {/* Ambient Glows */}
-      <StarlightGlow className="absolute top-1/3 right-10 w-80 h-80 bg-bloom-pink/10" />
-      <StarlightGlow className="absolute bottom-10 left-10 w-96 h-96 bg-bloom-pink/10" />
+      {/* Ambient Glow */}
+      <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-surface-card/30" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         
@@ -74,18 +78,29 @@ export default function Gallery() {
           </div>
         </ScrollReveal>
 
-        {/* Gallery Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Gallery Grid — framed by garden arches */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {galleryItems.map((item, idx) => (
             <ScrollReveal key={item.id} animation="zoom-in" delay={idx * 80}>
-              <div className="group relative overflow-hidden rounded-3xl border border-bloom-pink/25 hover:border-gold/70 transition-all duration-500 shadow-xl bg-surface-base aspect-[16/10] w-full">
-                <Image
-                  src={item.image}
-                  alt={item.alt}
-                  fill
-                  unoptimized
-                  className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108"
-                />
+              <div className="group relative pt-6 px-2">
+                {/* arch frame */}
+                <div className="relative aspect-[4/5] rounded-t-[45%] rounded-b-[1.5rem] border-2 border-bloom-pink/30 group-hover:border-gold/70 transition-colors duration-500 shadow-xl overflow-hidden bg-surface-base">
+                  {/* inner hairline arch */}
+                  <div className="absolute inset-2 rounded-t-[45%] rounded-b-xl border border-bloom-pink/20 pointer-events-none z-20" />
+                  <Image
+                    src={item.image}
+                    alt={item.alt}
+                    fill
+                    unoptimized
+                    className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108"
+                  />
+                  {/* inner glow from within the arch on hover */}
+                  <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_50%_120%,rgba(255,181,232,0.35),transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 z-10 bg-gradient-to-t from-surface-base/70 via-transparent to-transparent" />
+                </div>
+
+                {/* top keystone ornament */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-gradient-to-br from-gold to-bloom-pink-deep shadow-[0_0_12px_rgba(255,181,232,0.6)] z-30" />
               </div>
             </ScrollReveal>
           ))}
