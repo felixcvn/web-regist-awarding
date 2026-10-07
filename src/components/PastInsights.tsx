@@ -58,17 +58,17 @@ export default function PastInsights() {
 
   return (
     <section id="insight" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
-      
-      {/* Wide wisteria canopy (distinct from Hero) */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.wisteriaA}
-        objectFit="cover"
-        interaction="swaySoft"
-        className="absolute -top-10 sm:-top-16 left-0 w-full h-40 sm:h-56 z-0 origin-top opacity-50 [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
-      />
 
       {/* Background ambient glow */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-surface-card/25 via-lavender/10 to-transparent" />
+
+      {/* WisteriaC hanging from the top for accent */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.wisteriaC}
+        objectFit="cover"
+        interaction="swaySoft"
+        className="absolute -top-10 sm:-top-14 left-1/3 w-48 sm:w-64 z-0 origin-top opacity-40 blur-sm"
+      />
 
       <div className="max-w-7xl mx-auto relative z-10">
         

@@ -155,16 +155,19 @@ export default function RegistrationForm() {
     }`;
 
   return (
-    <section id="registrasi" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-vignette-soft text-ink overflow-hidden">
-      
-      {/* Soft real garden backdrop */}
+    <section id="registrasi" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
+
+      {/* WisteriaC rising from the bottom corners as a soft accent */}
       <GardenArtwork
         src={GARDEN_IMAGES.wisteriaC}
-        objectFit="cover"
-        blur={5}
-        className="absolute inset-0 w-full h-full z-0 opacity-[0.12]"
+        blur={4}
+        className="absolute -bottom-6 -left-10 w-40 sm:w-64 z-0 origin-bottom opacity-50"
       />
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-surface-base/65 via-surface-base/40 to-surface-base/85" />
+      <GardenArtwork
+        src={GARDEN_IMAGES.wisteriaC}
+        blur={4}
+        className="absolute -bottom-6 -right-10 w-40 sm:w-64 z-0 origin-bottom opacity-50 scale-x-[-1]"
+      />
 
       {/* Ambient Starlight Glows */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-surface-card/30" />

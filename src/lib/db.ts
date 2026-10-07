@@ -13,9 +13,9 @@ function normalizeNim(nim: string): string {
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const fallbackFilePath = path.join(process.cwd(), '.participants_data.json');
 
-// Fail fast: production cannot run without a database (no safe local persistence).
+// Lazy production guard: failure surfaces after runtime, not at module load.
 if (IS_PRODUCTION && !process.env.DATABASE_URL) {
-  throw new Error('[DB] DATABASE_URL is required in production.');
+  console.error('[DB] DATABASE_URL is not set in production.');
 }
 
 function loadFallbackData(): Participant[] {

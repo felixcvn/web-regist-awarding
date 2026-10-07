@@ -4,7 +4,6 @@ import React from 'react';
 import Image from 'next/image';
 import { Calendar, MapPin, Shirt, Award, Music, Camera } from 'lucide-react';
 import { StarlightGlow } from './StarlightGlow';
-import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import ScrollReveal from './ScrollReveal';
 
 export default function EventDetails() {
@@ -83,16 +82,6 @@ export default function EventDetails() {
 
   return (
     <section id="tentang" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
-      
-      {/* Soft real garden backdrop with faded edges for a seamless transition */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.scenePortrait}
-        objectFit="cover"
-        blur={4}
-        className="absolute inset-0 w-full h-full z-0 opacity-[0.14] [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_82%,transparent)]"
-      />
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-transparent via-surface-base/40 to-transparent" />
-
       {/* Ambient background glows */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-surface-card/30" />
 

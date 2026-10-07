@@ -48,17 +48,16 @@ export default function Gallery() {
 
   return (
     <section id="galeri" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
-      
-      {/* Wide wisteria canopy (distinct from Hero) */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.wisteriaB}
-        objectFit="cover"
-        interaction="swaySoft"
-        className="absolute -top-10 sm:-top-16 left-0 w-full h-40 sm:h-56 z-0 origin-top opacity-50 [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
-      />
 
       {/* Ambient Glow */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-surface-card/30" />
+
+      {/* Small butterfly accent wandering near the title */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.butterfly}
+        interaction="float"
+        className="absolute top-16 right-[12%] w-16 sm:w-24 z-0 opacity-70"
+      />
 
       <div className="max-w-7xl mx-auto relative z-10">
         
