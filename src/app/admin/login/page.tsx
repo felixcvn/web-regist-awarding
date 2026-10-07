@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Shield, KeyRound, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
+import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -38,7 +39,8 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen bg-garden bg-vignette-soft text-ink flex flex-col items-center justify-center p-4 overflow-hidden">
+    <main className="relative min-h-screen bg-transparent text-ink flex flex-col items-center justify-center p-4 overflow-hidden">
+      <GlobalGardenBackdrop />
       {/* Subtle top wisteria accent only — clean login */}
       <GardenArtwork
         src={GARDEN_IMAGES.wisteriaBorder}
@@ -91,9 +93,6 @@ export default function AdminLoginPage() {
                   className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-field border border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20 text-sm text-ivory placeholder-ink/40 outline-hidden tracking-widest text-center font-mono font-bold"
                 />
               </div>
-              <p className="text-[11px] text-ink/50 mt-2 text-center">
-                PIN Default pengujian: <span className="font-mono text-bloom-pink">2026</span>
-              </p>
             </div>
 
             <button

@@ -7,7 +7,8 @@ import { QrCode, CheckCircle2, AlertTriangle, XCircle, LayoutDashboard, LogOut, 
 import Link from 'next/link';
 import Dialog from '@/components/Dialog';
 import { secureFetch } from '@/lib/csrfClient';
-import GardenArtwork from '@/components/GardenArtwork';
+import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
+import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
 
 export default function AdminScanPage() {
   const router = useRouter();
@@ -162,9 +163,14 @@ export default function AdminScanPage() {
   };
 
   return (
-    <main className="relative min-h-screen bg-garden bg-vignette-soft text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
-      <GardenArtwork asset="bush" interaction="hover" className="absolute bottom-0 left-2 sm:left-6 w-40 sm:w-52 z-0 origin-bottom opacity-40" />
-      <GardenArtwork asset="butterfly" interaction="float" className="absolute top-6 right-6 w-7 z-0 opacity-60" />
+    <main className="relative min-h-screen bg-transparent text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
+      <GlobalGardenBackdrop />
+      {/* Hanging wisteria accent across the top — matches the login page */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.wisteriaBorder}
+        interaction="swaySoft"
+        className="absolute -top-20 sm:-top-28 left-0 w-full z-0 origin-top opacity-25"
+      />
       <div className="relative z-10 max-w-7xl mx-auto">
         
         {/* Header panitia */}
@@ -233,7 +239,7 @@ export default function AdminScanPage() {
         <div className="space-y-6">
           
           {/* Camera Scanner Box */}
-          <div className="rounded-3xl p-6 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/30 shadow-xl flex flex-col items-center justify-between">
+<div className="rounded-3xl p-6 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/30 shadow-[0_0_40px_rgba(183,156,232,0.18)] flex flex-col items-center justify-between">
             <div className="w-full text-center mb-4">
               <span className="font-cinzel font-bold text-base text-gold block">
                 Kamera QR Scanner
@@ -277,7 +283,7 @@ export default function AdminScanPage() {
           </div>
 
           {/* Manual Input Box */}
-          <div className="rounded-3xl p-6 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/30 shadow-xl flex flex-col justify-between">
+<div className="rounded-3xl p-6 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/30 shadow-[0_0_40px_rgba(183,156,232,0.18)] flex flex-col justify-between">
             <div>
               <span className="font-cinzel font-bold text-base text-gold block">
                 Input Kode Tiket Manual
