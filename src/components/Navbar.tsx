@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Shield, Menu, X, Ticket } from 'lucide-react';
+import { Menu, X, Ticket } from 'lucide-react';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -67,14 +67,6 @@ export default function Navbar() {
           >
             Dokumentasi
           </a>
-          <Link
-            href="/admin/scan"
-              className="text-lavender/80 hover:text-lavender flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-lavender/40 text-xs transition-colors hover:border-lavender/60"
-            title="Portal Scanner Panitia"
-          >
-            <Shield className="w-3.5 h-3.5" />
-            Panitia
-          </Link>
         </nav>
 
         {/* Registration CTA */}
@@ -129,13 +121,6 @@ export default function Navbar() {
           >
             Dokumentasi
           </a>
-          <Link
-            href="/admin/scan"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 text-lavender text-sm py-1"
-          >
-            <Shield className="w-4 h-4" /> Portal Panitia
-          </Link>
           <a
             href="#registrasi"
             onClick={() => setMobileMenuOpen(false)}

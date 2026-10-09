@@ -77,15 +77,15 @@ export default function Gallery() {
           </div>
         </ScrollReveal>
 
-        {/* Gallery Grid — framed by garden arches */}
+        {/* Gallery Grid — rectangular photo frames */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {galleryItems.map((item, idx) => (
             <ScrollReveal key={item.id} animation="zoom-in" delay={idx * 80}>
-              <div className="group relative pt-6 px-2">
-                {/* arch frame */}
-                <div className="relative aspect-[4/5] rounded-t-[45%] rounded-b-[1.5rem] border-2 border-bloom-pink/30 group-hover:border-gold/70 transition-colors duration-500 shadow-xl overflow-hidden bg-surface-base">
-                  {/* inner hairline arch */}
-                  <div className="absolute inset-2 rounded-t-[45%] rounded-b-xl border border-bloom-pink/20 pointer-events-none z-20" />
+              <div className="group relative p-2">
+                {/* rectangular frame */}
+                <div className="relative aspect-[4/3] rounded-2xl border-2 border-bloom-pink/30 group-hover:border-gold/70 transition-colors duration-500 shadow-xl overflow-hidden bg-surface-base">
+                  {/* inner hairline frame */}
+                  <div className="absolute inset-2 rounded-xl border border-bloom-pink/20 pointer-events-none z-20" />
                   <Image
                     src={item.image}
                     alt={item.alt}
@@ -93,13 +93,10 @@ export default function Gallery() {
                     unoptimized
                     className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-108"
                   />
-                  {/* inner glow from within the arch on hover */}
+                  {/* inner glow on hover */}
                   <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_50%_120%,rgba(255,181,232,0.35),transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="absolute inset-0 z-10 bg-gradient-to-t from-surface-base/70 via-transparent to-transparent" />
                 </div>
-
-                {/* top keystone ornament */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-gradient-to-br from-gold to-bloom-pink-deep shadow-[0_0_12px_rgba(255,181,232,0.6)] z-30" />
               </div>
             </ScrollReveal>
           ))}

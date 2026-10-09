@@ -1,6 +1,4 @@
 import React from 'react';
-import Link from 'next/link';
-import { Shield } from 'lucide-react';
 import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 
 export default function Footer() {
@@ -58,12 +56,6 @@ export default function Footer() {
           <a href="#galeri" className="hover:text-bloom-pink transition-colors">
             Dokumentasi
           </a>
-          <Link
-            href="/admin/scan"
-            className="text-lavender hover:text-gold flex items-center gap-1 font-medium transition-colors"
-          >
-            <Shield className="w-3.5 h-3.5" /> Portal Panitia
-          </Link>
         </div>
       </div>
     </footer>

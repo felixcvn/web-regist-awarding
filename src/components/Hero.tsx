@@ -58,7 +58,7 @@ export default function Hero() {
           </div>
           <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-surface-card-2/85 border border-bloom-pink/25 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur-md hover:border-bloom-pink/50 transition-colors">
             <MapPin className="w-4 h-4 text-bloom-pink" />
-            <span>Auditorium Gedung Biru, Fasilkom UNEJ</span>
+            <span>Gedung Soerachman, Universitas Jember</span>
           </div>
         </div>
 
