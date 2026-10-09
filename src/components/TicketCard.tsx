@@ -231,7 +231,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
         1025
       );
       ctx.fillText(
-        'Gedung Biru Fakultas Ilmu Komputer, Universitas Jember.',
+        'Gedung Soerachman, Universitas Jember',
         width / 2,
         1050
       );
@@ -251,7 +251,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       ctx.fillText('📅  Selasa, 1 Desember 2026 • 17:30 WIB', 120, 1150);
 
       ctx.textAlign = 'right';
-      ctx.fillText('📍  Auditorium Gedung Biru, Fasilkom UNEJ', width - 120, 1150);
+      ctx.fillText('📍  Gedung Soerachman, Universitas Jember', width - 120, 1150);
 
       // Bottom Branding
       ctx.textAlign = 'center';
@@ -399,7 +399,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
                 {participant.qrToken}
               </span>
               <p className="text-[11px] text-ink/60 text-center mt-1 max-w-xs font-light">
-                Tunjukkan QR Code ini kepada panitia registrasi di pintu masuk Gedung Biru Fasilkom UNEJ.
+                Tunjukkan QR Code ini kepada panitia registrasi di pintu masuk Gedung Soerachman, Universitas Jember.
               </p>
             </div>
 
@@ -411,7 +411,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
               </div>
               <div className="flex items-center gap-1.5 justify-end">
                 <MapPin className="w-3.5 h-3.5 text-bloom-pink shrink-0" />
-                <span>Auditorium Fasilkom</span>
+                <span>Gedung Soerachman, Universitas Jember</span>
               </div>
             </div>
 
