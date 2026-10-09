@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Award, Users, Trophy, Star, Sparkles } from 'lucide-react';
+import { Award, Users, Trophy, Star } from 'lucide-react';
 import { StarlightGlow } from './StarlightGlow';
-import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import ScrollReveal from './ScrollReveal';
 
 export default function PastInsights() {
@@ -57,18 +56,10 @@ export default function PastInsights() {
   ];
 
   return (
-    <section id="insight" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
+    <section id="insight" className="section-shade relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
 
       {/* Background ambient glow */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-surface-card/25 via-lavender/10 to-transparent" />
-
-      {/* WisteriaC hanging from the top for accent */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.wisteriaC}
-        objectFit="cover"
-        interaction="swaySoft"
-        className="absolute -top-10 sm:-top-14 left-1/3 w-48 sm:w-64 z-0 origin-top opacity-40 blur-sm"
-      />
 
       <div className="max-w-7xl mx-auto relative z-10">
         

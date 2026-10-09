@@ -6,7 +6,6 @@ import confetti from 'canvas-confetti';
 import { Ticket, User, Mail, Phone, BookOpen, AlertCircle, CheckCircle, Loader2, ChevronDown, Check, Users, CalendarDays } from 'lucide-react';
 import { RoleType, CategoryType, BatchType, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/types';
 import { StarlightGlow } from './StarlightGlow';
-import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import ScrollReveal from './ScrollReveal';
 
 type DropdownKey = 'prodi' | 'category' | 'batch';
@@ -155,19 +154,7 @@ export default function RegistrationForm() {
     }`;
 
   return (
-    <section id="registrasi" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
-
-      {/* WisteriaC rising from the bottom corners as a soft accent */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.wisteriaC}
-        blur={4}
-        className="absolute -bottom-6 -left-10 w-40 sm:w-64 z-0 origin-bottom opacity-50"
-      />
-      <GardenArtwork
-        src={GARDEN_IMAGES.wisteriaC}
-        blur={4}
-        className="absolute -bottom-6 -right-10 w-40 sm:w-64 z-0 origin-bottom opacity-50 scale-x-[-1]"
-      />
+    <section id="registrasi" className="section-shade relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
 
       {/* Ambient Starlight Glows */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-surface-card/30" />

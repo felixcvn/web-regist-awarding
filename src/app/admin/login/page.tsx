@@ -6,7 +6,7 @@ import { Shield, KeyRound, AlertCircle, Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link';
 import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
 import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
-
+import GardenFrame from '@/components/GardenFrame';
 export default function AdminLoginPage() {
   const router = useRouter();
   const [pin, setPin] = useState('');
@@ -41,11 +41,17 @@ export default function AdminLoginPage() {
   return (
     <main className="relative min-h-screen bg-transparent text-ink flex flex-col items-center justify-center p-4 overflow-hidden">
       <GlobalGardenBackdrop />
-      {/* Subtle top wisteria accent only — clean login */}
+      <GardenFrame variant="subtle" />
+      {/* Small flower accents — admin stays minimal */}
       <GardenArtwork
-        src={GARDEN_IMAGES.wisteriaBorder}
+        src={GARDEN_IMAGES.flowerMini}
         interaction="swaySoft"
-        className="absolute -top-20 sm:-top-28 left-0 w-full z-0 origin-top opacity-25"
+        className="absolute top-24 left-[12%] w-10 sm:w-14 z-0 origin-bottom opacity-70"
+      />
+      <GardenArtwork
+        src={GARDEN_IMAGES.flowerMini2}
+        interaction="swaySoft"
+        className="absolute bottom-28 right-[12%] w-10 sm:w-14 z-0 origin-bottom opacity-70 scale-x-[-1]"
       />
       <div className="relative z-10 max-w-md w-full">
         

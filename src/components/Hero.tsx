@@ -3,7 +3,6 @@
 import React, { useRef } from 'react';
 import { Calendar, MapPin, Ticket, ArrowDown } from 'lucide-react';
 import Countdown from './Countdown';
-import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import Petals from './garden/Petals';
 import Card3D from './Card3D';
 
@@ -18,13 +17,6 @@ export default function Hero() {
       {/* Background vignette inside Hero for depth */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#140d1f]/70 via-[#1a1030]/45 to-[#140d1f]/90" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,transparent_25%,rgba(12,6,18,0.7)_100%)]" />
-
-      {/* Hanging wisteria border across the top (full screen width) */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.wisteriaBorder}
-        interaction="swaySoft"
-        className="absolute -top-20 sm:-top-28 left-0 w-full z-20 origin-top opacity-95"
-      />
 
       {/* Petals + fireflies ambience in Hero */}
       <Petals className="absolute inset-0 z-10" count={14} fireflies={12} />

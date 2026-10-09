@@ -83,14 +83,17 @@
   text-shadow: 0 0 18px rgba(255, 220, 130, 0.7);
 }
 
-/* Secret Garden backdrop: deep wisteria-plum base with pink + purple light blooms */
+/* Secret Garden backdrop: deep wisteria-plum base with pink + purple light blooms.
+   Storybook era: no photo backdrop, so the gradient carries the mood — blooms strengthened. */
 .bg-garden {
   background-color: #160f22;
   background-image:
-    radial-gradient(circle at 76% 10%, rgba(183, 156, 232, 0.30) 0%, transparent 44%),
-    radial-gradient(circle at 14% 86%, rgba(255, 181, 232, 0.24) 0%, transparent 46%),
-    radial-gradient(circle at 50% 46%, rgba(245, 138, 212, 0.10) 0%, transparent 60%),
-    linear-gradient(165deg, #160f22 0%, #1f1430 42%, #2d1836 74%, #3a1c38 100%);
+    radial-gradient(circle at 76% 8%, rgba(183, 156, 232, 0.42) 0%, transparent 46%),
+    radial-gradient(circle at 12% 22%, rgba(245, 138, 212, 0.26) 0%, transparent 40%),
+    radial-gradient(circle at 14% 86%, rgba(255, 181, 232, 0.30) 0%, transparent 46%),
+    radial-gradient(circle at 86% 72%, rgba(122, 79, 176, 0.32) 0%, transparent 48%),
+    radial-gradient(circle at 50% 46%, rgba(245, 138, 212, 0.14) 0%, transparent 60%),
+    linear-gradient(165deg, #160f22 0%, #1f1430 38%, #2d1836 72%, #3a1c38 100%);
 }
 
 .bg-vignette {
@@ -110,12 +113,32 @@
 .bg-film::after {
   content: '';
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   pointer-events: none;
   background:
     radial-gradient(circle at center, transparent 55%, rgba(10, 6, 16, 0.45) 100%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
   mix-blend-mode: soft-light;
+}
+
+/* Cinematic dark gradient shared by content sections — identical to the Hero's
+   two-layer shade: vertical depth + radial vignette. */
+.section-shade::before,
+.section-shade::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.section-shade::before {
+  background: linear-gradient(to bottom, rgba(20, 13, 31, 0.7), rgba(26, 16, 48, 0.45) 50%, rgba(20, 13, 31, 0.9));
+}
+.section-shade::after {
+  background: radial-gradient(circle at 50% 45%, transparent 25%, rgba(12, 6, 18, 0.7) 100%);
 }
 
 .bg-parchment-pattern {

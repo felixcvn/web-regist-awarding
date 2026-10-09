@@ -9,6 +9,7 @@ import Dialog from '@/components/Dialog';
 import { secureFetch } from '@/lib/csrfClient';
 import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
 import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
+import GardenFrame from '@/components/GardenFrame';
 
 export default function AdminScanPage() {
   const router = useRouter();
@@ -165,11 +166,17 @@ export default function AdminScanPage() {
   return (
     <main className="relative min-h-screen bg-transparent text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
       <GlobalGardenBackdrop />
-      {/* Hanging wisteria accent across the top — matches the login page */}
+      <GardenFrame variant="subtle" />
+      {/* Small flower accents — matches the login page */}
       <GardenArtwork
-        src={GARDEN_IMAGES.wisteriaBorder}
+        src={GARDEN_IMAGES.flowerMini}
         interaction="swaySoft"
-        className="absolute -top-20 sm:-top-28 left-0 w-full z-0 origin-top opacity-25"
+        className="absolute top-8 left-[6%] w-10 sm:w-14 z-0 origin-bottom opacity-70"
+      />
+      <GardenArtwork
+        src={GARDEN_IMAGES.flowerMini2}
+        interaction="swaySoft"
+        className="absolute top-8 right-[6%] w-10 sm:w-14 z-0 origin-bottom opacity-70 scale-x-[-1]"
       />
       <div className="relative z-10 max-w-7xl mx-auto">
         

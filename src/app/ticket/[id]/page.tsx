@@ -4,7 +4,9 @@ import TicketCard from '@/components/TicketCard';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Enchanted3DCanvas from '@/components/Enchanted3DCanvas';
-import GardenArtwork from '@/components/GardenArtwork';
+import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
+import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
+import GardenFrame from '@/components/GardenFrame';
 
 interface TicketPageProps {
   params: Promise<{ id: string }>;
@@ -19,12 +21,20 @@ export default async function TicketPage({ params }: TicketPageProps) {
   }
 
   return (
-    <main className="relative min-h-screen bg-garden bg-vignette-soft text-ink flex flex-col justify-between selection:bg-bloom-pink selection:text-on-accent overflow-hidden">
+    <main className="section-shade relative min-h-screen bg-transparent text-ink flex flex-col justify-between selection:bg-bloom-pink selection:text-on-accent overflow-hidden">
+      <GlobalGardenBackdrop />
+      <GardenFrame variant="subtle" />
       <Enchanted3DCanvas />
-      <GardenArtwork asset="droop" interaction="sway" className="absolute -top-6 sm:-top-8 left-1/2 -translate-x-1/2 w-[52vw] sm:w-[380px] z-10 opacity-70 origin-top" />
-      <GardenArtwork asset="bush" interaction="hover" className="absolute bottom-0 left-2 sm:left-6 w-40 sm:w-56 z-10 origin-bottom opacity-70" />
-      <GardenArtwork asset="bush" interaction="hover" className="absolute bottom-0 right-2 sm:right-6 w-40 sm:w-56 z-10 origin-bottom scale-x-[-1] opacity-70" />
-      <GardenArtwork asset="butterfly" interaction="float" className="absolute top-40 right-[14%] w-7 sm:w-9 z-10 opacity-80" />
+      {/* Soft glow behind the ticket + flower accent */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.glowEllipse}
+        className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[480px] sm:w-[640px] z-0 opacity-25"
+      />
+      <GardenArtwork
+        src={GARDEN_IMAGES.flowerPink}
+        interaction="swaySoft"
+        className="absolute top-32 left-[10%] w-12 sm:w-16 z-10 origin-bottom opacity-80"
+      />
       <Navbar />
       <div className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 flex-1 flex items-center justify-center relative z-20">
         <TicketCard participant={participant} />

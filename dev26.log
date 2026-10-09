@@ -1,0 +1,31 @@
+
+> web-regist-26@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.132.1.155:3000
+- Environments: .env.local
+✓ Ready in 772ms
+✓ Running next.config.ts took 63ms
+
+[browser] Can't perform a React state update on a component that hasn't mounted yet. This indicates that you have a side-effect in your render function that asynchronously tries to update the component. Move this work to useEffect instead. 
+ GET / 200 in 1073ms (next.js: 414ms, proxy.ts: 280ms, application-code: 379ms)
+ POST /api/register 200 in 9.9s (next.js: 166ms, proxy.ts: 7ms, application-code: 9.7s)
+ GET /admin/login 200 in 301ms (next.js: 48ms, proxy.ts: 12ms, application-code: 240ms)
+ POST /api/admin/login 200 in 3.5s (next.js: 51ms, proxy.ts: 8ms, application-code: 3.4s)
+ DELETE /api/admin/participants/TKT-A7FB7809 200 in 1831ms (next.js: 915ms, proxy.ts: 7ms, application-code: 909ms)
+ GET / 200 in 370ms (next.js: 17ms, proxy.ts: 29ms, application-code: 324ms)
+✓ Compiled in 363ms
+✓ Compiled in 1113ms
+ GET / 200 in 70ms (next.js: 15ms, proxy.ts: 10ms, application-code: 45ms)
+✓ Compiled in 1058ms
+ GET / 200 in 69ms (next.js: 9ms, proxy.ts: 7ms, application-code: 53ms)
+✓ Compiled in 1011ms
+ GET / 200 in 49ms (next.js: 11ms, proxy.ts: 6ms, application-code: 32ms)
+✓ Compiled in 1060ms
+ GET / 200 in 66ms (next.js: 15ms, proxy.ts: 6ms, application-code: 46ms)
+ GET / 200 in 57ms (next.js: 12ms, proxy.ts: 7ms, application-code: 39ms)
+ GET / 200 in 55ms (next.js: 7ms, proxy.ts: 7ms, application-code: 41ms)
+[browser] "⨯ unhandledRejection:" undefined 
+

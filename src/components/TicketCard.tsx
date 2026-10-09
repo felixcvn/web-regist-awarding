@@ -30,12 +30,12 @@ export default function TicketCard({ participant }: TicketCardProps) {
 
       if (!ctx) throw new Error('Canvas context not available');
 
-      // 1. Dark Emerald Magical Background Gradient
+      // 1. Wisteria-plum background gradient (matches .bg-garden)
       const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-      bgGrad.addColorStop(0, '#0E2D22');
-      bgGrad.addColorStop(0.3, '#0A2019');
-      bgGrad.addColorStop(0.7, '#071813');
-      bgGrad.addColorStop(1, '#040F0B');
+      bgGrad.addColorStop(0, '#160f22');
+      bgGrad.addColorStop(0.3, '#1f1430');
+      bgGrad.addColorStop(0.7, '#2d1836');
+      bgGrad.addColorStop(1, '#3a1c38');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
@@ -107,7 +107,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       const badgeY = 110;
       const badgeW = 260;
       const badgeH = 40;
-      ctx.fillStyle = '#184535';
+      ctx.fillStyle = '#241835';
       ctx.beginPath();
       ctx.roundRect((width - badgeW) / 2, badgeY, badgeW, badgeH, 20);
       ctx.fill();
@@ -166,7 +166,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       const infoBoxY = 440;
       const infoBoxW = 760;
       const infoBoxH = 80;
-      ctx.fillStyle = 'rgba(6, 24, 17, 0.9)';
+      ctx.fillStyle = 'rgba(22, 15, 34, 0.9)';
       ctx.beginPath();
       ctx.roundRect((width - infoBoxW) / 2, infoBoxY, infoBoxW, infoBoxH, 20);
       ctx.fill();
@@ -312,7 +312,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       <Card3D glowColor="rgba(255, 243, 176, 0.25)">
         <div
           id="ticket-pass"
-          className="relative rounded-3xl overflow-hidden bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base border-2 border-gold/60 shadow-[0_0_50px_rgba(255,243,176,0.25)] p-6 sm:p-8"
+          className="relative rounded-3xl overflow-hidden bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base border-2 border-gold/60 shadow-[0_0_50px_rgba(183,156,232,0.25)] p-6 sm:p-8"
         >
           {/* Decorative corner borders */}
           <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-bloom-pink" />

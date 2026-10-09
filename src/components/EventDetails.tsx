@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Calendar, MapPin, Shirt, Award, Music, Camera } from 'lucide-react';
 import { StarlightGlow } from './StarlightGlow';
+import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import ScrollReveal from './ScrollReveal';
 
 export default function EventDetails() {
@@ -81,9 +82,15 @@ export default function EventDetails() {
   ];
 
   return (
-    <section id="tentang" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
+    <section id="tentang" className="section-shade relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
       {/* Ambient background glows */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-surface-card/30" />
+
+      {/* Soft glow orb behind the section title */}
+      <GardenArtwork
+        src={GARDEN_IMAGES.glowEllipse}
+        className="absolute top-16 left-1/2 -translate-x-1/2 w-[420px] sm:w-[560px] z-0 opacity-20"
+      />
 
       <div className="max-w-7xl mx-auto relative z-10">
         

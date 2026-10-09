@@ -11,16 +11,42 @@ import { useParallax, useMouseProximity, useMouseParallax } from '@/lib/useGarde
 
 // Raster (photoreal) garden assets in /public/garden.
 export const GARDEN_IMAGES = {
-  gateway: '/garden/Enchanted Wisteria Garden Gateway.webp',
-  wisteriaBorder: '/garden/Hanging Wisteria Botanical Border (1).webp',
-  wisteriaA: '/garden/Gemini_Generated_Image_l90c3rl90c3rl90c-Photoroom.webp',
-  wisteriaB: '/garden/Gemini_Generated_Image_s1d10rs1d10rs1d1-Photoroom.webp',
-  wisteriaC: '/garden/Gemini_Generated_Image_xgasnyxgasnyxgas-Photoroom.webp',
-  scenePortrait: '/garden/Gemini_Generated_Image_s1tv9ys1tv9ys1tv.webp',
   butterfly: '/garden/download (71)-Photoroom.webp',
+  // Storybook garden elements (flat illustration, transparent bg)
+  bushRight: '/garden/bush-right.png',
+  grassRight: '/garden/grass-right.png',
+  glowEllipse: '/garden/glow-ellipse.png',
+  clusterSmall1: '/garden/cluster-small-1.png',
+  clusterSmall2: '/garden/cluster-small-2.png',
+  clusterSmall3: '/garden/cluster-small-3.png',
+  clusterBig1: '/garden/cluster-big-1.png',
+  clusterBig2: '/garden/cluster-big-2.png',
+  flowerCream: '/garden/flower-cream.png',
+  flowerPink: '/garden/flower-pink.png',
+  flowerMini: '/garden/flower-mini.png',
+  flowerMini2: '/garden/flower-mini-2.png',
+  flowerSoft: '/garden/flower-soft.png',
 } as const;
 
 export type GardenImageAsset = keyof typeof GARDEN_IMAGES;
+
+// Intrinsic dimensions so next/image keeps each asset's real aspect ratio.
+export const GARDEN_DIMS: Record<string, { width: number; height: number }> = {
+  [GARDEN_IMAGES.butterfly]: { width: 674, height: 1263 },
+  [GARDEN_IMAGES.bushRight]: { width: 394, height: 1190 },
+  [GARDEN_IMAGES.grassRight]: { width: 442, height: 1190 },
+  [GARDEN_IMAGES.glowEllipse]: { width: 601, height: 741 },
+  [GARDEN_IMAGES.clusterSmall1]: { width: 226, height: 358 },
+  [GARDEN_IMAGES.clusterSmall2]: { width: 326, height: 258 },
+  [GARDEN_IMAGES.clusterSmall3]: { width: 155, height: 237 },
+  [GARDEN_IMAGES.clusterBig1]: { width: 368, height: 605 },
+  [GARDEN_IMAGES.clusterBig2]: { width: 343, height: 624 },
+  [GARDEN_IMAGES.flowerCream]: { width: 277, height: 274 },
+  [GARDEN_IMAGES.flowerPink]: { width: 214, height: 192 },
+  [GARDEN_IMAGES.flowerMini]: { width: 140, height: 140 },
+  [GARDEN_IMAGES.flowerMini2]: { width: 140, height: 140 },
+  [GARDEN_IMAGES.flowerSoft]: { width: 201, height: 202 },
+};
 
 // SVG fallback variants (used where no raster asset exists yet).
 export type GardenSvgAsset = 'gate' | 'hanging' | 'bush' | 'droop' | 'butterfly';
@@ -72,8 +98,8 @@ function RasterGardenArtwork({
       <Image
         src={src}
         alt={alt}
-        width={1672}
-        height={941}
+        width={GARDEN_DIMS[src]?.width ?? 512}
+        height={GARDEN_DIMS[src]?.height ?? 512}
         priority={priority}
         sizes="100vw"
         className={`w-full ${objectFit === 'cover' ? 'h-full object-cover' : 'h-auto object-contain'}`}

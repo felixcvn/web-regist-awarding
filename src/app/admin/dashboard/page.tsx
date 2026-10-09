@@ -6,7 +6,8 @@ import { Participant } from '@/lib/types';
 import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { secureFetch } from '@/lib/csrfClient';
-import GardenArtwork from '@/components/GardenArtwork';
+import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
+import GardenFrame from '@/components/GardenFrame';
 import Dialog from '@/components/Dialog';
 
 export default function AdminDashboardPage() {
@@ -91,9 +92,9 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <main className="relative min-h-screen bg-garden bg-vignette-soft text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
-      <GardenArtwork asset="bush" interaction="hover" className="absolute bottom-0 right-2 sm:right-6 w-40 sm:w-52 z-0 origin-bottom opacity-50" />
-      <GardenArtwork asset="butterfly" interaction="float" className="absolute top-6 left-6 w-7 z-0 opacity-60" />
+    <main className="section-shade relative min-h-screen bg-transparent text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
+      <GlobalGardenBackdrop />
+      <GardenFrame variant="subtle" />
       <div className="relative z-10 max-w-7xl mx-auto space-y-6">
         
         {/* Top Header */}
@@ -149,8 +150,8 @@ export default function AdminDashboardPage() {
 
         {/* 4 Big Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          
-          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-lg">
+
+          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-[0_0_30px_rgba(183,156,232,0.15)]">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs uppercase font-bold tracking-wider text-ink/60">Total Terdaftar</span>
               <Users className="w-5 h-5 text-bloom-pink" />
@@ -161,7 +162,7 @@ export default function AdminDashboardPage() {
             <span className="text-[11px] text-ink/50 block mt-1">Akumulasi seluruh civitas</span>
           </div>
 
-          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-lg">
+          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-[0_0_30px_rgba(183,156,232,0.15)]">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs uppercase font-bold tracking-wider text-mint">Sudah Hadir</span>
               <UserCheck className="w-5 h-5 text-mint" />
@@ -172,7 +173,7 @@ export default function AdminDashboardPage() {
             <span className="text-[11px] text-mint/70 block mt-1">Telah check-in di venue</span>
           </div>
 
-          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-lg">
+          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-[0_0_30px_rgba(183,156,232,0.15)]">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs uppercase font-bold tracking-wider text-bloom-pink">Belum Hadir</span>
               <UserX className="w-5 h-5 text-bloom-pink" />
@@ -183,7 +184,7 @@ export default function AdminDashboardPage() {
             <span className="text-[11px] text-bloom-pink/70 block mt-1">Menunggu kehadiran</span>
           </div>
 
-          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-gold/30 shadow-lg">
+          <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-gold/30 shadow-[0_0_30px_rgba(183,156,232,0.15)]">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs uppercase font-bold tracking-wider text-gold">Tingkat Kehadiran</span>
               <Sparkles className="w-5 h-5 text-gold" />
@@ -240,7 +241,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Attendee Table */}
-        <div className="rounded-3xl border border-bloom-pink/20 bg-surface-base overflow-hidden shadow-xl">
+        <div className="rounded-3xl border border-bloom-pink/20 bg-surface-base/90 overflow-hidden shadow-[0_0_30px_rgba(183,156,232,0.15)] backdrop-blur-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-card text-gold uppercase tracking-wider font-semibold border-b border-bloom-pink/20">
