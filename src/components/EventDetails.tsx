@@ -82,7 +82,7 @@ export default function EventDetails() {
   ];
 
   return (
-    <section id="tentang" className="section-shade relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
+    <section id="tentang" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
       {/* Ambient background glows */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-surface-card/30" />
 

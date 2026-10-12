@@ -111,7 +111,7 @@ export default function AdminScanPage() {
 
       await qrScanner.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: (viewfinderWidth, viewfinderHeight) => {
+        { fps: 10, aspectRatio: 16 / 9, qrbox: (viewfinderWidth, viewfinderHeight) => {
           const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.7);
           return { width: edge, height: edge };
         } },
@@ -164,7 +164,7 @@ export default function AdminScanPage() {
   };
 
   return (
-    <main className="relative min-h-screen bg-transparent text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
+    <main className="relative min-h-screen bg-transparent text-ink px-4 pb-8 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pt-12 overflow-hidden">
       <GlobalGardenBackdrop />
       <GardenFrame variant="subtle" />
       {/* Small flower accents — matches the login page */}
@@ -246,18 +246,9 @@ export default function AdminScanPage() {
         <div className="space-y-6">
           
           {/* Camera Scanner Box */}
-<div className="rounded-3xl p-6 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/30 shadow-[0_0_40px_rgba(183,156,232,0.18)] flex flex-col items-center justify-between">
-            <div className="w-full text-center mb-4">
-              <span className="font-cinzel font-bold text-base text-gold block">
-                Kamera QR Scanner
-              </span>
-              <p className="text-xs text-ink/60 mt-1">
-                Arahkan kamera ke QR Code pada ponsel audiens
-              </p>
-            </div>
-
-            {/* Video preview target */}
-            <div className="w-full aspect-square max-w-2xl bg-black/60 rounded-2xl overflow-hidden border-2 border-bloom-pink/40 relative flex items-center justify-center">
+<div className="rounded-3xl p-4 sm:p-6 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/30 shadow-[0_0_40px_rgba(183,156,232,0.18)] flex flex-col items-center justify-between">
+            {/* Video preview target — wide but short, fits the viewport without scrolling */}
+            <div className="w-full aspect-[16/9] max-w-[1100px] bg-black/60 rounded-2xl overflow-hidden border-2 border-bloom-pink/40 relative flex items-center justify-center">
               <div id="qr-reader" className="w-full h-full" />
               {!scanning && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-surface-base/90">

@@ -13,7 +13,7 @@ export default function GardenFrame({ variant = 'full' }: GardenFrameProps) {
 
   // Bush is ~1:3 tall; max() keeps its crest above the viewport top on any
   // screen ratio so the cropped edge of the PNG never shows.
-  const bushW = isSubtle ? 'w-[max(18vw,32vh)]' : 'w-[max(21vw,38vh)]';
+  const bushW = isSubtle ? 'w-[max(18vw,36vh)]' : 'w-[max(21vw,38vh)]';
   const grassW = isSubtle ? 'w-[max(11vw,20vh)]' : 'w-[max(13vw,24vh)]';
   const glowW = isSubtle ? 'w-[20vw]' : 'w-[24vw]';
   // Grass crest sits mid-screen; fade its top edge so it melts into the dark.
@@ -255,6 +255,11 @@ export default function GardenFrame({ variant = 'full' }: GardenFrameProps) {
         src={GARDEN_IMAGES.glowEllipse}
         className="fixed top-[22vh] right-[15vw] w-[7vw] opacity-15"
       />
+
+      {/* dark veil ABOVE the foliage: dims the garden frame so the foliage
+          recedes into shadow while content stays crisp on top (z-10+).
+          Heavier at the bottom where the plants root, fading upward. */}
+      <div className="fixed inset-0 z-[1] bg-[linear-gradient(to_top,rgba(10,6,18,0.78)_0%,rgba(10,6,18,0.52)_45%,rgba(10,6,18,0.30)_100%)]" />
     </div>
   );
 }

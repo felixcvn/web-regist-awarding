@@ -17,9 +17,9 @@ export default function RegistrationForm() {
     name: '',
     role: 'Mahasiswa' as RoleType,
     nimNip: '',
-    category: 'HIMASIF' as CategoryType,
+    category: '' as CategoryType,
     batch: '-' as BatchType,
-    prodi: 'Informatika',
+    prodi: '',
     email: '',
     phone: '',
   });
@@ -106,6 +106,16 @@ export default function RegistrationForm() {
       return;
     }
 
+    if (!formData.category) {
+      setErrorMsg('Silakan pilih datang sebagai apa terlebih dahulu.');
+      return;
+    }
+
+    if (!formData.prodi) {
+      setErrorMsg('Silakan pilih program studi Anda terlebih dahulu.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -154,7 +164,7 @@ export default function RegistrationForm() {
     }`;
 
   return (
-    <section id="registrasi" className="section-shade relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
+    <section id="registrasi" className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-ink overflow-hidden">
 
       {/* Ambient Starlight Glows */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-surface-card/30" />
@@ -267,7 +277,9 @@ export default function RegistrationForm() {
                     className={dropdownClass('category')}
                   >
                     <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
-                    <span className="truncate">{formData.category}</span>
+                    <span className={`truncate ${formData.category ? '' : 'text-ink/40'}`}>
+                      {formData.category || 'Pilih Datang Sebagai...'}
+                    </span>
                     <ChevronDown
                       className={`w-4 h-4 text-bloom-pink transition-transform duration-200 shrink-0 ml-2 ${
                         openDropdown === 'category' ? 'rotate-180 text-gold' : ''
@@ -365,7 +377,9 @@ export default function RegistrationForm() {
                   className={dropdownClass('prodi')}
                 >
                   <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
-                  <span className="truncate">{formData.prodi}</span>
+                  <span className={`truncate ${formData.prodi ? '' : 'text-ink/40'}`}>
+                    {formData.prodi || 'Pilih Program Studi Yang Ada...'}
+                  </span>
                   <ChevronDown
                     className={`w-4 h-4 text-bloom-pink transition-transform duration-200 shrink-0 ml-2 ${
                       openDropdown === 'prodi' ? 'rotate-180 text-gold' : ''

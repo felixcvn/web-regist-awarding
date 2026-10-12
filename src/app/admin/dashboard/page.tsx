@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <main className="section-shade relative min-h-screen bg-transparent text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
+    <main className="relative min-h-screen bg-transparent text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
       <GlobalGardenBackdrop />
       <GardenFrame variant="subtle" />
       <div className="relative z-10 max-w-7xl mx-auto space-y-6">

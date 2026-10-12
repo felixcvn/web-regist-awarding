@@ -3,7 +3,7 @@ import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 
 export default function Footer() {
   return (
-    <footer className="section-shade relative bg-surface-base border-t border-bloom-pink/20 text-ink py-14 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <footer className="relative bg-surface-base border-t border-bloom-pink/20 text-ink py-14 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* Gate silhouette closing the garden */}
       <div className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 w-[420px] sm:w-[560px] opacity-[0.13]" aria-hidden="true">
         <svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">

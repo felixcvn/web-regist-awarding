@@ -14,10 +14,6 @@ export default function Hero() {
       ref={sectionRef}
       className="relative min-h-screen pt-32 pb-24 px-4 sm:px-6 lg:px-8 flex flex-col justify-between overflow-hidden"
     >
-      {/* Background vignette inside Hero for depth */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#140d1f]/70 via-[#1a1030]/45 to-[#140d1f]/90" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,transparent_25%,rgba(12,6,18,0.7)_100%)]" />
-
       {/* Petals + fireflies ambience in Hero */}
       <Petals className="absolute inset-0 z-10" count={14} fireflies={12} />
 

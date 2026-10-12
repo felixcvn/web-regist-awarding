@@ -21,7 +21,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
   }
 
   return (
-    <main className="section-shade relative min-h-screen bg-transparent text-ink flex flex-col justify-between selection:bg-bloom-pink selection:text-on-accent overflow-hidden">
+    <main className="relative min-h-screen bg-transparent text-ink flex flex-col justify-between selection:bg-bloom-pink selection:text-on-accent overflow-hidden">
       <GlobalGardenBackdrop />
       <GardenFrame variant="subtle" />
       <Enchanted3DCanvas />
