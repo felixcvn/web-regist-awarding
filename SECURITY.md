@@ -7,15 +7,15 @@ Dokumen ini merangkum **postur keamanan**, **teori** yang diterapkan, dan **impl
 | # | Ancaman | Teori | Implementasi |
 |---|---|---|---|
 | 1 | Pencurian/pemalsuan sesi admin | Session token server-side, bukan kredensial di cookie | `lib/auth.ts`, `lib/session` via tabel `admin_sessions`; cookie `fan26_session` httpOnly + `sameSite=strict` |
-| 2 | Brute-force PIN | Rate-limit + lockout | `lib/ratelimit.ts`; login 5/menit/IP; audit `login_failed` |
-| 3 | PIN plaintext bocor | Password hashing | bcrypt (`ADMIN_PIN_HASH`); hash dihasilkan `npm run hash-pin -- <pin>` |
-| 4 | Timing attack pada PIN | Constant-time compare | `crypto.timingSafeEqual` di `auth.ts` |
-| 5 | Spam registrasi / banjir email | Rate-limit | register 5/menit/IP |
+| 2 | Brute-force PIN | Rate-limit + lockout | `lib/ratelimit.ts` (5/menit/IP) + lockout 12 kegagalan/15 menit yang disimpan di `audit_log` (bertahan lintas instance) |
+| 3 | PIN plaintext bocor | Password hashing | bcrypt (`ADMIN_PIN_HASH`, cost 12); hash di `.env.local` meng-escape `$` sebagai `\$` karena `@next/env` melakukan ekspansi variabel |
+| 4 | Timing attack pada PIN | Constant-time compare | `crypto.timingSafeEqual` di `auth.ts` (fallback dev) |
+| 5 | Spam registrasi / banjir email | Rate-limit + anti-bot | register 5/menit/IP, 2/jam per email, honeypot, dan Cloudflare Turnstile (aktif bila `TURNSTILE_SECRET_KEY` diisi) |
 | 6 | Enumerasi NIM | Rate-limit endpoint cek | `register/check` 20/menit/IP |
 | 7 | Abuse QR generator | Rate-limit + validasi token | `/api/qr/[token]` 30/menit/IP, token max 64 char |
 | 8 | Input oversized / malformed (DoS) | Validasi skema di trust boundary | `lib/validation.ts` (Zod) di `register` |
 | 9 | CSV formula injection | Sanitasi sel | `csvSafe()` — prefix `'` untuk nilai mulai `= + - @` |
-| 10 | Clickjacking / MIME sniffing / XSS | Security headers + CSP | `src/middleware.ts` |
+| 10 | Clickjacking / MIME sniffing / XSS | Security headers + CSP | `src/proxy.ts` (CSP, COOP/CORP, HSTS, `noindex` untuk admin/tiket) |
 | 11 | CSRF pada aksi admin | Double-submit token + Origin check | `lib/csrf.ts` + `lib/csrfClient.ts`; terapkan di delete & checkin |
 | 12 | PII di filesystem/git | Jangan persist PII di FS | fallback JSON dimatikan di prod; `.participants_data.json` di `.gitignore`; seed dev memakai data palsu |
 | 13 | Info leak via error | Pesan generik ke klien | route memakai pesan umum; detail hanya `console.error` |
@@ -33,10 +33,11 @@ Ganti dipakai di semua endpoint admin: `checkin`, `participants`, `participants/
 ## Environment (produksi)
 
 ```
-ADMIN_PIN_HASH="<bcrypt hash>"   # WAJIB di produksi
-DATABASE_URL="postgres://...?...sslmode=require"
+ADMIN_PIN_HASH="<bcrypt hash>"   # WAJIB di produksi; escape "$" -> "\$" HANYA di .env.local
+DATABASE_URL="postgres://...?...sslmode=verify-full"
 GMAIL_USER / GMAIL_APP_PASSWORD
 NEXT_PUBLIC_APP_URL="https://domain-anda"
+TURNSTILE_SECRET_KEY / NEXT_PUBLIC_TURNSTILE_SITE_KEY   # opsional, anti-bot
 ```
 
 Generate hash: `npm run hash-pin -- <pin-rahasia>`.
@@ -47,7 +48,7 @@ Generate hash: `npm run hash-pin -- <pin-rahasia>`.
 
 ## Rate limiting
 
-In-memory sliding window (`lib/ratelimit.ts`). Cukup untuk 1 instance (skala ~700 peserta). **Jika multi-instance**, ganti `buckets` dengan Redis.
+In-memory sliding window (`lib/ratelimit.ts`) dengan prioritas IP dari header platform (`cf-connecting-ip` / `x-real-ip`), bukan `X-Forwarded-For` yang bisa dipalsukan klien. Login juga memiliki **lockout berbasis database** (12 kegagalan/15 menit per IP) yang tidak hilang saat cold start. Untuk trafik multi-region sangat tinggi, pindahkan limiter ke Redis/Upstash.
 
 ## Audit log
 

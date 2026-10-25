@@ -2,16 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Script from 'next/script';
 import confetti from 'canvas-confetti';
 import { Ticket, User, Mail, Phone, BookOpen, AlertCircle, CheckCircle, Loader2, ChevronDown, Check, Users, CalendarDays } from 'lucide-react';
 import { RoleType, CategoryType, BatchType, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/types';
 import { StarlightGlow } from './StarlightGlow';
 import ScrollReveal from './ScrollReveal';
 
+declare global {
+  interface Window {
+    turnstile?: { reset: () => void };
+  }
+}
+
 type DropdownKey = 'prodi' | 'category' | 'batch';
 
 export default function RegistrationForm() {
   const router = useRouter();
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -22,6 +30,8 @@ export default function RegistrationForm() {
     prodi: '',
     email: '',
     phone: '',
+    // Honeypot: invisible to humans, filled by naive bots.
+    website: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -116,13 +126,22 @@ export default function RegistrationForm() {
       return;
     }
 
+    const turnstileToken = turnstileSiteKey
+      ? (document.querySelector('[name="cf-turnstile-response"]') as HTMLInputElement | null)?.value || ''
+      : '';
+
+    if (turnstileSiteKey && !turnstileToken) {
+      setErrorMsg('Selesaikan verifikasi anti-bot terlebih dahulu.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, turnstileToken }),
       });
 
       const data = await res.json();
@@ -144,6 +163,8 @@ export default function RegistrationForm() {
       }, 1200);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Terjadi kesalahan.');
+      // Turnstile tokens are single-use; refresh the widget for the next attempt.
+      window.turnstile?.reset();
     } finally {
       setLoading(false);
     }
@@ -214,6 +235,20 @@ export default function RegistrationForm() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+
+            {/* Honeypot (anti-bot) — hidden from real users */}
+            <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+              <label htmlFor="website">Website</label>
+              <input
+                id="website"
+                name="website"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={formData.website}
+                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+              />
+            </div>
             
             {/* Nama Lengkap */}
             <div>
@@ -448,6 +483,24 @@ export default function RegistrationForm() {
                 </div>
               </div>
             </div>
+
+            {/* Cloudflare Turnstile — only rendered when the site key is configured */}
+            {turnstileSiteKey && (
+              <div className="flex flex-col items-center gap-2">
+                <Script
+                  src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+                  strategy="lazyOnload"
+                />
+                <div
+                  className="cf-turnstile"
+                  data-sitekey={turnstileSiteKey}
+                  data-theme="dark"
+                />
+                <span className="text-[10px] text-ink/50">
+                  Dilindungi oleh Cloudflare Turnstile
+                </span>
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="pt-4">

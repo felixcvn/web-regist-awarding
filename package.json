@@ -14,14 +14,14 @@
     "canvas-confetti": "^1.9.4",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.43.0",
-    "next": "16.3.4",
-    "nodemailer": "^10.0.12",
+    "next": "^16.4.3",
+    "nodemailer": "^10.2.1",
     "pg": "^8.23.0",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -34,7 +34,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.4",
+    "eslint-config-next": "^16.4.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

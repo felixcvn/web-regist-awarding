@@ -4,6 +4,7 @@ import { CategoryType, BatchType, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/
 import { sendInvitationEmail } from '@/lib/mailer';
 import { registrationSchema } from '@/lib/validation';
 import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { verifyTurnstile } from '@/lib/turnstile';
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
@@ -12,6 +13,12 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+
+    // Honeypot: real users never see or fill this field.
+    if (typeof body?.website === 'string' && body.website.trim() !== '') {
+      return NextResponse.json({ error: 'Data tidak valid.' }, { status: 400 });
+    }
+
     const parsed = registrationSchema.safeParse(body);
     if (!parsed.success) {
       const first = parsed.error.issues[0]?.message || 'Data tidak valid.';
@@ -23,6 +30,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Kategori civitas tidak valid!' }, { status: 400 });
     }
 
+    // Optional bot check (active only when TURNSTILE_SECRET_KEY is configured).
+    if (process.env.TURNSTILE_SECRET_KEY) {
+      const token = typeof body?.turnstileToken === 'string' ? body.turnstileToken : '';
+      if (!(await verifyTurnstile(token, ip))) {
+        return NextResponse.json(
+          { error: 'Verifikasi anti-bot gagal. Muat ulang halaman lalu coba lagi.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Cap submissions per recipient address to stop email-bombing via one inbox.
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailLimit = rateLimit(`register:email:${normalizedEmail}`, 2, 60 * 60_000);
+    if (!emailLimit.allowed) return tooManyResponse(emailLimit.retryAfter);
+
     const resolvedBatch: BatchType =
       category === 'Mahasiswa Fasilkom' && BATCH_OPTIONS.includes(batch as BatchType) ? (batch as BatchType) : '-';
 
@@ -33,7 +56,7 @@ export async function POST(request: Request) {
       category: category as CategoryType,
       batch: resolvedBatch,
       prodi: prodi || '-',
-      email,
+      email: normalizedEmail,
       phone: phone || '-',
     });
 

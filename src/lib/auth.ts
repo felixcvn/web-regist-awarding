@@ -23,13 +23,15 @@ export function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-export function validatePin(pin: string): boolean {
+export async function validatePin(pin: string): Promise<boolean> {
   const candidate = (pin || '').trim();
   if (!candidate) return false;
 
   // Production must use a bcrypt hash. Plaintext ADMIN_PIN is a dev-only fallback.
   if (ADMIN_PIN_HASH) {
-    return bcrypt.compareSync(candidate, ADMIN_PIN_HASH);
+    // Async compare keeps the event loop free; a sync compare is a cheap DoS
+    // vector on an unauthenticated endpoint.
+    return bcrypt.compare(candidate, ADMIN_PIN_HASH);
   }
   if (IS_PRODUCTION) {
     console.error('[Auth] ADMIN_PIN_HASH is not set in production. Refusing plaintext PIN auth.');

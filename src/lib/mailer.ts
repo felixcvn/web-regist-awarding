@@ -41,10 +41,21 @@ function resolveBaseUrl(): string {
   return 'http://localhost:3000';
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function buildHtml({ name, category, batch, qrToken, imgSrc, ticketUrl }: { name: string; category: string; batch: string; qrToken: string; imgSrc: string; ticketUrl: string }): string {
   const batchLabel = batch !== '-' ? batch : '';
-  const categoryLine = category;
-  const batchLine = batchLabel ? ` • Angkatan: ${batchLabel}` : '';
+  // User-controlled values must be escaped: the invitation is HTML email.
+  const safeName = escapeHtml(name);
+  const categoryLine = escapeHtml(category);
+  const batchLine = batchLabel ? ` • Angkatan: ${escapeHtml(batchLabel)}` : '';
 
   return `
   <table width="100%" style="font-family:Arial,Helvetica,sans-serif;background:#061510;">
@@ -74,7 +85,7 @@ function buildHtml({ name, category, batch, qrToken, imgSrc, ticketUrl }: { name
         <tr>
           <td style="padding:8px 28px 28px;text-align:center;">
             <p style="margin:16px 0 4px;font-size:14px;color:#EDE8DF;">
-              Halo, <b style="color:#FFB5E8;">${name}</b>
+              Halo, <b style="color:#FFB5E8;">${safeName}</b>
             </p>
             <p style="margin:0 0 22px;font-size:13px;color:rgba(237,232,223,0.8);">
               Registrasi Anda berhasil. Berikut QR undangan resmi Anda.

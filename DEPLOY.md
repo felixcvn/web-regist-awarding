@@ -8,9 +8,8 @@ Set semua ini di dashboard hosting (Vercel → Project → Settings → Environm
 
 | Variabel | Contoh | Catatan |
 |---|---|---|
-| `DATABASE_URL` | `postgres://user:pass@host/db?sslmode=require` | Wajib. Pakai managed Postgres (Neon/Supabase/Railway). SSL auto-aktif untuk host non-localhost. |
-| `ADMIN_PIN_HASH` | `$2b$12$...` | **Wajib di produksi.** Generate: `npm run hash-pin -- <pin>`. |
-| `ADMIN_PIN` | `2026` | Hanya dipakai di dev (plaintext fallback). Diabaikan di produksi. |
+| `DATABASE_URL` | `postgres://user:pass@host/db?sslmode=verify-full` | Wajib. Pakai managed Postgres (Neon/Supabase/Railway). Sertifikat TLS selalu diverifikasi. |
+| `ADMIN_PIN_HASH` | `$2b$12$...` | **Wajib di produksi.** Generate: `npm run hash-pin -- "<pin-kuat>"`. Di `.env.local` escape `$` menjadi `\$`; di dashboard hosting tempel apa adanya. |
 | `GMAIL_USER` | `panitia@gmail.com` | Akun pengirim email. |
 | `GMAIL_APP_PASSWORD` | `xxxx xxxx xxxx xxxx` | App Password Gmail (bukan password akun). |
 | `NEXT_PUBLIC_APP_URL` | `https://fan2026.domainkamu.com` | Tanpa trailing slash. Perbaiki link tiket di email. |

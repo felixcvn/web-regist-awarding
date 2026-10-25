@@ -7,5 +7,8 @@ if (!pin) {
 }
 
 const hash = bcrypt.hashSync(pin, 12);
-console.log('\nAdd this to your environment (e.g. .env.local / hosting dashboard):\n');
-console.log(`ADMIN_PIN_HASH="${hash}"\n`);
+const escaped = hash.replace(/\$/g, '\\$');
+console.log('\nFor .env.local (escape "$" as "\\$"):\n');
+console.log(`ADMIN_PIN_HASH='${escaped}'\n`);
+console.log('For Vercel / hosting dashboard (raw, no quotes, no escaping):\n');
+console.log(hash + '\n');

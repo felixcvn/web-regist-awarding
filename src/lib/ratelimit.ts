@@ -27,7 +27,16 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateLim
   const now = Date.now();
   sweep(now);
 
-  if (buckets.size > MAX_KEYS) buckets.clear();
+  if (buckets.size > MAX_KEYS) {
+    // Evict the oldest entries instead of clearing everything: a flood of unique
+    // keys (e.g. spoofed IPs) must not reset every active rate limit.
+    const overflow = Math.max(1, Math.floor(MAX_KEYS * 0.1));
+    let removed = 0;
+    for (const key of buckets.keys()) {
+      buckets.delete(key);
+      if (++removed >= overflow) break;
+    }
+  }
 
   const times = (buckets.get(key) || []).filter((t) => now - t < windowMs);
   if (times.length >= limit) {
@@ -42,10 +51,22 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateLim
 }
 
 export function getClientIp(request: Request): string {
+  // Platform-injected headers cannot be spoofed by the client on Vercel /
+  // Cloudflare and must be preferred over the user-controlled X-Forwarded-For.
+  const platformIp =
+    request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-real-ip') ||
+    request.headers.get('x-vercel-forwarded-for');
+  if (platformIp) return platformIp.split(',')[0].trim();
+
+  // Fallback for self-hosted proxies: the right-most entry is appended by the
+  // nearest trusted proxy, so it is the safest value in the chain.
   const xff = request.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  const real = request.headers.get('x-real-ip');
-  if (real) return real.trim();
+  if (xff) {
+    const chain = xff.split(',').map((part) => part.trim()).filter(Boolean);
+    if (chain.length > 0) return chain[chain.length - 1];
+  }
+
   return 'unknown';
 }
 

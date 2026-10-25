@@ -89,7 +89,15 @@ function getPool(): Pool | null {
     const needsSsl = url.includes('sslmode=require') || url.includes('sslmode=verify-full') || !isLocal;
     pool = new Pool({
       connectionString: url,
-      ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
+      // Always verify the server certificate (Neon uses a public CA). Setting
+      // rejectUnauthorized:false silently disables MITM protection.
+      ssl: needsSsl ? { rejectUnauthorized: true } : undefined,
+      max: 5,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
+      // Bound every query so a stuck/locked table cannot hang a request forever.
+      statement_timeout: 15_000,
+      query_timeout: 15_000,
     });
   }
   return pool;
@@ -437,6 +445,45 @@ export async function purgeExpiredSessions(): Promise<void> {
 }
 
 // --- Audit log ---
+
+// Count recent audit rows for a given action (e.g. failed logins). Used for
+// cross-instance lockouts where an in-memory counter would reset on cold start.
+export async function countRecentAudit(action: string, windowMs: number): Promise<number> {
+  const p = getPool();
+  if (!p) return 0;
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) return 0;
+    const res = await p.query(
+      `SELECT COUNT(*)::int AS count FROM audit_log
+       WHERE action = $1 AND created_at > NOW() - ($2::int * INTERVAL '1 millisecond')`,
+      [action.slice(0, 40), Math.max(1, Math.floor(windowMs))]
+    );
+    return res.rows[0]?.count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+// Count recent failed logins for one IP. DB-backed so the lockout survives
+// serverless cold starts and multiple instances.
+export async function countRecentLoginFailures(ip: string, windowMs: number): Promise<number> {
+  const p = getPool();
+  if (!p) return 0;
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) return 0;
+    const res = await p.query(
+      `SELECT COUNT(*)::int AS count FROM audit_log
+       WHERE action = 'login_failed' AND actor_ip = $1
+         AND created_at > NOW() - ($2::int * INTERVAL '1 millisecond')`,
+      [ip.slice(0, 64), Math.max(1, Math.floor(windowMs))]
+    );
+    return res.rows[0]?.count || 0;
+  } catch {
+    return 0;
+  }
+}
 
 export async function writeAuditLog(action: string, actorIp: string, targetId?: string, detail?: string): Promise<void> {
   const p = getPool();

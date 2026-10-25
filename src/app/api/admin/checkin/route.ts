@@ -4,6 +4,7 @@ import { checkInParticipant } from '@/lib/db';
 import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
 import { writeAuditLog } from '@/lib/db';
 import { validateCsrf, validateOrigin, forbiddenResponse } from '@/lib/csrf';
+import { qrTokenSchema } from '@/lib/validation';
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
@@ -23,11 +24,12 @@ export async function POST(request: Request) {
 
     const { qrToken } = await request.json();
 
-    if (!qrToken || typeof qrToken !== 'string') {
-      return NextResponse.json({ error: 'QR Code / Token tidak boleh kosong!' }, { status: 400 });
+    const parsedToken = qrTokenSchema.safeParse(qrToken);
+    if (!parsedToken.success || !parsedToken.data) {
+      return NextResponse.json({ error: 'QR Code / Token tidak valid!' }, { status: 400 });
     }
 
-    const result = await checkInParticipant(qrToken.trim());
+    const result = await checkInParticipant(parsedToken.data);
     if (result.success && result.participant) {
       await writeAuditLog('checkin', ip, result.participant.id);
     }
