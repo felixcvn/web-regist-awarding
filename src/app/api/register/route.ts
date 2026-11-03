@@ -26,6 +26,12 @@ export async function POST(request: Request) {
     }
     const { nimNip, name, role, category, batch, prodi, email, phone } = parsed.data;
 
+    // The public registration form only registers students. Do not let a direct
+    // API caller bypass the student master check by submitting another role.
+    if (role !== 'Mahasiswa') {
+      return NextResponse.json({ error: 'Registrasi publik hanya tersedia untuk mahasiswa.' }, { status: 403 });
+    }
+
     if (!CATEGORY_OPTIONS.includes(category as CategoryType)) {
       return NextResponse.json({ error: 'Kategori civitas tidak valid!' }, { status: 400 });
     }
@@ -61,7 +67,7 @@ export async function POST(request: Request) {
     });
 
     if (result.error) {
-      return NextResponse.json({ error: result.error }, { status: 409 });
+      return NextResponse.json({ error: result.error }, { status: result.status || 409 });
     }
 
     // ponytail: email best-effort, never blocks ticket issuance.

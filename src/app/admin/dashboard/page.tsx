@@ -1,14 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Participant } from '@/lib/types';
-import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2 } from 'lucide-react';
+import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { secureFetch } from '@/lib/csrfClient';
 import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
 import GardenFrame from '@/components/GardenFrame';
 import Dialog from '@/components/Dialog';
+
+interface StudentImportPreview {
+  batchId: string;
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  duplicateNims: number;
+  emptyNames: number;
+  invalidNims: number;
+  errors: string[];
+}
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -20,8 +31,27 @@ export default function AdminDashboardPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [target, setTarget] = useState<Participant | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirmRollback, setConfirmRollback] = useState(false);
 
-  const fetchParticipants = async () => {
+  // Student import state
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<StudentImportPreview | null>(null);
+  const [studentFiles, setStudentFiles] = useState<{
+    sistemInformasi: File;
+    informatika: File;
+    teknologiInformasi: File;
+  } | null>(null);
+  const [commitLoading, setCommitLoading] = useState(false);
+  const [rollbackLoading, setRollbackLoading] = useState(false);
+  const [activeBatch, setActiveBatch] = useState<{
+    batchId: string;
+    createdAt: string;
+    count: number;
+    canRollback: boolean;
+  } | null>(null);
+
+  const fetchParticipants = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/participants');
@@ -38,11 +68,35 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  const fetchActiveBatch = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/student-imports/active');
+      if (res.status === 401) return;
+      const data = await res.json();
+      if (data.active) {
+        setActiveBatch({
+          batchId: data.batchId,
+          createdAt: data.createdAt,
+          count: data.count,
+          canRollback: data.canRollback,
+        });
+      } else {
+        setActiveBatch(null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchParticipants();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void fetchParticipants();
+      void fetchActiveBatch();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchParticipants, fetchActiveBatch]);
 
   const totalRegistered = participants.length;
   const totalCheckedIn = participants.filter((p) => p.isCheckedIn).length;
@@ -91,6 +145,98 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handlePreviewImport = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setImportLoading(true);
+    setPreviewData(null);
+
+    const formData = new FormData(e.currentTarget);
+    const sistemInformasi = formData.get('sistemInformasi');
+    const informatika = formData.get('informatika');
+    const teknologiInformasi = formData.get('teknologiInformasi');
+    if (!(sistemInformasi instanceof File) || !(informatika instanceof File) || !(teknologiInformasi instanceof File)) {
+      setImportLoading(false);
+      setNotice('Pilih ketiga file Excel terlebih dahulu.');
+      return;
+    }
+    setStudentFiles({ sistemInformasi, informatika, teknologiInformasi });
+
+    try {
+      const res = await secureFetch('/api/admin/student-imports/preview', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Gagal memproses file');
+      }
+
+      const data = await res.json();
+      setPreviewData(data);
+    } catch (err) {
+      setNotice((err as Error).message || 'Gagal memproses file');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleCommitImport = async () => {
+    if (!previewData || !studentFiles || previewData.invalidRows > 0 || previewData.validRows === 0 || previewData.errors.length > 0) return;
+
+    setCommitLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('batchId', previewData.batchId);
+      formData.append('sistemInformasi', studentFiles.sistemInformasi);
+      formData.append('informatika', studentFiles.informatika);
+      formData.append('teknologiInformasi', studentFiles.teknologiInformasi);
+
+      const res = await secureFetch('/api/admin/student-imports/commit', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Gagal menyimpan data');
+      }
+
+      setShowImportDialog(false);
+      setPreviewData(null);
+      setStudentFiles(null);
+      await fetchActiveBatch();
+      setNotice('Data mahasiswa berhasil disimpan!');
+    } catch (err) {
+      setNotice((err as Error).message || 'Gagal menyimpan data');
+    } finally {
+      setCommitLoading(false);
+    }
+  };
+
+  const handleRollback = async () => {
+    setRollbackLoading(true);
+    try {
+      const res = await secureFetch('/api/admin/student-imports/rollback', {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Gagal melakukan rollback');
+      }
+
+      const data = await res.json();
+      await fetchActiveBatch();
+      setConfirmRollback(false);
+      setNotice(`Rollback berhasil ke batch ${data.previousBatchId} (${data.count} mahasiswa)`);
+    } catch (err) {
+      setNotice((err as Error).message || 'Gagal melakukan rollback');
+    } finally {
+      setRollbackLoading(false);
+    }
+  };
+
   return (
     <main className="relative min-h-screen bg-transparent text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
       <GlobalGardenBackdrop />
@@ -129,6 +275,14 @@ export default function AdminDashboardPage() {
               <Download className="w-3.5 h-3.5" />
               Export CSV
             </a>
+
+            <button
+              onClick={() => setShowImportDialog(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-surface-card border border-gold/40 text-gold text-xs font-bold hover:bg-surface-card transition-colors shadow-md"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Unggah Data Mahasiswa
+            </button>
 
             <Link
               href="/admin/scan"
@@ -352,6 +506,182 @@ export default function AdminDashboardPage() {
         confirmLabel="Mengerti"
         onClose={() => setNotice(null)}
       />
+
+      <Dialog
+        open={confirmRollback}
+        variant="danger"
+        title="Pulihkan Data Sebelumnya"
+        message="Daftar mahasiswa aktif akan dikembalikan ke batch impor sebelumnya. Lanjutkan?"
+        confirmLabel={rollbackLoading ? 'Memulihkan...' : 'Pulihkan'}
+        busy={rollbackLoading}
+        onClose={() => !rollbackLoading && setConfirmRollback(false)}
+        onConfirm={handleRollback}
+      />
+
+      {/* Student Import Dialog */}
+            {/* Student Import Dialog */}
+      <div
+        className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${showImportDialog ? '' : 'hidden'}`}
+      >
+        <div
+          className="absolute inset-0 bg-surface-base/80 backdrop-blur-sm"
+          onClick={() => {
+            if (!importLoading && !commitLoading && !rollbackLoading) {
+              setShowImportDialog(false);
+            }
+          }}
+        />
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base shadow-[0_0_60px_rgba(0,0,0,0.85)] animate-[dialogIn_180ms_cubic-bezier(0.16,1,0.3,1)]"
+          style={{ borderColor: 'rgba(183, 156, 232, 0.4)' }}
+        >
+          <div
+            className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent"
+          />
+
+          <div className="p-6 sm:p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-cinzel text-xl font-bold text-ivory tracking-wide">
+                Unggah Data Mahasiswa
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!importLoading && !commitLoading && !rollbackLoading) {
+                    setShowImportDialog(false);
+                  }
+                }}
+                disabled={importLoading || commitLoading || rollbackLoading}
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-ink transition-colors disabled:opacity-50"
+              >
+                ✕
+              </button>
+            </div>
+
+            {!previewData ? (
+              <form onSubmit={handlePreviewImport} className="space-y-6">
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gold mb-2">Sistem Informasi <span className="text-red-400">*</span></label>
+                    <input
+                      type="file"
+                      name="sistemInformasi"
+                      id="sistemInformasi"
+                      accept=".xlsx"
+                      required
+                      className="w-full px-4 py-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory placeholder-ink/40 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-bloom-pink/10 file:text-bloom-pink file:cursor-pointer file:hover:bg-bloom-pink/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gold mb-2">Informatika <span className="text-red-400">*</span></label>
+                    <input
+                      type="file"
+                      name="informatika"
+                      id="informatika"
+                      accept=".xlsx"
+                      required
+                      className="w-full px-4 py-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory placeholder-ink/40 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-bloom-pink/10 file:text-bloom-pink file:cursor-pointer file:hover:bg-bloom-pink/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gold mb-2">Teknologi Informasi <span className="text-red-400">*</span></label>
+                    <input
+                      type="file"
+                      name="teknologiInformasi"
+                      id="teknologiInformasi"
+                      accept=".xlsx"
+                      required
+                      className="w-full px-4 py-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory placeholder-ink/40 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-bloom-pink/10 file:text-bloom-pink file:cursor-pointer file:hover:bg-bloom-pink/20"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={importLoading}
+                  className="w-full px-4 py-3 rounded-xl bg-gold text-ink text-xs font-bold hover:bg-gold-light transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {importLoading ? 'Memproses...' : 'Preview Data'}
+                </button>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                {/* Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl p-4 bg-surface-card-2 border border-bloom-pink/20 text-center">
+                    <div className="text-2xl font-black text-gold">{previewData.totalRows}</div>
+                    <div className="text-[10px] text-ink/60 uppercase font-bold">Baris Total</div>
+                  </div>
+                  <div className="rounded-xl p-4 bg-surface-card-2 border border-mint/40 text-center">
+                    <div className="text-2xl font-black text-mint">{previewData.validRows}</div>
+                    <div className="text-[10px] text-ink/60 uppercase font-bold">Data Valid</div>
+                  </div>
+                  <div className="rounded-xl p-4 bg-surface-card-2 border border-red-500/40 text-center">
+                    <div className="text-2xl font-black text-red-300">{previewData.invalidRows}</div>
+                    <div className="text-[10px] text-ink/60 uppercase font-bold">Data Invalid</div>
+                  </div>
+                  <div className="rounded-xl p-4 bg-surface-card-2 border border-orange-500/40 text-center">
+                    <div className="text-2xl font-black text-orange-300">{previewData.duplicateNims}</div>
+                    <div className="text-[10px] text-ink/60 uppercase font-bold">NIM Duplikat</div>
+                  </div>
+                </div>
+
+                {/* Errors */}
+                {previewData.errors.length > 0 && (
+                  <div className="rounded-xl p-4 bg-red-950/30 border border-red-500/30 max-h-48 overflow-y-auto">
+                    <div className="text-[10px] font-bold text-red-300 mb-2">Kesalahan Temukan:</div>
+                    {previewData.errors.map((error, idx) => (
+                      <div key={idx} className="text-[10px] text-red-200 mb-1">• {error}</div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Active Batch Info */}
+                {activeBatch && (
+                  <div className="rounded-xl p-4 bg-surface-card-2 border border-gold/40 text-center">
+                    <div className="text-sm font-bold text-gold mb-1">Batch Aktif: {activeBatch.batchId}</div>
+                    <div className="text-[10px] text-ink/60">Mahasiswa: {activeBatch.count} • Dibuat: {new Date(activeBatch.createdAt).toLocaleString('id-ID')}</div>
+                    {activeBatch.canRollback && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRollback(true)}
+                        disabled={rollbackLoading}
+                        className="mt-3 rounded-lg border border-red-400/40 px-3 py-1.5 text-[10px] font-bold text-red-200 hover:bg-red-950/40 disabled:opacity-50"
+                      >
+                        Pulihkan Batch Sebelumnya
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewData(null);
+                      setStudentFiles(null);
+                      setShowImportDialog(false);
+                    }}
+                    className="flex-1 px-4 py-3 rounded-xl bg-surface-card border border-bloom-pink/30 text-xs font-bold text-bloom-pink hover:bg-surface-card transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCommitImport}
+                    disabled={commitLoading || previewData.invalidRows > 0 || previewData.validRows === 0 || previewData.errors.length > 0 || !studentFiles}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gold text-ink text-xs font-bold hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                  >
+                    {commitLoading ? 'Menyimpan...' : 'Simpan Data Aktif'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

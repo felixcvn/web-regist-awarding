@@ -3,6 +3,69 @@ import { Participant, RegistrationInput } from './types';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import * as XLSX from 'xlsx';
+
+// --- Student import tables ---
+
+const STUDENT_IMPORT_BATCHES_TABLE = 'student_import_batches';
+const STUDENT_MASTER_TABLE = 'student_master';
+
+async function initStudentImportTables(p: Pool): Promise<boolean> {
+  try {
+    const statements = [
+      `CREATE TABLE IF NOT EXISTS ${STUDENT_IMPORT_BATCHES_TABLE} (
+        id SERIAL PRIMARY KEY,
+        batch_id VARCHAR(64) UNIQUE NOT NULL,
+        prodi VARCHAR(80) NOT NULL,
+        total_rows INT NOT NULL,
+        valid_rows INT NOT NULL,
+        invalid_rows INT NOT NULL,
+        duplicate_nims INT NOT NULL,
+        empty_names INT NOT NULL,
+        invalid_nims INT NOT NULL,
+        status VARCHAR(20) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        committed_at TIMESTAMP,
+        previous_batch_id VARCHAR(64),
+        committed_by_ip VARCHAR(64)
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_student_batches_id ON ${STUDENT_IMPORT_BATCHES_TABLE}(batch_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_student_batches_status ON ${STUDENT_IMPORT_BATCHES_TABLE}(status)`,
+      `CREATE TABLE IF NOT EXISTS ${STUDENT_MASTER_TABLE} (
+        nim VARCHAR(50) PRIMARY KEY,
+        official_name VARCHAR(120) NOT NULL,
+        normalized_name VARCHAR(120) NOT NULL,
+        prodi VARCHAR(80) NOT NULL,
+        batch_year VARCHAR(4) NOT NULL,
+        is_active BOOLEAN DEFAULT FALSE,
+        import_batch_id VARCHAR(64),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_student_master_prodi ON ${STUDENT_MASTER_TABLE}(prodi)`,
+      `CREATE INDEX IF NOT EXISTS idx_student_master_batch_year ON ${STUDENT_MASTER_TABLE}(batch_year)`,
+      `CREATE INDEX IF NOT EXISTS idx_student_master_active ON ${STUDENT_MASTER_TABLE}(is_active)`,
+      `CREATE TABLE IF NOT EXISTS student_import_records (
+        batch_id VARCHAR(64) NOT NULL,
+        nim VARCHAR(50) NOT NULL,
+        official_name VARCHAR(120) NOT NULL,
+        normalized_name VARCHAR(120) NOT NULL,
+        prodi VARCHAR(80) NOT NULL,
+        batch_year VARCHAR(4) NOT NULL,
+        PRIMARY KEY (batch_id, nim)
+      )`,
+    ];
+    for (const statement of statements) await p.query(statement);
+    return true;
+  } catch (err) {
+    console.warn('[DB] Student import tables init error:', (err as Error).message);
+    return false;
+  }
+}
+
+function normalizeName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').normalize('NFKC').toLocaleLowerCase('id-ID');
+}
 
 function normalizeNim(nim: string): string {
   return nim.trim().toLowerCase();
@@ -154,36 +217,75 @@ async function initPostgresTable(p: Pool): Promise<boolean> {
   }
 }
 
-export async function createParticipant(input: RegistrationInput): Promise<{ participant?: Participant; error?: string }> {
+export async function createParticipant(input: RegistrationInput): Promise<{ participant?: Participant; error?: string; status?: number }> {
   const p = getPool();
   const id = 'TKT-' + crypto.randomBytes(4).toString('hex').toUpperCase();
   const qrToken = 'FAN26-' + crypto.randomUUID();
   const createdAt = new Date().toISOString();
 
+  if (!p && input.role === 'Mahasiswa') {
+    return { error: 'Validasi mahasiswa tidak tersedia. Silakan coba lagi.', status: 503 };
+  }
+
   // Try PostgreSQL
   if (p) {
     try {
       const ready = await initPostgresTable(p);
-      if (ready) {
-        const existing = await p.query('SELECT nim_nip FROM participants WHERE LOWER(nim_nip) = $1 LIMIT 1', [normalizeNim(input.nimNip)]);
+      if (!ready) {
+        if (input.role === 'Mahasiswa') {
+          return { error: 'Validasi mahasiswa tidak tersedia. Silakan coba lagi.', status: 503 };
+        }
+      } else {
+        const existing = await p.query(
+          'SELECT nim_nip FROM participants WHERE LOWER(nim_nip) = $1 LIMIT 1',
+          [normalizeNim(input.nimNip)]
+        );
         if (existing.rows.length > 0) {
-          return { error: 'NIM / NIP ini sudah terdaftar sebelumnya!' };
+          return { error: 'NIM / NIP ini sudah terdaftar sebelumnya!', status: 409 };
+        }
+
+        let participantName = input.name.trim();
+        let participantBatch = input.batch;
+        let participantProdi = input.prodi.trim();
+
+        if (input.role === 'Mahasiswa') {
+          const studentRes = await p.query(
+            `SELECT official_name, prodi, batch_year FROM ${STUDENT_MASTER_TABLE}
+             WHERE LOWER(nim) = $1 AND is_active = TRUE LIMIT 1`,
+            [normalizeNim(input.nimNip)]
+          );
+          const student = studentRes.rows[0];
+
+          if (!student) {
+            return { error: 'NIM tidak ditemukan dalam data mahasiswa aktif.', status: 403 };
+          }
+          if (normalizeName(input.name) !== normalizeName(student.official_name)) {
+            return { error: 'NIM atau nama tidak sesuai data mahasiswa aktif.', status: 403 };
+          }
+
+          participantName = student.official_name;
+          participantBatch = student.batch_year;
+          participantProdi = student.prodi;
         }
 
         const res = await p.query(
           `INSERT INTO participants (id, nim_nip, name, role, category, batch, prodi, email, phone, qr_token, is_checked_in, created_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, NOW())
            RETURNING id, nim_nip AS "nimNip", name, role, category, batch, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"`,
-          [id, normalizeNim(input.nimNip), input.name.trim(), input.role, input.category, input.batch, input.prodi.trim(), input.email.trim(), input.phone.trim(), qrToken]
+          [id, normalizeNim(input.nimNip), participantName, input.role, input.category, participantBatch, participantProdi, input.email.trim(), input.phone.trim(), qrToken]
         );
 
         return { participant: res.rows[0] };
       }
-    } catch (err: any) {
-      if (err.code === '23505') {
-        return { error: 'NIM / NIP atau token sudah terdaftar!' };
+    } catch (err: unknown) {
+      const dbError = err as { code?: string; message?: string };
+      if (dbError.code === '23505') {
+        return { error: 'NIM / NIP atau token sudah terdaftar!', status: 409 };
       }
-      console.warn('[DB] PG Insert failed, trying fallback store:', err.message);
+      console.warn('[DB] PG Insert failed, trying fallback store:', dbError.message || 'Unknown database error');
+      if (input.role === 'Mahasiswa') {
+        return { error: 'Validasi mahasiswa tidak tersedia. Silakan coba lagi.', status: 503 };
+      }
     }
   }
 
@@ -361,6 +463,25 @@ export async function isNimRegistered(nimNip: string): Promise<boolean> {
   return loadFallbackData().some((item) => normalizeNim(item.nimNip) === normalized);
 }
 
+export async function validateStudentIdentity(nim: string, name: string): Promise<'valid' | 'invalid' | 'unavailable'> {
+  const p = getPool();
+  if (!p) return 'unavailable';
+
+  try {
+    const result = await p.query<{ official_name: string }>(
+      `SELECT official_name FROM ${STUDENT_MASTER_TABLE}
+       WHERE LOWER(nim) = $1 AND is_active = TRUE LIMIT 1`,
+      [normalizeNim(nim)]
+    );
+    const student = result.rows[0];
+    if (!student) return 'invalid';
+    return normalizeName(name) === normalizeName(student.official_name) ? 'valid' : 'invalid';
+  } catch (err) {
+    console.error('[DB] Student identity validation failed:', (err as Error).message);
+    return 'unavailable';
+  }
+}
+
 export async function deleteParticipant(id: string): Promise<boolean> {
   const p = getPool();
   if (p) {
@@ -497,5 +618,422 @@ export async function writeAuditLog(action: string, actorIp: string, targetId?: 
     );
   } catch {
     // audit failures must never break the request
+  }
+}
+
+export interface StudentImportResult {
+  batchId: string;
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  duplicateNims: number;
+  emptyNames: number;
+  invalidNims: number;
+  errors: string[];
+}
+
+interface ImportedStudent {
+  nim: string;
+  name: string;
+  normalizedName: string;
+  prodi: string;
+  batchYear: string;
+}
+
+interface ParsedStudentImport {
+  students: ImportedStudent[];
+  result: StudentImportResult;
+}
+
+const STUDENT_PRODI_CODES: Record<string, string> = {
+  '10': 'Sistem Informasi',
+  '11': 'Sistem Informasi',
+  '20': 'Teknologi Informasi',
+  '21': 'Teknologi Informasi',
+  '30': 'Informatika',
+  '31': 'Informatika',
+};
+
+const MAX_IMPORT_ERRORS = 100;
+
+async function parseStudentImportFiles(files: {
+  sistemInformasi?: File;
+  informatika?: File;
+  teknologiInformasi?: File;
+}): Promise<ParsedStudentImport> {
+  const students: ImportedStudent[] = [];
+  const seenNims = new Set<string>();
+  const errors: string[] = [];
+  let totalRows = 0;
+  let duplicateNims = 0;
+  let emptyNames = 0;
+  let invalidNims = 0;
+  let errorsTruncated = false;
+
+  const addError = (message: string) => {
+    if (errors.length < MAX_IMPORT_ERRORS - 1) errors.push(message);
+    else errorsTruncated = true;
+  };
+
+  const processFile = async (
+    file: File | undefined,
+    label: string,
+    expectedProdi: string
+  ): Promise<void> => {
+    if (!file) {
+      addError(`File ${label} belum diunggah.`);
+      return;
+    }
+
+    let rows: unknown[][];
+    try {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) {
+        addError(`File ${label} tidak memiliki worksheet.`);
+        return;
+      }
+      rows = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[sheetName], {
+        header: 1,
+        defval: '',
+        raw: false,
+      });
+    } catch {
+      addError(`File ${label} tidak dapat dibaca sebagai Excel .xlsx.`);
+      return;
+    }
+
+    const headerIndex = rows.findIndex((row) =>
+      row.some((cell) => String(cell).trim().toLocaleUpperCase('id-ID') === 'NIM')
+    );
+    if (headerIndex < 0) {
+      addError(`File ${label}: header kolom NIM tidak ditemukan.`);
+      return;
+    }
+
+    const header = rows[headerIndex].map((cell) => String(cell).trim().toLocaleUpperCase('id-ID'));
+    const nimColumn = header.indexOf('NIM');
+    const nameColumn = header.findIndex((value) => value === 'NAMA' || value === 'NAMA LENGKAP');
+    if (nameColumn < 0) {
+      addError(`File ${label}: kolom NAMA atau NAMA LENGKAP tidak ditemukan.`);
+      return;
+    }
+
+    for (let rowIndex = headerIndex + 1; rowIndex < rows.length; rowIndex++) {
+      const row = rows[rowIndex];
+      if (!row || row.every((cell) => String(cell).trim() === '')) continue;
+
+      totalRows++;
+      const rowLabel = `Baris ${rowIndex + 1} (${label})`;
+      const nim = String(row[nimColumn] ?? '').trim();
+      const name = String(row[nameColumn] ?? '').trim().replace(/\s+/g, ' ');
+
+      if (!name) {
+        emptyNames++;
+        addError(`${rowLabel}: nama kosong.`);
+        continue;
+      }
+
+      if (!/^\d{10,20}$/.test(nim)) {
+        invalidNims++;
+        addError(`${rowLabel}: NIM tidak valid atau kosong.`);
+        continue;
+      }
+
+      const yearDigit = nim.slice(0, 2);
+      if (!['23', '24', '25', '26'].includes(yearDigit)) {
+        invalidNims++;
+        addError(`${rowLabel}: NIM tidak memiliki angkatan valid (2023–2026).`);
+        continue;
+      }
+
+      const prodi = STUDENT_PRODI_CODES[nim.slice(8, 10)];
+      if (!prodi) {
+        invalidNims++;
+        addError(`${rowLabel}: kode program studi pada NIM tidak dikenali.`);
+        continue;
+      }
+
+      if (prodi !== expectedProdi) {
+        invalidNims++;
+        addError(`${rowLabel}: NIM menunjukkan prodi ${prodi}, bukan ${expectedProdi}.`);
+        continue;
+      }
+
+      const normalizedNim = normalizeNim(nim);
+      if (seenNims.has(normalizedNim)) {
+        duplicateNims++;
+        addError(`${rowLabel}: NIM duplikat ditemukan pada file yang diunggah.`);
+        continue;
+      }
+
+      seenNims.add(normalizedNim);
+      students.push({
+        nim: normalizedNim,
+        name,
+        normalizedName: normalizeName(name),
+        prodi,
+        batchYear: `20${yearDigit}`,
+      });
+    }
+  };
+
+  await processFile(files.sistemInformasi, 'Sistem Informasi', 'Sistem Informasi');
+  await processFile(files.informatika, 'Informatika', 'Informatika');
+  await processFile(files.teknologiInformasi, 'Teknologi Informasi', 'Teknologi Informasi');
+
+  if (errorsTruncated) errors.push('Kesalahan lainnya tidak ditampilkan. Periksa semua baris pada file yang diunggah.');
+
+  const result: StudentImportResult = {
+    batchId: `STU-${crypto.randomUUID()}`,
+    totalRows,
+    validRows: students.length,
+    invalidRows: totalRows - students.length,
+    duplicateNims,
+    emptyNames,
+    invalidNims,
+    errors,
+  };
+
+  return { students, result };
+}
+
+export async function previewStudentImport(files: {
+  sistemInformasi?: File;
+  informatika?: File;
+  teknologiInformasi?: File;
+}): Promise<StudentImportResult> {
+  const p = getPool();
+  if (!p) {
+    throw new Error('Database unavailable');
+  }
+
+  try {
+    const ready = await initStudentImportTables(p);
+    if (!ready) {
+      throw new Error('Failed to initialize student import tables');
+    }
+
+    return (await parseStudentImportFiles(files)).result;
+  } catch (err) {
+    console.error('[DB] Student import preview error:', err);
+    throw new Error(`Gagal memproses file: ${(err as Error).message}`);
+  }
+}
+
+export async function commitStudentImport(
+  batchId: string,
+  files: {
+    sistemInformasi?: File;
+    informatika?: File;
+    teknologiInformasi?: File;
+  },
+  committedByIp: string
+): Promise<void> {
+  const p = getPool();
+  if (!p) {
+    throw new Error('Database unavailable');
+  }
+
+  if (!/^STU-[0-9a-f-]{36}$/i.test(batchId)) {
+    throw new Error('ID preview impor tidak valid. Silakan lakukan preview ulang.');
+  }
+
+  try {
+    const ready = await initStudentImportTables(p);
+    if (!ready) {
+      throw new Error('Failed to initialize student import tables');
+    }
+
+    const parsed = await parseStudentImportFiles(files);
+    if (parsed.result.invalidRows > 0 || parsed.result.validRows === 0 || parsed.result.errors.length > 0) {
+      throw new Error('Data Excel berubah atau tidak valid. Silakan periksa ulang preview.');
+    }
+
+    const client = await p.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('student-import'))");
+
+      const activeBatch = await client.query(
+        `SELECT batch_id FROM ${STUDENT_IMPORT_BATCHES_TABLE}
+         WHERE status = 'ACTIVE' ORDER BY created_at DESC LIMIT 1 FOR UPDATE`
+      );
+      const previousBatchId = activeBatch.rows[0]?.batch_id || null;
+
+      await client.query(
+        `INSERT INTO ${STUDENT_IMPORT_BATCHES_TABLE}
+         (batch_id, prodi, total_rows, valid_rows, invalid_rows, duplicate_nims, empty_names, invalid_nims, status, committed_by_ip)
+         VALUES ($1, 'ALL_PRODI', $2, $3, $4, $5, $6, $7, 'PENDING', $8)`,
+        [
+          batchId,
+          parsed.result.totalRows,
+          parsed.result.validRows,
+          parsed.result.invalidRows,
+          parsed.result.duplicateNims,
+          parsed.result.emptyNames,
+          parsed.result.invalidNims,
+          committedByIp.slice(0, 64),
+        ]
+      );
+
+      const batchIds = parsed.students.map(() => batchId);
+      const nims = parsed.students.map((student) => student.nim);
+      const names = parsed.students.map((student) => student.name);
+      const normalizedNames = parsed.students.map((student) => student.normalizedName);
+      const prodis = parsed.students.map((student) => student.prodi);
+      const batchYears = parsed.students.map((student) => student.batchYear);
+
+      await client.query(
+        `INSERT INTO student_import_records (batch_id, nim, official_name, normalized_name, prodi, batch_year)
+         SELECT * FROM UNNEST(
+           $1::VARCHAR[], $2::VARCHAR[], $3::VARCHAR[], $4::VARCHAR[], $5::VARCHAR[], $6::VARCHAR[]
+         )`,
+        [batchIds, nims, names, normalizedNames, prodis, batchYears]
+      );
+
+      if (previousBatchId) {
+        await client.query(
+          `UPDATE ${STUDENT_IMPORT_BATCHES_TABLE} SET status = 'ARCHIVED' WHERE batch_id = $1`,
+          [previousBatchId]
+        );
+      }
+
+      await client.query(`DELETE FROM ${STUDENT_MASTER_TABLE}`);
+      await client.query(
+        `INSERT INTO ${STUDENT_MASTER_TABLE}
+         (nim, official_name, normalized_name, prodi, batch_year, is_active, import_batch_id, updated_at)
+         SELECT nim, official_name, normalized_name, prodi, batch_year, TRUE, batch_id, NOW()
+         FROM student_import_records WHERE batch_id = $1`,
+        [batchId]
+      );
+      await client.query(
+        `UPDATE ${STUDENT_IMPORT_BATCHES_TABLE}
+         SET status = 'ACTIVE', committed_at = NOW(), previous_batch_id = $2
+         WHERE batch_id = $1`,
+        [batchId, previousBatchId]
+      );
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('[DB] Student import commit error:', err);
+    throw new Error(`Gagal menyimpan data: ${(err as Error).message}`);
+  }
+}
+
+export async function rollbackToPreviousBatch(): Promise<{ batchId: string; count: number }> {
+  const p = getPool();
+  if (!p) {
+    throw new Error('Database unavailable');
+  }
+
+  try {
+    const ready = await initStudentImportTables(p);
+    if (!ready) {
+      throw new Error('Failed to initialize student import tables');
+    }
+
+    const client = await p.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('student-import'))");
+
+      const activeBatch = await client.query(
+        `SELECT batch_id, previous_batch_id FROM ${STUDENT_IMPORT_BATCHES_TABLE}
+         WHERE status = 'ACTIVE' ORDER BY created_at DESC LIMIT 1 FOR UPDATE`
+      );
+
+      if (activeBatch.rows.length === 0) {
+        throw new Error('Tidak ada data mahasiswa aktif untuk di-rollback.');
+      }
+
+      const currentBatchId = activeBatch.rows[0].batch_id;
+      const previousBatchId = activeBatch.rows[0].previous_batch_id;
+      if (!previousBatchId) {
+        throw new Error('Belum ada batch impor sebelumnya untuk dipulihkan.');
+      }
+
+      const previousRows = await client.query(
+        `SELECT COUNT(*)::int AS count FROM student_import_records WHERE batch_id = $1`,
+        [previousBatchId]
+      );
+      const count = Number(previousRows.rows[0]?.count || 0);
+      if (!count) throw new Error('Snapshot batch sebelumnya tidak ditemukan.');
+
+      await client.query(`DELETE FROM ${STUDENT_MASTER_TABLE}`);
+      await client.query(
+        `INSERT INTO ${STUDENT_MASTER_TABLE}
+         (nim, official_name, normalized_name, prodi, batch_year, is_active, import_batch_id, updated_at)
+         SELECT nim, official_name, normalized_name, prodi, batch_year, TRUE, batch_id, NOW()
+         FROM student_import_records WHERE batch_id = $1`,
+        [previousBatchId]
+      );
+      await client.query(
+        `UPDATE ${STUDENT_IMPORT_BATCHES_TABLE} SET status = 'ROLLED_BACK' WHERE batch_id = $1`,
+        [currentBatchId]
+      );
+      await client.query(
+        `UPDATE ${STUDENT_IMPORT_BATCHES_TABLE} SET status = 'ACTIVE' WHERE batch_id = $1`,
+        [previousBatchId]
+      );
+
+      await client.query('COMMIT');
+      return { batchId: previousBatchId, count };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('[DB] Student import rollback error:', err);
+    throw new Error(`Gagal melakukan rollback: ${(err as Error).message}`);
+  }
+}
+
+export async function getActiveStudentImportBatch(): Promise<{
+  batchId: string;
+  createdAt: string;
+  count: number;
+  canRollback: boolean;
+} | null> {
+  const p = getPool();
+  if (!p) return null;
+
+  try {
+    const ready = await initStudentImportTables(p);
+    if (!ready) return null;
+
+    const res = await p.query(
+      `SELECT b.batch_id, b.created_at, b.previous_batch_id,
+              COUNT(s.nim)::int AS count,
+              EXISTS (
+                SELECT 1 FROM student_import_records previous
+                WHERE previous.batch_id = b.previous_batch_id
+              ) AS can_rollback
+       FROM ${STUDENT_IMPORT_BATCHES_TABLE} b
+       JOIN ${STUDENT_MASTER_TABLE} s ON s.import_batch_id = b.batch_id AND s.is_active = TRUE
+       WHERE b.status = 'ACTIVE'
+       GROUP BY b.batch_id, b.created_at
+       ORDER BY b.created_at DESC LIMIT 1`
+    );
+
+    if (res.rows.length === 0) return null;
+
+    return {
+      batchId: res.rows[0].batch_id,
+      createdAt: res.rows[0].created_at,
+      count: res.rows[0].count,
+      canRollback: Boolean(res.rows[0].previous_batch_id && res.rows[0].can_rollback),
+    };
+  } catch {
+    return null;
   }
 }

@@ -247,8 +247,9 @@ Semua item **Kritis** dan **Tinggi** sudah ditutup di kode, kecuali T-4 yang men
 | M-4 | ✅ Selesai | `src/proxy.ts` redirect `/admin/*` → `/admin/login` tanpa cookie sesi; API tetap memakai `verifyAdminAuth()` |
 | M-5 | ✅ Selesai | CSP ditambah `object-src 'none'`, `frame-src`, `worker-src`, `upgrade-insecure-requests`; `'unsafe-eval'` hanya non-produksi; COOP/CORP |
 | M-6 | ✅ Selesai | Pool `max: 5`, `idleTimeoutMillis 30s`, `connectionTimeoutMillis 10s`, `statement_timeout`/`query_timeout` 15s |
+| R-1 | ✅ Selesai | `/api/qr/[token]` kini `Cache-Control: private, no-store` (QR adalah token bearer, tidak boleh di-cache publik) |
 | R-3 | ✅ Sebagian | `qrToken` check-in divalidasi `qrTokenSchema` (maks 64) → token 80 karakter = **400** |
-| R-8 | ✅ Sebagian | `poweredByHeader: false`; `X-Robots-Tag: noindex, nofollow` untuk `/admin` dan `/ticket` |
+| R-8 | ✅ Sebagian | `poweredByHeader: false`; `X-Robots-Tag: noindex, nofollow` untuk `/admin` dan `/ticket`; `src/app/robots.ts` menambahkan `robots.txt` (disallow `/api/` dan `/ticket/`, tanpa menyebut `/admin` agar portal tidak diumumkan) |
 
 ### Verifikasi runtime (dev, 25/10/2026)
 

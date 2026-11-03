@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import confetti from 'canvas-confetti';
-import { Ticket, User, Mail, Phone, BookOpen, AlertCircle, CheckCircle, Loader2, ChevronDown, Check, Users, CalendarDays } from 'lucide-react';
+import { Ticket, User, Mail, Phone, BookOpen, AlertCircle, CheckCircle, Loader2, ChevronDown, Check, X, Users, CalendarDays } from 'lucide-react';
 import { RoleType, CategoryType, BatchType, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/types';
 import { StarlightGlow } from './StarlightGlow';
 import ScrollReveal from './ScrollReveal';
@@ -16,6 +16,42 @@ declare global {
 }
 
 type DropdownKey = 'prodi' | 'category' | 'batch';
+type IdentityStatus = 'idle' | 'checking' | 'valid' | 'invalid' | 'unavailable';
+
+function IdentityIndicator({ status, field }: { status: IdentityStatus; field: 'name' | 'nim' }) {
+  if (status === 'idle') return null;
+
+  const message = status === 'valid'
+    ? 'Nama dan NIM cocok dengan data mahasiswa aktif.'
+    : status === 'invalid'
+      ? 'Nama atau NIM tidak sesuai. Periksa kembali ejaan nama dan nomor NIM.'
+      : status === 'checking'
+        ? 'Sedang mencocokkan nama dan NIM dengan data mahasiswa aktif.'
+        : 'Validasi belum tersedia. Coba lagi beberapa saat.';
+
+  return (
+    <button
+      type="button"
+      aria-label={message}
+      aria-describedby={`${field}-identity-tooltip`}
+      className={`group absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 outline-none focus-visible:ring-2 focus-visible:ring-ivory ${
+        status === 'valid' ? 'text-mint' : status === 'invalid' ? 'text-red-400' : status === 'unavailable' ? 'text-gold' : 'text-bloom-pink'
+      }`}
+    >
+      {status === 'valid' ? <CheckCircle className="h-5 w-5" /> : null}
+      {status === 'invalid' ? <X className="h-5 w-5" /> : null}
+      {status === 'checking' ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+      {status === 'unavailable' ? <AlertCircle className="h-5 w-5" /> : null}
+      <span
+        id={`${field}-identity-tooltip`}
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full right-0 z-50 mb-2 w-64 rounded-lg border border-bloom-pink/30 bg-surface-base px-3 py-2 text-left text-xs font-medium leading-relaxed text-ivory opacity-0 shadow-xl transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+      >
+        {message}
+      </span>
+    </button>
+  );
+}
 
 export default function RegistrationForm() {
   const router = useRouter();
@@ -37,8 +73,8 @@ export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [nimError, setNimError] = useState('');
-  const [checkingNim, setCheckingNim] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [identityCheck, setIdentityCheck] = useState<{ key: string; status: IdentityStatus }>({ key: '', status: 'idle' });
 
   const [openDropdown, setOpenDropdown] = useState<DropdownKey | null>(null);
 
@@ -58,7 +94,11 @@ export default function RegistrationForm() {
     'Teknologi Informasi',
   ];
 
-  const isStudentBatch = formData.category === 'Mahasiswa Fasilkom' || formData.category === 'Perwakilan Angkatan';
+  const normalizedIdentityKey = `${formData.nimNip.trim()}|${formData.name.trim().replace(/\s+/g, ' ').normalize('NFKC').toLocaleLowerCase('id-ID')}`;
+  const hasIdentityInputs = Boolean(formData.nimNip.trim() && formData.name.trim());
+  const identityStatus: IdentityStatus = identityCheck.key === normalizedIdentityKey
+    ? identityCheck.status
+    : hasIdentityInputs ? 'checking' : 'idle';
 
   const prodiFromNim = (nim: string): string | null => {
     const digits = nim.replace(/\D/g, '');
@@ -70,21 +110,27 @@ export default function RegistrationForm() {
     return null;
   };
 
+  const batchFromNim = (nim: string): BatchType => {
+    const year = nim.trim().slice(0, 2);
+    return ['23', '24', '25', '26'].includes(year) ? (`20${year}` as BatchType) : '-';
+  };
+
   useEffect(() => {
     const nim = formData.nimNip.trim();
     let cancelled = false;
     const timer = setTimeout(async () => {
       if (!nim) {
         setNimError('');
-        setCheckingNim(false);
         return;
       }
-      setCheckingNim(true);
 
       const detectedProdi = prodiFromNim(nim);
-      if (detectedProdi) {
-        setFormData((prev) => (prev.prodi === detectedProdi ? prev : { ...prev, prodi: detectedProdi }));
-      }
+      const detectedBatch = batchFromNim(nim);
+      setFormData((prev) => (
+        prev.prodi === (detectedProdi || '') && prev.batch === detectedBatch
+          ? prev
+          : { ...prev, prodi: detectedProdi || '', batch: detectedBatch }
+      ));
 
       try {
         const res = await fetch(`/api/register/check?nim=${encodeURIComponent(nim)}`);
@@ -93,8 +139,6 @@ export default function RegistrationForm() {
         setNimError(data.available === false ? 'NIM ini sudah terdaftar. Satu NIM hanya untuk satu registrasi.' : '');
       } catch {
         if (!cancelled) setNimError('');
-      } finally {
-        if (!cancelled) setCheckingNim(false);
       }
     }, 500);
     return () => {
@@ -102,6 +146,40 @@ export default function RegistrationForm() {
       clearTimeout(timer);
     };
   }, [formData.nimNip]);
+
+  useEffect(() => {
+    const nim = formData.nimNip.trim();
+    const name = formData.name.trim();
+    const identityKey = normalizedIdentityKey;
+    if (!nim || !name) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setIdentityCheck({ key: identityKey, status: 'checking' });
+      try {
+        const response = await fetch('/api/register/validate-identity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nim, name }),
+        });
+        const data = await response.json();
+        if (cancelled) return;
+        setIdentityCheck({
+          key: identityKey,
+          status: response.status === 503 ? 'unavailable' : data.valid ? 'valid' : 'invalid',
+        });
+      } catch {
+        if (!cancelled) setIdentityCheck({ key: identityKey, status: 'unavailable' });
+      }
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [formData.name, formData.nimNip, normalizedIdentityKey]);
 
   const toggleDropdown = (key: DropdownKey) => {
     setOpenDropdown((prev) => (prev === key ? null : key));
@@ -113,6 +191,13 @@ export default function RegistrationForm() {
 
     if (nimError) {
       setErrorMsg(nimError);
+      return;
+    }
+
+    if (identityStatus !== 'valid' || identityCheck.key !== normalizedIdentityKey) {
+      setErrorMsg(identityStatus === 'unavailable'
+        ? 'Data mahasiswa belum dapat diperiksa. Silakan coba lagi.'
+        : 'Pastikan nama dan NIM sudah cocok dengan data mahasiswa aktif.');
       return;
     }
 
@@ -250,6 +335,7 @@ export default function RegistrationForm() {
               />
             </div>
             
+            <div className="space-y-5">
             {/* Nama Lengkap */}
             <div>
               <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
@@ -263,8 +349,15 @@ export default function RegistrationForm() {
                   placeholder="Contoh: Arya Yudhistira"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-surface-card-2 border border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20 text-sm text-ivory placeholder-ink/40 outline-hidden transition-all"
+                  className={`w-full pl-11 pr-11 py-3.5 rounded-xl bg-surface-card-2 border text-sm text-ivory placeholder-ink/40 outline-hidden transition-all ${
+                    identityStatus === 'valid'
+                      ? 'border-mint/70 focus:border-mint focus:ring-2 focus:ring-mint/20'
+                      : identityStatus === 'invalid'
+                        ? 'border-red-500/70 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        : 'border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20'
+                  }`}
                 />
+                <IdentityIndicator status={identityStatus} field="name" />
               </div>
             </div>
 
@@ -280,14 +373,21 @@ export default function RegistrationForm() {
                   required
                   placeholder="Contoh: 232410101055"
                   value={formData.nimNip}
-                  onChange={(e) => setFormData({ ...formData, nimNip: e.target.value })}
-                  className={`w-full pl-11 pr-10 py-3.5 rounded-xl bg-surface-card-2 border text-sm text-ivory placeholder-ink/40 outline-hidden transition-all font-mono ${
-                    nimError ? 'border-red-500/70 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' : 'border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20'
+                  onChange={(e) => {
+                    setNimError('');
+                    setFormData({ ...formData, nimNip: e.target.value });
+                  }}
+                  className={`w-full pl-11 pr-11 py-3.5 rounded-xl bg-surface-card-2 border text-sm text-ivory placeholder-ink/40 outline-hidden transition-all font-mono ${
+                    identityStatus === 'valid'
+                      ? 'border-mint/70 focus:border-mint focus:ring-2 focus:ring-mint/20'
+                      : identityStatus === 'invalid'
+                        ? 'border-red-500/70 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        : nimError
+                          ? 'border-red-500/70 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                          : 'border-bloom-pink/30 focus:border-bloom-pink focus:ring-2 focus:ring-bloom-pink/20'
                   }`}
                 />
-                {checkingNim && (
-                  <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink animate-spin" />
-                )}
+                <IdentityIndicator status={identityStatus} field="nim" />
               </div>
               {nimError && (
                 <p className="mt-2 text-[11px] text-red-300 flex items-center gap-1.5">
@@ -297,10 +397,15 @@ export default function RegistrationForm() {
               )}
             </div>
 
+            </div>
+            <span aria-live="polite" className="sr-only">
+              {identityStatus === 'valid' ? 'Nama dan NIM cocok.' : identityStatus === 'invalid' ? 'Nama dan NIM tidak cocok.' : identityStatus === 'checking' ? 'Memeriksa nama dan NIM.' : identityStatus === 'unavailable' ? 'Pemeriksaan data mahasiswa belum tersedia.' : ''}
+            </span>
+
             {/* Kategori Civitas & Angkatan Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="relative" data-dropdown>
-                <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
+                <label className="mb-2 block text-xs uppercase tracking-widest text-gold font-semibold">
                   Datang Sebagai <span className="text-bloom-pink">*</span>
                 </label>
                 <div className="relative">
@@ -331,11 +436,10 @@ export default function RegistrationForm() {
                             <button
                               key={c}
                               type="button"
-                                onClick={() => {
-                                  const keepsBatch = c === 'Mahasiswa Fasilkom' || c === 'Perwakilan Angkatan';
-                                  setFormData({ ...formData, category: c, batch: keepsBatch ? formData.batch : '-' });
-                                  setOpenDropdown(null);
-                                }}
+                              onClick={() => {
+                                setFormData((prev) => ({ ...prev, category: c }));
+                                setOpenDropdown(null);
+                              }}
                               className={optionClass(isSelected)}
                             >
                               <span className="truncate">{c}</span>
@@ -350,20 +454,21 @@ export default function RegistrationForm() {
               </div>
 
               <div className="relative" data-dropdown>
-                <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
-                  Angkatan {isStudentBatch && <span className="text-bloom-pink">*</span>}
+                <label className="mb-2 block text-xs uppercase tracking-widest text-gold font-semibold">
+                  Angkatan <span className="text-bloom-pink">*</span>
                 </label>
                 <div className="relative">
                   <button
                     type="button"
-                    disabled={!isStudentBatch}
                     onClick={() => toggleDropdown('batch')}
                     aria-haspopup="listbox"
                     aria-expanded={openDropdown === 'batch'}
-                    className={`${dropdownClass('batch')} disabled:opacity-40 disabled:cursor-not-allowed`}
+                    className={dropdownClass('batch')}
                   >
                     <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bloom-pink" />
-                    <span className="truncate">{isStudentBatch ? formData.batch : '—'}</span>
+                    <span className={`truncate ${formData.batch === '-' ? 'text-ink/40' : ''}`}>
+                      {formData.batch === '-' ? 'Pilih Angkatan...' : formData.batch}
+                    </span>
                     <ChevronDown
                       className={`w-4 h-4 text-bloom-pink transition-transform duration-200 shrink-0 ml-2 ${
                         openDropdown === 'batch' ? 'rotate-180 text-gold' : ''
@@ -371,7 +476,7 @@ export default function RegistrationForm() {
                     />
                   </button>
 
-                  {openDropdown === 'batch' && isStudentBatch && (
+                  {openDropdown === 'batch' && (
                     <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-surface-card-2/95 backdrop-blur-xl border border-bloom-pink/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
                       <div className="divide-y divide-bloom-pink/10">
                         {BATCH_OPTIONS.map((b) => {
@@ -400,7 +505,7 @@ export default function RegistrationForm() {
 
             {/* Program Studi */}
             <div className="relative" data-dropdown>
-              <label className="block text-xs uppercase tracking-widest text-gold font-semibold mb-2">
+              <label className="mb-2 block text-xs uppercase tracking-widest text-gold font-semibold">
                 Program Studi (S1) <span className="text-bloom-pink">*</span>
               </label>
               <div className="relative">

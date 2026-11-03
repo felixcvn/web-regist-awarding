@@ -20,6 +20,7 @@ Dokumen ini merangkum **postur keamanan**, **teori** yang diterapkan, dan **impl
 | 12 | PII di filesystem/git | Jangan persist PII di FS | fallback JSON dimatikan di prod; `.participants_data.json` di `.gitignore`; seed dev memakai data palsu |
 | 13 | Info leak via error | Pesan generik ke klien | route memakai pesan umum; detail hanya `console.error` |
 | 14 | Kehilangan jejak insiden | Audit log | tabel `audit_log` (login, logout, checkin, delete, export CSV) |
+| 15 | Cache/indexing data sensitif | Cache privat + robots | `/api/qr/[token]` `Cache-Control: private, no-store`; `X-Robots-Tag: noindex` untuk admin/tiket; `app/robots.ts` tidak menyebut `/admin` |
 
 ## Autentikasi admin (alur)
 
@@ -42,7 +43,7 @@ TURNSTILE_SECRET_KEY / NEXT_PUBLIC_TURNSTILE_SITE_KEY   # opsional, anti-bot
 
 Generate hash: `npm run hash-pin -- <pin-rahasia>`.
 
-## Security headers (middleware)
+## Security headers (proxy)
 
 `Content-Security-Policy` (default-src 'self'; frame-ancestors 'none'), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security`, `Referrer-Policy`, `Permissions-Policy` (kamera hanya self).
 
