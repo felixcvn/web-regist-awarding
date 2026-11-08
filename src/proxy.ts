@@ -33,6 +33,7 @@ export function proxy(request: NextRequest) {
   const isAdminRoute = pathname.startsWith('/admin');
   const isAdminLogin = pathname.startsWith('/admin/login');
   const isSensitivePage = isAdminRoute || pathname.startsWith('/ticket');
+  const isSensitiveApi = /^\/api\/(?:admin|register|qr)(?:\/|$)/.test(pathname);
 
   let response = NextResponse.next();
 
@@ -56,9 +57,10 @@ export function proxy(request: NextRequest) {
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
 
-  // Keep admin and ticket pages (bearer links) out of search indexes.
-  if (isSensitivePage) {
+  // Apply to success and error responses, including JSON, CSV, and bearer links.
+  if (isSensitivePage || isSensitiveApi) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    response.headers.set('Cache-Control', 'private, no-store');
   }
 
   // Issue a CSRF token cookie for admin pages if missing (readable by JS for double-submit).

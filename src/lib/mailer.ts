@@ -6,7 +6,7 @@ const EVENT = {
   title: 'Fasilkom Awarding Night 2026',
   tagline: 'Secret Garden: Dreams to History',
   date: 'Selasa, 1 Desember 2026 • 17:30 WIB',
-  venue: 'Auditorium Gedung Biru, Fasilkom UNEJ',
+  venue: 'Gedung Soetardjo Universitas Jember',
 };
 
 let transporter: Transporter | null = null;

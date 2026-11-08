@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { validatePin, createSession } from '@/lib/auth';
-import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { rateLimit, getClientIp, rateLimitResponse, tooManyResponse } from '@/lib/ratelimit';
 import { writeAuditLog, countRecentLoginFailures } from '@/lib/db';
+import { loginSchema } from '@/lib/validation';
+import { readJsonBody } from '@/lib/requestBody';
+import { apiErrorResponse } from '@/lib/apiErrors';
 
 const LOCK_WINDOW_MS = 15 * 60_000;
 const LOCK_MAX_FAILURES = 12;
@@ -9,10 +12,10 @@ const LOCK_MAX_FAILURES = 12;
 export async function POST(request: Request) {
   const ip = getClientIp(request);
 
-  const limit = rateLimit(`login:${ip}`, 5, 60_000);
+  const limit = await rateLimit(`login:${ip}`, 5, 60_000);
   if (!limit.allowed) {
-    await writeAuditLog('login_rate_limited', ip);
-    return tooManyResponse(limit.retryAfter);
+    if (!limit.unavailable) await writeAuditLog('login_rate_limited', ip);
+    return rateLimitResponse(limit);
   }
 
   // Per-IP lockout persisted in the audit log (independent of instance memory).
@@ -23,9 +26,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { pin } = await request.json();
-
-    if (!pin || typeof pin !== 'string' || !(await validatePin(pin))) {
+    const parsed = loginSchema.safeParse(await readJsonBody(request, 1024));
+    if (!parsed.success) return NextResponse.json({ error: 'Format PIN tidak valid.' }, { status: 400 });
+    if (!(await validatePin(parsed.data.pin))) {
       await writeAuditLog('login_failed', ip);
       return NextResponse.json({ error: 'PIN Panitia salah!' }, { status: 401 });
     }
@@ -34,7 +37,7 @@ export async function POST(request: Request) {
     await writeAuditLog('login_success', ip);
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  } catch (error) {
+    return apiErrorResponse(error, 'Gagal memproses login. Silakan coba lagi.');
   }
 }

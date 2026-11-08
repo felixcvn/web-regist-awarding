@@ -1,9 +1,14 @@
 import { Pool } from 'pg';
-import { Participant, RegistrationInput } from './types';
+import { Participant, PublicTicket, RegistrationInput } from './types';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import * as XLSX from 'xlsx';
+import { ApiError, DatabaseUnavailableError } from './apiErrors';
+import { isTicketRevoked } from './revokedTickets';
+import { MAX_STUDENT_FILE_BYTES, MAX_STUDENT_IMPORT_ROWS, type StudentImportFiles } from './studentImportFiles';
+import { validateXlsxArchive } from './xlsxArchive';
+import { toPublicTicket } from './publicTicket';
 
 // --- Student import tables ---
 
@@ -54,6 +59,16 @@ async function initStudentImportTables(p: Pool): Promise<boolean> {
         batch_year VARCHAR(4) NOT NULL,
         PRIMARY KEY (batch_id, nim)
       )`,
+      `CREATE TABLE IF NOT EXISTS student_import_previews (
+        batch_id VARCHAR(64) PRIMARY KEY,
+        session_hash VARCHAR(64) NOT NULL,
+        students JSONB NOT NULL,
+        result JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL,
+        consumed_at TIMESTAMPTZ
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_student_previews_expiry ON student_import_previews(expires_at)`,
     ];
     for (const statement of statements) await p.query(statement);
     return true;
@@ -82,6 +97,7 @@ if (IS_PRODUCTION && !process.env.DATABASE_URL) {
 }
 
 function loadFallbackData(): Participant[] {
+  if (IS_PRODUCTION) throw new DatabaseUnavailableError();
   try {
     if (fs.existsSync(fallbackFilePath)) {
       const raw = fs.readFileSync(fallbackFilePath, 'utf8');
@@ -164,6 +180,56 @@ function getPool(): Pool | null {
     });
   }
   return pool;
+}
+
+let rateLimitTableReady: Promise<void> | null = null;
+let lastRateLimitCleanup = 0;
+
+// Atomic per-key sliding window shared by every application instance. Keys are
+// hashed so recipient addresses and client IPs are not stored in this table.
+export async function consumeRateLimit(key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; retryAfter: number } | null> {
+  const p = getPool();
+  if (!p) return null;
+  try {
+    if (!rateLimitTableReady) {
+      rateLimitTableReady = p.query(`
+        CREATE TABLE IF NOT EXISTS request_rate_limits (
+          bucket_key VARCHAR(64) PRIMARY KEY,
+          hits BIGINT[] NOT NULL,
+          last_allowed BOOLEAN NOT NULL,
+          expires_at TIMESTAMPTZ NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_request_rate_limits_expiry ON request_rate_limits(expires_at);
+      `).then(() => {}).catch((error) => { rateLimitTableReady = null; throw error; });
+    }
+    await rateLimitTableReady;
+    if (Date.now() - lastRateLimitCleanup >= 60_000) {
+      lastRateLimitCleanup = Date.now();
+      await p.query('DELETE FROM request_rate_limits WHERE expires_at <= NOW() AND bucket_key IN (SELECT bucket_key FROM request_rate_limits WHERE expires_at <= NOW() LIMIT 1000)');
+    }
+    const result = await p.query<{ last_allowed: boolean; retry_after: number }>(`
+      INSERT INTO request_rate_limits AS bucket (bucket_key, hits, last_allowed, expires_at)
+      VALUES ($1, ARRAY[(EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT], TRUE, NOW() + ($3::BIGINT * INTERVAL '1 millisecond'))
+      ON CONFLICT (bucket_key) DO UPDATE SET
+        hits = (
+          SELECT COALESCE(array_agg(hit ORDER BY hit), ARRAY[]::BIGINT[]) ||
+            CASE WHEN COUNT(*) < $2 THEN ARRAY[(EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT] ELSE ARRAY[]::BIGINT[] END
+          FROM unnest(bucket.hits) AS hit
+          WHERE hit > (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT - $3
+        ),
+        last_allowed = (
+          SELECT COUNT(*) < $2 FROM unnest(bucket.hits) AS hit
+          WHERE hit > (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT - $3
+        ),
+        expires_at = NOW() + ($3::BIGINT * INTERVAL '1 millisecond')
+      RETURNING last_allowed,
+        GREATEST(1, CEIL((hits[1] + $3 - EXTRACT(EPOCH FROM NOW()) * 1000) / 1000))::INT AS retry_after
+    `, [crypto.createHash('sha256').update(key).digest('hex'), limit, windowMs]);
+    return { allowed: result.rows[0].last_allowed, retryAfter: result.rows[0].last_allowed ? 0 : result.rows[0].retry_after };
+  } catch (error) {
+    console.error('[DB] Rate limit store unavailable:', (error as Error).message);
+    return null;
+  }
 }
 
 let isTableInitialized = false;
@@ -321,18 +387,19 @@ export async function createParticipant(input: RegistrationInput): Promise<{ par
   return { participant: newRecord };
 }
 
-export async function getParticipantByToken(qrToken: string): Promise<Participant | null> {
+export async function getParticipantByToken(qrToken: string): Promise<PublicTicket | null> {
+  if (isTicketRevoked(qrToken)) return null;
   const p = getPool();
   if (p) {
     try {
       const ready = await initPostgresTable(p);
       if (ready) {
-        const res = await p.query(
-          `SELECT id, nim_nip AS "nimNip", name, role, category, batch, prodi, email, phone, qr_token AS "qrToken", is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt", created_at AS "createdAt"
+        const res = await p.query<PublicTicket>(
+          `SELECT id, nim_nip AS "nimNip", name, role, category, batch, prodi, qr_token AS "qrToken", is_checked_in AS "isCheckedIn"
            FROM participants WHERE qr_token = $1 LIMIT 1`,
           [qrToken.trim()]
         );
-        if (res.rows.length > 0) return res.rows[0];
+        return res.rows[0] ? toPublicTicket(res.rows[0]) : null;
       }
     } catch {
       // fallback
@@ -340,10 +407,14 @@ export async function getParticipantByToken(qrToken: string): Promise<Participan
   }
 
   const list = loadFallbackData();
-  return list.find((item) => item.qrToken === qrToken.trim()) || null;
+  const participant = list.find((item) => item.qrToken === qrToken.trim());
+  return participant ? toPublicTicket(participant) : null;
 }
 
 export async function checkInParticipant(qrToken: string): Promise<{ success: boolean; message: string; participant?: Participant }> {
+  if (isTicketRevoked(qrToken)) {
+    return { success: false, message: 'Tiket tidak berlaku. Silakan hubungi panitia untuk penggantian.' };
+  }
   const p = getPool();
   const now = new Date().toISOString();
 
@@ -656,11 +727,7 @@ const STUDENT_PRODI_CODES: Record<string, string> = {
 
 const MAX_IMPORT_ERRORS = 100;
 
-async function parseStudentImportFiles(files: {
-  sistemInformasi?: File;
-  informatika?: File;
-  teknologiInformasi?: File;
-}): Promise<ParsedStudentImport> {
+async function parseStudentImportFiles(files: StudentImportFiles): Promise<ParsedStudentImport> {
   const students: ImportedStudent[] = [];
   const seenNims = new Set<string>();
   const errors: string[] = [];
@@ -684,23 +751,34 @@ async function parseStudentImportFiles(files: {
       addError(`File ${label} belum diunggah.`);
       return;
     }
+    if (file.size === 0 || file.size > MAX_STUDENT_FILE_BYTES) {
+      addError(`File ${label}: ukuran file harus antara 1 byte dan 5 MB.`);
+      return;
+    }
 
     let rows: unknown[][];
     try {
       const buffer = Buffer.from(await file.arrayBuffer());
-      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      await validateXlsxArchive(buffer);
+      const workbook = XLSX.read(buffer, { type: 'buffer', sheets: 0, sheetRows: MAX_STUDENT_IMPORT_ROWS + 1 });
       const sheetName = workbook.SheetNames[0];
       if (!sheetName) {
         addError(`File ${label} tidak memiliki worksheet.`);
         return;
       }
-      rows = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[sheetName], {
+      const sheet = workbook.Sheets[sheetName];
+      const range = XLSX.utils.decode_range(sheet['!fullref'] || sheet['!ref'] || 'A1');
+      if (range.e.r > MAX_STUDENT_IMPORT_ROWS || range.e.c > 127) {
+        addError(`File ${label}: maksimal ${MAX_STUDENT_IMPORT_ROWS} baris data dan 128 kolom.`);
+        return;
+      }
+      rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
         header: 1,
         defval: '',
-        raw: false,
+        raw: true,
       });
-    } catch {
-      addError(`File ${label} tidak dapat dibaca sebagai Excel .xlsx.`);
+    } catch (error) {
+      addError(`File ${label}: ${error instanceof ApiError ? error.message : 'tidak dapat dibaca sebagai Excel .xlsx.'}`);
       return;
     }
 
@@ -720,11 +798,15 @@ async function parseStudentImportFiles(files: {
       return;
     }
 
+    const validBeforeFile = students.length;
     for (let rowIndex = headerIndex + 1; rowIndex < rows.length; rowIndex++) {
       const row = rows[rowIndex];
       if (!row || row.every((cell) => String(cell).trim() === '')) continue;
 
       totalRows++;
+      if (totalRows > MAX_STUDENT_IMPORT_ROWS) {
+        throw new ApiError(`Maksimal total impor adalah ${MAX_STUDENT_IMPORT_ROWS} baris mahasiswa.`, 400);
+      }
       const rowLabel = `Baris ${rowIndex + 1} (${label})`;
       const nim = String(row[nimColumn] ?? '').trim();
       const name = String(row[nameColumn] ?? '').trim().replace(/\s+/g, ' ');
@@ -734,10 +816,14 @@ async function parseStudentImportFiles(files: {
         addError(`${rowLabel}: nama kosong.`);
         continue;
       }
+      if (name.length > 120 || normalizeName(name).length > 120) {
+        addError(`${rowLabel}: nama maksimal 120 karakter.`);
+        continue;
+      }
 
-      if (!/^\d{10,20}$/.test(nim)) {
+      if (!/^\d{12}$/.test(nim)) {
         invalidNims++;
-        addError(`${rowLabel}: NIM tidak valid atau kosong.`);
+        addError(`${rowLabel}: NIM wajib terdiri dari tepat 12 digit.`);
         continue;
       }
 
@@ -777,6 +863,7 @@ async function parseStudentImportFiles(files: {
         batchYear: `20${yearDigit}`,
       });
     }
+    if (students.length === validBeforeFile) addError(`File ${label} tidak memiliki baris mahasiswa valid.`);
   };
 
   await processFile(files.sistemInformasi, 'Sistem Informasi', 'Sistem Informasi');
@@ -799,62 +886,59 @@ async function parseStudentImportFiles(files: {
   return { students, result };
 }
 
-export async function previewStudentImport(files: {
-  sistemInformasi?: File;
-  informatika?: File;
-  teknologiInformasi?: File;
-}): Promise<StudentImportResult> {
+export async function previewStudentImport(files: StudentImportFiles, sessionHash: string): Promise<StudentImportResult> {
   const p = getPool();
-  if (!p) {
-    throw new Error('Database unavailable');
-  }
+  if (!p) throw new DatabaseUnavailableError();
+  if (!/^[a-f0-9]{64}$/.test(sessionHash)) throw new ApiError('Sesi impor tidak valid.', 401);
 
-  try {
-    const ready = await initStudentImportTables(p);
-    if (!ready) {
-      throw new Error('Failed to initialize student import tables');
-    }
+  const ready = await initStudentImportTables(p);
+  if (!ready) throw new DatabaseUnavailableError();
 
-    return (await parseStudentImportFiles(files)).result;
-  } catch (err) {
-    console.error('[DB] Student import preview error:', err);
-    throw new Error(`Gagal memproses file: ${(err as Error).message}`);
+  const parsed = await parseStudentImportFiles(files);
+  if (parsed.result.validRows > 0 && parsed.result.invalidRows === 0 && parsed.result.errors.length === 0) {
+    await p.query('DELETE FROM student_import_previews WHERE expires_at <= NOW()');
+    await p.query(`
+      INSERT INTO student_import_previews (batch_id, session_hash, students, result, expires_at)
+      VALUES ($1, $2, $3::JSONB, $4::JSONB, NOW() + INTERVAL '15 minutes')
+    `, [parsed.result.batchId, sessionHash, JSON.stringify(parsed.students), JSON.stringify(parsed.result)]);
   }
+  return parsed.result;
 }
 
 export async function commitStudentImport(
   batchId: string,
-  files: {
-    sistemInformasi?: File;
-    informatika?: File;
-    teknologiInformasi?: File;
-  },
+  sessionHash: string,
   committedByIp: string
 ): Promise<void> {
   const p = getPool();
-  if (!p) {
-    throw new Error('Database unavailable');
-  }
+  if (!p) throw new DatabaseUnavailableError();
 
-  if (!/^STU-[0-9a-f-]{36}$/i.test(batchId)) {
-    throw new Error('ID preview impor tidak valid. Silakan lakukan preview ulang.');
+  if (!/^STU-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(batchId)) {
+    throw new ApiError('ID preview impor tidak valid. Silakan lakukan preview ulang.', 400);
   }
 
   try {
     const ready = await initStudentImportTables(p);
-    if (!ready) {
-      throw new Error('Failed to initialize student import tables');
-    }
-
-    const parsed = await parseStudentImportFiles(files);
-    if (parsed.result.invalidRows > 0 || parsed.result.validRows === 0 || parsed.result.errors.length > 0) {
-      throw new Error('Data Excel berubah atau tidak valid. Silakan periksa ulang preview.');
-    }
+    if (!ready) throw new DatabaseUnavailableError();
 
     const client = await p.connect();
     try {
       await client.query('BEGIN');
       await client.query("SELECT pg_advisory_xact_lock(hashtext('student-import'))");
+
+      const previewRes = await client.query<{
+        session_hash: string; students: ImportedStudent[]; result: StudentImportResult;
+        valid: boolean; consumed_at: string | null;
+      }>(`SELECT session_hash, students, result, expires_at > clock_timestamp() AS valid, consumed_at
+          FROM student_import_previews WHERE batch_id = $1 FOR UPDATE`, [batchId]);
+      const preview = previewRes.rows[0];
+      if (!preview || preview.session_hash !== sessionHash || !preview.valid || preview.consumed_at) {
+        throw new ApiError('Preview tidak tersedia, kedaluwarsa, atau sudah digunakan. Silakan preview ulang.', 409);
+      }
+      const parsed = { students: preview.students, result: preview.result };
+      if (!Array.isArray(parsed.students) || parsed.students.length === 0 || parsed.result.errors.length > 0 || parsed.result.invalidRows > 0) {
+        throw new ApiError('Preview tidak valid. Silakan preview ulang.', 409);
+      }
 
       const activeBatch = await client.query(
         `SELECT batch_id FROM ${STUDENT_IMPORT_BATCHES_TABLE}
@@ -914,6 +998,7 @@ export async function commitStudentImport(
          WHERE batch_id = $1`,
         [batchId, previousBatchId]
       );
+      await client.query("UPDATE student_import_previews SET consumed_at = NOW(), students = '[]'::JSONB WHERE batch_id = $1", [batchId]);
 
       await client.query('COMMIT');
     } catch (err) {
@@ -924,20 +1009,20 @@ export async function commitStudentImport(
     }
   } catch (err) {
     console.error('[DB] Student import commit error:', err);
-    throw new Error(`Gagal menyimpan data: ${(err as Error).message}`);
+    throw err;
   }
 }
 
 export async function rollbackToPreviousBatch(): Promise<{ batchId: string; count: number }> {
   const p = getPool();
   if (!p) {
-    throw new Error('Database unavailable');
+    throw new DatabaseUnavailableError();
   }
 
   try {
     const ready = await initStudentImportTables(p);
     if (!ready) {
-      throw new Error('Failed to initialize student import tables');
+      throw new DatabaseUnavailableError();
     }
 
     const client = await p.connect();
@@ -951,13 +1036,13 @@ export async function rollbackToPreviousBatch(): Promise<{ batchId: string; coun
       );
 
       if (activeBatch.rows.length === 0) {
-        throw new Error('Tidak ada data mahasiswa aktif untuk di-rollback.');
+        throw new ApiError('Tidak ada data mahasiswa aktif untuk di-rollback.', 409);
       }
 
       const currentBatchId = activeBatch.rows[0].batch_id;
       const previousBatchId = activeBatch.rows[0].previous_batch_id;
       if (!previousBatchId) {
-        throw new Error('Belum ada batch impor sebelumnya untuk dipulihkan.');
+        throw new ApiError('Belum ada batch impor sebelumnya untuk dipulihkan.', 409);
       }
 
       const previousRows = await client.query(
@@ -965,7 +1050,7 @@ export async function rollbackToPreviousBatch(): Promise<{ batchId: string; coun
         [previousBatchId]
       );
       const count = Number(previousRows.rows[0]?.count || 0);
-      if (!count) throw new Error('Snapshot batch sebelumnya tidak ditemukan.');
+      if (!count) throw new ApiError('Snapshot batch sebelumnya tidak ditemukan.', 409);
 
       await client.query(`DELETE FROM ${STUDENT_MASTER_TABLE}`);
       await client.query(
@@ -994,7 +1079,7 @@ export async function rollbackToPreviousBatch(): Promise<{ batchId: string; coun
     }
   } catch (err) {
     console.error('[DB] Student import rollback error:', err);
-    throw new Error(`Gagal melakukan rollback: ${(err as Error).message}`);
+    throw err;
   }
 }
 
@@ -1005,11 +1090,11 @@ export async function getActiveStudentImportBatch(): Promise<{
   canRollback: boolean;
 } | null> {
   const p = getPool();
-  if (!p) return null;
+  if (!p) throw new DatabaseUnavailableError();
 
   try {
     const ready = await initStudentImportTables(p);
-    if (!ready) return null;
+    if (!ready) throw new DatabaseUnavailableError();
 
     const res = await p.query(
       `SELECT b.batch_id, b.created_at, b.previous_batch_id,
@@ -1021,7 +1106,7 @@ export async function getActiveStudentImportBatch(): Promise<{
        FROM ${STUDENT_IMPORT_BATCHES_TABLE} b
        JOIN ${STUDENT_MASTER_TABLE} s ON s.import_batch_id = b.batch_id AND s.is_active = TRUE
        WHERE b.status = 'ACTIVE'
-       GROUP BY b.batch_id, b.created_at
+       GROUP BY b.batch_id, b.created_at, b.previous_batch_id
        ORDER BY b.created_at DESC LIMIT 1`
     );
 
@@ -1033,7 +1118,8 @@ export async function getActiveStudentImportBatch(): Promise<{
       count: res.rows[0].count,
       canRollback: Boolean(res.rows[0].previous_batch_id && res.rows[0].can_rollback),
     };
-  } catch {
-    return null;
+  } catch (error) {
+    console.error('[DB] Active student batch unavailable:', (error as Error).message);
+    throw new DatabaseUnavailableError();
   }
 }

@@ -11,43 +11,70 @@ export default function EventDetails() {
 
   const rundownItems = [
     {
-      time: '17:30 - 18:30 WIB',
-      title: 'Red Carpet, Registration & Welcome Drink',
-      desc: 'Penyambutan tamu, photobooth, scan QR code tiket masuk, dan registrasi doorprize.',
+      time: '17:45 - 18:15 WIB',
+      title: 'Open Gate & Band Etalase',
       icon: Camera,
       tag: 'Opening Phase',
     },
     {
-      time: '18:30 - 19:00 WIB',
-      title: 'Grand Opening & Enchanted Orchestra',
+      time: '18:15 - 18:25 WIB',
+      title: 'Persembahan Tari dan pembukaan ',
       desc: 'Tari pembuka tematik "Botanical Fairy Tale" dan sambutan Dekan Fasilkom UNEJ.',
       icon: Music,
       tag: 'Ceremony',
     },
     {
-      time: '19:00 - 20:15 WIB',
-      title: 'Awarding Session 1: Academic & Research',
+      time: '18:25 - 18:30 WIB',
+      title: 'Indonesia Raya dan Hymne Unej',
       desc: 'Penganugerahan Kategori Mahasiswa Berprestasi, Dosen Terfavorit, dan Riset Unggulan 2026.',
       icon: Award,
       tag: 'Penganugerahan',
     },
     {
-      time: '20:15 - 20:45 WIB',
-      title: 'Special Performance & Dinner Banquet',
+      time: '18:30 - 18:40 WIB',
+      title: 'Opening Fasilkom Awarding dari MC & Penjelasan Acara + doa',
       desc: 'Makan malam bersama diiringi penampilan musik akustik civitas Fasilkom.',
       icon: Music,
       tag: 'Intermezzo',
     },
     {
-      time: '20:45 - 21:45 WIB',
-      title: 'Awarding Session 2 & Grand Trophy',
+      time: '18:55 - 19:05 WIB',
+      title: 'Sambutan Dekan Fasilkom Unej',
       desc: 'Pengumuman Organisasi Mahasiswa Terbaik, Duta Fasilkom 2026, dan Pengumuman Doorprize Utama.',
       icon: Award,
       tag: 'Puncak Acara',
     },
     {
-      time: '21:45 - 22:00 WIB',
-      title: 'Closing Ceremony & Photo Session',
+      time: '19:05 - 19:10 WIB',
+      title: 'Sambutan Wakil Rektor I Universitas Jember',
+      desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
+      icon: Camera,
+      tag: 'Penutupan',
+    },
+    {
+      time: '19:15 - 19:35 WIB',
+      title: 'Pemutaran Video Opening Awarding',
+      desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
+      icon: Camera,
+      tag: 'Penutupan',
+    },
+    {
+      time: '19:35 - 19:45 WIB',
+      title: 'Pembacaan Nominasi dan Pengumuman Pemenang',
+      desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
+      icon: Camera,
+      tag: 'Penutupan',
+    },
+    {
+      time: '19:45 - 21:15 WIB',
+      title: 'Perform Guest Star',
+      desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
+      icon: Camera,
+      tag: 'Penutupan',
+    },
+    {
+      time: '21:15 - 21:45 WIB',
+      title: 'Closing',
       desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
       icon: Camera,
       tag: 'Penutupan',
@@ -153,9 +180,9 @@ export default function EventDetails() {
               </div>
               <h3 className="font-cinzel text-xl font-bold text-gold mb-2">Tanggal & Waktu</h3>
               <p className="text-sm text-ink/90 font-medium">Selasa, 1 Desember 2026</p>
-              <p className="text-xs text-bloom-pink mt-1 font-mono">17:30 WIB — 22:00 WIB</p>
+              <p className="text-xs text-bloom-pink mt-1 font-mono">17:45 WIB — 22:00 WIB</p>
               <p className="text-xs text-ink/60 mt-3 leading-relaxed">
-                Open gate dimulai pukul 17:30 WIB. Harap hadir tepat waktu untuk registrasi & sesi red carpet.
+                Open gate dimulai pukul 17:45 WIB. Harap hadir tepat waktu untuk registrasi & sesi red carpet.
               </p>
             </div>
           </ScrollReveal>
@@ -167,7 +194,7 @@ export default function EventDetails() {
                 <MapPin className="w-6 h-6" />
               </div>
               <h3 className="font-cinzel text-xl font-bold text-gold mb-2">Lokasi & Venue</h3>
-              <p className="text-sm text-ink/90 font-medium">Auditorium Gedung Biru</p>
+              <p className="text-sm text-ink/90 font-medium">Gedung Soetardjo Unniversitas Jember</p>
               <p className="text-xs text-bloom-pink mt-1">Fakultas Ilmu Komputer, Universitas Jember</p>
               <p className="text-xs text-ink/60 mt-3 leading-relaxed">
                 Jl. Kalimantan No. 37, Kampus Tegalboto, Sumbersari, Jember, Jawa Timur.

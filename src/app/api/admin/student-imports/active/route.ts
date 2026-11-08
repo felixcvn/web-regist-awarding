@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/auth';
-import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/ratelimit';
 import { getActiveStudentImportBatch } from '@/lib/db';
+import { apiErrorResponse } from '@/lib/apiErrors';
 
 export async function GET(request: Request) {
   const ip = getClientIp(request);
-  const limit = rateLimit(`student-import:active:${ip}`, 30, 60_000);
-  if (!limit.allowed) return tooManyResponse(limit.retryAfter);
+  const limit = await rateLimit(`student-import:active:${ip}`, 30, 60_000);
+  if (!limit.allowed) return rateLimitResponse(limit);
 
   try {
     const isAuthed = await verifyAdminAuth();
@@ -24,10 +25,6 @@ export async function GET(request: Request) {
       canRollback: batch?.canRollback || false,
     });
   } catch (err) {
-    console.error('[API] Student import active batch error:', err);
-    return NextResponse.json(
-      { error: `Gagal mengambil data: ${(err as Error).message}` },
-      { status: 500 }
-    );
+    return apiErrorResponse(err, 'Gagal mengambil informasi batch aktif.');
   }
 }

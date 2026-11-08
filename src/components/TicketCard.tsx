@@ -2,13 +2,13 @@
 
 import React, { useRef, useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Participant } from '@/lib/types';
+import type { PublicTicket } from '@/lib/types';
 import { Sparkles, Calendar, MapPin, Download, CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Card3D from './Card3D';
 
 interface TicketCardProps {
-  participant: Participant;
+  participant: PublicTicket;
 }
 
 export default function TicketCard({ participant }: TicketCardProps) {

@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/auth';
 import { getAllParticipants, writeAuditLog } from '@/lib/db';
-import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/ratelimit';
 import { csvSafe } from '@/lib/validation';
+import { apiErrorResponse } from '@/lib/apiErrors';
 
 export async function GET(request: Request) {
   const ip = getClientIp(request);
-  const limit = rateLimit(`participants:${ip}`, 60, 60_000);
-  if (!limit.allowed) return tooManyResponse(limit.retryAfter);
+  const limit = await rateLimit(`participants:${ip}`, 60, 60_000);
+  if (!limit.allowed) return rateLimitResponse(limit);
 
   try {
     const isAuthed = await verifyAdminAuth();
@@ -43,13 +44,14 @@ export async function GET(request: Request) {
         status: 200,
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
+          'Cache-Control': 'private, no-store',
           'Content-Disposition': `attachment; filename="FAN2026_Kehadiran_${new Date().toISOString().slice(0, 10)}.csv"`,
         },
       });
     }
 
     return NextResponse.json({ participants });
-  } catch {
-    return NextResponse.json({ error: 'Gagal mengambil data peserta.' }, { status: 500 });
+  } catch (error) {
+    return apiErrorResponse(error, 'Gagal mengambil data peserta.');
   }
 }

@@ -2,15 +2,16 @@ import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/auth';
 import { deleteParticipant, writeAuditLog } from '@/lib/db';
 import { validateCsrf, validateOrigin, forbiddenResponse } from '@/lib/csrf';
-import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/ratelimit';
+import { apiErrorResponse } from '@/lib/apiErrors';
 
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const ip = getClientIp(request);
-  const limit = rateLimit(`delete:${ip}`, 30, 60_000);
-  if (!limit.allowed) return tooManyResponse(limit.retryAfter);
+  const limit = await rateLimit(`delete:${ip}`, 30, 60_000);
+  if (!limit.allowed) return rateLimitResponse(limit);
 
   try {
     const isAuthed = await verifyAdminAuth();
@@ -34,7 +35,7 @@ export async function DELETE(
 
     await writeAuditLog('delete_participant', ip, id.trim());
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: 'Gagal menghapus peserta.' }, { status: 500 });
+  } catch (error) {
+    return apiErrorResponse(error, 'Gagal menghapus peserta.');
   }
 }

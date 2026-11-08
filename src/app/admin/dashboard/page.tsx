@@ -37,11 +37,6 @@ export default function AdminDashboardPage() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [previewData, setPreviewData] = useState<StudentImportPreview | null>(null);
-  const [studentFiles, setStudentFiles] = useState<{
-    sistemInformasi: File;
-    informatika: File;
-    teknologiInformasi: File;
-  } | null>(null);
   const [commitLoading, setCommitLoading] = useState(false);
   const [rollbackLoading, setRollbackLoading] = useState(false);
   const [activeBatch, setActiveBatch] = useState<{
@@ -75,6 +70,10 @@ export default function AdminDashboardPage() {
       const res = await fetch('/api/admin/student-imports/active');
       if (res.status === 401) return;
       const data = await res.json();
+      if (!res.ok) {
+        setNotice(data.error || 'Gagal mengambil informasi batch aktif.');
+        return;
+      }
       if (data.active) {
         setActiveBatch({
           batchId: data.batchId,
@@ -159,7 +158,6 @@ export default function AdminDashboardPage() {
       setNotice('Pilih ketiga file Excel terlebih dahulu.');
       return;
     }
-    setStudentFiles({ sistemInformasi, informatika, teknologiInformasi });
 
     try {
       const res = await secureFetch('/api/admin/student-imports/preview', {
@@ -182,29 +180,24 @@ export default function AdminDashboardPage() {
   };
 
   const handleCommitImport = async () => {
-    if (!previewData || !studentFiles || previewData.invalidRows > 0 || previewData.validRows === 0 || previewData.errors.length > 0) return;
+    if (!previewData || previewData.invalidRows > 0 || previewData.validRows === 0 || previewData.errors.length > 0) return;
 
     setCommitLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('batchId', previewData.batchId);
-      formData.append('sistemInformasi', studentFiles.sistemInformasi);
-      formData.append('informatika', studentFiles.informatika);
-      formData.append('teknologiInformasi', studentFiles.teknologiInformasi);
-
       const res = await secureFetch('/api/admin/student-imports/commit', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchId: previewData.batchId }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        if (res.status === 409) setPreviewData(null);
         throw new Error(data.error || 'Gagal menyimpan data');
       }
 
       setShowImportDialog(false);
       setPreviewData(null);
-      setStudentFiles(null);
       await fetchActiveBatch();
       setNotice('Data mahasiswa berhasil disimpan!');
     } catch (err) {
@@ -607,6 +600,9 @@ export default function AdminDashboardPage() {
               </form>
             ) : (
               <div className="space-y-4">
+                <p className="text-xs text-ink/70">
+                  Preview berlaku 15 menit pada sesi ini. Simpan untuk mengaktifkan data yang telah diperiksa.
+                </p>
                 {/* Summary */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-xl p-4 bg-surface-card-2 border border-bloom-pink/20 text-center">
@@ -661,7 +657,6 @@ export default function AdminDashboardPage() {
                     type="button"
                     onClick={() => {
                       setPreviewData(null);
-                      setStudentFiles(null);
                       setShowImportDialog(false);
                     }}
                     className="flex-1 px-4 py-3 rounded-xl bg-surface-card border border-bloom-pink/30 text-xs font-bold text-bloom-pink hover:bg-surface-card transition-colors"
@@ -671,7 +666,7 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={handleCommitImport}
-                    disabled={commitLoading || previewData.invalidRows > 0 || previewData.validRows === 0 || previewData.errors.length > 0 || !studentFiles}
+                    disabled={commitLoading || previewData.invalidRows > 0 || previewData.validRows === 0 || previewData.errors.length > 0}
                     className="flex-1 px-4 py-3 rounded-xl bg-gold text-ink text-xs font-bold hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                   >
                     {commitLoading ? 'Menyimpan...' : 'Simpan Data Aktif'}

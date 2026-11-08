@@ -7,6 +7,9 @@ import Enchanted3DCanvas from '@/components/Enchanted3DCanvas';
 import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
 import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
 import GardenFrame from '@/components/GardenFrame';
+import { qrTokenSchema } from '@/lib/validation';
+
+export const dynamic = 'force-dynamic';
 
 interface TicketPageProps {
   params: Promise<{ id: string }>;
@@ -14,7 +17,9 @@ interface TicketPageProps {
 
 export default async function TicketPage({ params }: TicketPageProps) {
   const resolvedParams = await params;
-  const participant = await getParticipantByToken(resolvedParams.id);
+  const token = qrTokenSchema.safeParse(resolvedParams.id);
+  if (!token.success) notFound();
+  const participant = await getParticipantByToken(token.data);
 
   if (!participant) {
     notFound();

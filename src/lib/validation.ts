@@ -4,11 +4,13 @@ import { z } from 'zod';
 export function csvSafe(value: unknown): string {
   const s = String(value ?? '');
   const escaped = s.replace(/"/g, '""');
-  return /^[=+\-@]/.test(escaped) ? `'${escaped}` : escaped;
+  return /^[\s\u0000-\u001f]*[=+\-@]/.test(escaped) ? `'${escaped}` : escaped;
 }
 
+export const studentNimSchema = z.string().trim().regex(/^2[3-6]\d{6}(?:1[01]|2[01]|3[01])\d{2}$/, 'NIM harus 12 digit dengan angkatan dan kode prodi yang valid');
+
 export const registrationSchema = z.object({
-  nimNip: z.string().trim().min(1).max(30).regex(/^[A-Za-z0-9./-]+$/, 'NIM/NIP mengandung karakter tidak valid'),
+  nimNip: studentNimSchema,
   name: z.string().trim().min(1).max(120),
   role: z.enum(['Mahasiswa', 'Dosen', 'Tenaga Pendidik', 'Tamu Undangan']),
   category: z.string().trim().min(1).max(40),
@@ -16,8 +18,16 @@ export const registrationSchema = z.object({
   prodi: z.string().trim().max(80).optional().default('-'),
   email: z.string().trim().email().max(120),
   phone: z.string().trim().max(20).optional().default('-'),
+  website: z.string().max(200).optional(),
+  turnstileToken: z.string().max(2048).optional(),
 });
 
 export type RegistrationPayload = z.infer<typeof registrationSchema>;
 
-export const qrTokenSchema = z.string().trim().max(64);
+export const qrTokenSchema = z.string().trim().min(1).max(64);
+export const checkinSchema = z.object({ qrToken: qrTokenSchema });
+export const loginSchema = z.object({ pin: z.string().trim().min(1).max(128) });
+export const studentIdentitySchema = z.object({ nim: studentNimSchema, name: z.string().trim().min(1).max(120) });
+export const studentImportCommitSchema = z.object({
+  batchId: z.string().regex(/^STU-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+}).strict();

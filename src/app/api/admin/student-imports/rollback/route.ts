@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/auth';
-import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/ratelimit';
 import { rollbackToPreviousBatch } from '@/lib/db';
-import { validateCsrf } from '@/lib/csrf';
+import { validateCsrf, validateOrigin } from '@/lib/csrf';
+import { apiErrorResponse } from '@/lib/apiErrors';
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
-  const limit = rateLimit(`student-import:rollback:${ip}`, 3, 60_000);
-  if (!limit.allowed) return tooManyResponse(limit.retryAfter);
+  const limit = await rateLimit(`student-import:rollback:${ip}`, 3, 60_000);
+  if (!limit.allowed) return rateLimitResponse(limit);
 
   try {
     const isAuthed = await verifyAdminAuth();
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Akses ditolak.' }, { status: 401 });
     }
 
-    const csrfValid = validateCsrf(request);
+    const csrfValid = validateOrigin(request) && validateCsrf(request);
     if (!csrfValid) {
       return NextResponse.json({ error: 'Permintaan ditolak (CSRF).' }, { status: 403 });
     }
@@ -28,10 +29,6 @@ export async function POST(request: Request) {
       count: result.count,
     });
   } catch (err) {
-    console.error('[API] Student import rollback error:', err);
-    return NextResponse.json(
-      { error: `Gagal melakukan rollback: ${(err as Error).message}` },
-      { status: 500 }
-    );
+    return apiErrorResponse(err, 'Gagal memulihkan batch sebelumnya. Silakan coba lagi.');
   }
 }

@@ -2,7 +2,8 @@
 export function getCsrfToken(): string {
   if (typeof document === 'undefined') return '';
   const match = document.cookie.match(/(?:^|;\s*)fan26_csrf=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : '';
+  try { return match ? decodeURIComponent(match[1]) : ''; }
+  catch { return ''; }
 }
 
 export function secureFetch(input: string, init: RequestInit = {}): Promise<Response> {

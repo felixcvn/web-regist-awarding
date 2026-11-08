@@ -53,6 +53,10 @@ export interface Participant {
   createdAt: string;
 }
 
+export type PublicTicket = Pick<Participant,
+  'id' | 'nimNip' | 'name' | 'role' | 'category' | 'batch' | 'prodi' | 'qrToken' | 'isCheckedIn'
+>;
+
 export interface RegistrationInput {
   nimNip: string;
   name: string;

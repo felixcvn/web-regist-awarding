@@ -1,21 +1,25 @@
 import { NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 import { qrTokenSchema } from '@/lib/validation';
-import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/ratelimit';
+import { isTicketRevoked } from '@/lib/revokedTickets';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const ip = getClientIp(request);
-  const limit = rateLimit(`qr:${ip}`, 30, 60_000);
-  if (!limit.allowed) return tooManyResponse(limit.retryAfter);
+  const limit = await rateLimit(`qr:${ip}`, 30, 60_000);
+  if (!limit.allowed) return rateLimitResponse(limit);
 
   try {
     const { token } = await params;
     const parsed = qrTokenSchema.safeParse(token);
     if (!parsed.success) {
       return NextResponse.json({ error: 'Token tidak valid.' }, { status: 400 });
+    }
+    if (isTicketRevoked(parsed.data)) {
+      return NextResponse.json({ error: 'Tiket tidak berlaku. Silakan hubungi panitia.' }, { status: 404 });
     }
 
     const buffer = await QRCode.toBuffer(parsed.data, { margin: 5, width: 600, errorCorrectionLevel: 'H', color: { dark: '#000000', light: '#ffffff' } });

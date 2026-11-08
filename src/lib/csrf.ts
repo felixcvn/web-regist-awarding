@@ -11,7 +11,9 @@ export function generateCsrfToken(): string {
 export function validateCsrf(request: Request): boolean {
   const cookieHeader = request.headers.get('cookie') || '';
   const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${CSRF_COOKIE}=([^;]+)`));
-  const cookieValue = match ? decodeURIComponent(match[1]) : '';
+  let cookieValue = '';
+  try { cookieValue = match ? decodeURIComponent(match[1]) : ''; }
+  catch { return false; }
   const headerValue = request.headers.get(CSRF_HEADER) || '';
   if (!cookieValue || !headerValue) return false;
 
@@ -37,6 +39,6 @@ export function validateOrigin(request: Request): boolean {
 export function forbiddenResponse(): Response {
   return new Response(JSON.stringify({ error: 'Permintaan ditolak (CSRF).' }), {
     status: 403,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' },
   });
 }

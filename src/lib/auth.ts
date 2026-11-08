@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { DatabaseUnavailableError } from './apiErrors';
 import {
   createSessionRecord,
   getSessionRecord,
@@ -54,7 +55,7 @@ export async function createSession(ip: string, userAgent: string): Promise<stri
   if (!stored) {
     if (IS_PRODUCTION) {
       // Do not silently degrade auth in production.
-      throw new Error('Session store unavailable');
+      throw new DatabaseUnavailableError();
     }
     console.warn('[Auth] DB session store unavailable — using in-memory session (dev only).');
     memorySessions.set(tokenHash, expiresAt.getTime());
@@ -73,29 +74,34 @@ export async function createSession(ip: string, userAgent: string): Promise<stri
   return token;
 }
 
-export async function verifyAdminAuth(): Promise<boolean> {
+export async function getAdminSession(): Promise<{ tokenHash: string } | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token) return false;
+  if (!token) return null;
 
   const tokenHash = hashToken(token);
 
   const record = await getSessionRecord(tokenHash);
   if (record) {
-    return new Date(record.expiresAt).getTime() >= Date.now();
+    return new Date(record.expiresAt).getTime() >= Date.now() ? { tokenHash } : null;
   }
 
-  // Fallback to in-memory sessions (dev / DB down).
+  // In-memory sessions are development-only.
+  if (IS_PRODUCTION) return null;
   const memExpiry = memorySessions.get(tokenHash);
   if (memExpiry) {
     if (memExpiry < Date.now()) {
       memorySessions.delete(tokenHash);
-      return false;
+      return null;
     }
-    return true;
+    return { tokenHash };
   }
 
-  return false;
+  return null;
+}
+
+export async function verifyAdminAuth(): Promise<boolean> {
+  return (await getAdminSession()) !== null;
 }
 
 export async function destroySession(): Promise<void> {

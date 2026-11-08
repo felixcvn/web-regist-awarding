@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/auth';
 import { checkInParticipant } from '@/lib/db';
-import { rateLimit, getClientIp, tooManyResponse } from '@/lib/ratelimit';
+import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/ratelimit';
 import { writeAuditLog } from '@/lib/db';
 import { validateCsrf, validateOrigin, forbiddenResponse } from '@/lib/csrf';
-import { qrTokenSchema } from '@/lib/validation';
+import { checkinSchema } from '@/lib/validation';
+import { readJsonBody } from '@/lib/requestBody';
+import { apiErrorResponse } from '@/lib/apiErrors';
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
 
-  const limit = rateLimit(`checkin:${ip}`, 120, 60_000);
-  if (!limit.allowed) return tooManyResponse(limit.retryAfter);
+  const limit = await rateLimit(`checkin:${ip}`, 120, 60_000);
+  if (!limit.allowed) return rateLimitResponse(limit);
 
   try {
     const isAuthed = await verifyAdminAuth();
@@ -22,19 +24,17 @@ export async function POST(request: Request) {
       return forbiddenResponse();
     }
 
-    const { qrToken } = await request.json();
-
-    const parsedToken = qrTokenSchema.safeParse(qrToken);
-    if (!parsedToken.success || !parsedToken.data) {
+    const parsed = checkinSchema.safeParse(await readJsonBody(request, 1024));
+    if (!parsed.success) {
       return NextResponse.json({ error: 'QR Code / Token tidak valid!' }, { status: 400 });
     }
 
-    const result = await checkInParticipant(parsedToken.data);
+    const result = await checkInParticipant(parsed.data.qrToken);
     if (result.success && result.participant) {
       await writeAuditLog('checkin', ip, result.participant.id);
     }
     return NextResponse.json(result);
-  } catch {
-    return NextResponse.json({ error: 'Gagal memproses check-in' }, { status: 500 });
+  } catch (error) {
+    return apiErrorResponse(error, 'Gagal memproses check-in.');
   }
 }

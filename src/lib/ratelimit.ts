@@ -1,78 +1,74 @@
-// In-memory sliding-window rate limiter. Sufficient for a single-instance
-// self-hosted deployment (~700 participants). Swap the Map for Redis if you
-// ever run multiple instances behind a load balancer.
-type Entry = number[];
+import { isIP } from 'node:net';
+import { consumeRateLimit } from './db';
 
+type Entry = { times: number[]; expiresAt: number };
 const buckets = new Map<string, Entry>();
-let lastSweep = Date.now();
-
 const MAX_KEYS = 10_000;
-
-function sweep(now: number) {
-  if (now - lastSweep < 60_000) return;
-  lastSweep = now;
-  for (const [key, times] of buckets) {
-    const live = times.filter((t) => now - t < 10 * 60_000);
-    if (live.length === 0) buckets.delete(key);
-    else buckets.set(key, live);
-  }
-}
+let lastSweep = 0;
 
 export interface RateLimitResult {
   allowed: boolean;
   retryAfter: number; // seconds
+  unavailable?: boolean;
 }
 
-export function rateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
+function memoryRateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
   const now = Date.now();
-  sweep(now);
-
-  if (buckets.size > MAX_KEYS) {
-    // Evict the oldest entries instead of clearing everything: a flood of unique
-    // keys (e.g. spoofed IPs) must not reset every active rate limit.
-    const overflow = Math.max(1, Math.floor(MAX_KEYS * 0.1));
-    let removed = 0;
-    for (const key of buckets.keys()) {
-      buckets.delete(key);
-      if (++removed >= overflow) break;
-    }
+  if (now - lastSweep >= 60_000) {
+    lastSweep = now;
+    for (const [bucketKey, entry] of buckets) if (entry.expiresAt <= now) buckets.delete(bucketKey);
+  }
+  // Keep existing limits intact under a flood of distinct keys (development only).
+  if (!buckets.has(key) && buckets.size >= MAX_KEYS) {
+    return { allowed: false, retryAfter: 60 };
   }
 
-  const times = (buckets.get(key) || []).filter((t) => now - t < windowMs);
+  const times = (buckets.get(key)?.times || []).filter((time) => now - time < windowMs);
   if (times.length >= limit) {
-    const retryAfter = Math.ceil((windowMs - (now - times[0])) / 1000);
-    buckets.set(key, times);
-    return { allowed: false, retryAfter: Math.max(retryAfter, 1) };
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((times[0] + windowMs - now) / 1000)) };
   }
-
   times.push(now);
-  buckets.set(key, times);
+  buckets.set(key, { times, expiresAt: now + windowMs });
   return { allowed: true, retryAfter: 0 };
 }
 
-export function getClientIp(request: Request): string {
-  // Platform-injected headers cannot be spoofed by the client on Vercel /
-  // Cloudflare and must be preferred over the user-controlled X-Forwarded-For.
-  const platformIp =
-    request.headers.get('cf-connecting-ip') ||
-    request.headers.get('x-real-ip') ||
-    request.headers.get('x-vercel-forwarded-for');
-  if (platformIp) return platformIp.split(',')[0].trim();
-
-  // Fallback for self-hosted proxies: the right-most entry is appended by the
-  // nearest trusted proxy, so it is the safest value in the chain.
-  const xff = request.headers.get('x-forwarded-for');
-  if (xff) {
-    const chain = xff.split(',').map((part) => part.trim()).filter(Boolean);
-    if (chain.length > 0) return chain[chain.length - 1];
+export async function rateLimit(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+  const stored = await consumeRateLimit(key, limit, windowMs);
+  if (stored) return stored;
+  if (process.env.NODE_ENV === 'production') {
+    return { allowed: false, retryAfter: 60, unavailable: true };
   }
+  return memoryRateLimit(key, limit, windowMs);
+}
 
-  return 'unknown';
+export function getClientIp(request: Request): string {
+  // Trust only the ingress selected by server configuration. Self-hosted ingress
+  // must overwrite its selected header and prevent clients reaching the origin.
+  const proxy = process.env.TRUSTED_PROXY || (process.env.VERCEL === '1' ? 'vercel' : 'none');
+  let ip = '';
+  if (proxy === 'vercel') ip = (request.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+  if (proxy === 'cloudflare') ip = (request.headers.get('cf-connecting-ip') || '').trim();
+  if (proxy === 'reverse-proxy') ip = (request.headers.get('x-real-ip') || '').trim();
+  if (!isIP(ip)) return 'unknown';
+  if (ip.toLowerCase().startsWith('::ffff:') && isIP(ip.slice(7)) === 4) return ip.slice(7);
+  if (isIP(ip) === 6) {
+    try { return new URL(`http://[${ip}]`).hostname.slice(1, -1); }
+    catch { return 'unknown'; }
+  }
+  return ip.toLowerCase();
 }
 
 export function tooManyResponse(retryAfter: number): Response {
   return new Response(JSON.stringify({ error: 'Terlalu banyak permintaan. Silakan coba lagi nanti.' }), {
     status: 429,
-    headers: { 'Content-Type': 'application/json', 'Retry-After': String(retryAfter) },
+    headers: { 'Content-Type': 'application/json', 'Retry-After': String(retryAfter), 'Cache-Control': 'private, no-store' },
+  });
+}
+
+export function rateLimitResponse(result: RateLimitResult): Response {
+  if (!result.unavailable) return tooManyResponse(result.retryAfter);
+  return Response.json({ error: 'Layanan sedang tidak tersedia. Silakan coba lagi.' }, {
+    status: 503,
+    headers: { 'Retry-After': String(result.retryAfter), 'Cache-Control': 'private, no-store' },
   });
 }
