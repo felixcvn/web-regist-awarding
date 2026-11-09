@@ -133,7 +133,7 @@ export default function EventDetails() {
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent mx-auto mt-4" />
             <p className="text-sm sm:text-base text-ink/80 mt-4 leading-relaxed font-light">
-              Saksikan mekarnya perjuangan, dedikasi, dan karya mahasiswa, UKM, serta Ormawa dalam panggung kehormatan Fasilkom Universitas Jember.
+              Saksikan mekarnya perjuangan para civitas akademik dalam panggung kehormatan Fasilkom Universitas Jember.
             </p>
           </div>
         </ScrollReveal>
@@ -182,7 +182,7 @@ export default function EventDetails() {
               <p className="text-sm text-ink/90 font-medium">Selasa, 1 Desember 2026</p>
               <p className="text-xs text-bloom-pink mt-1 font-mono">17:45 WIB — 22:00 WIB</p>
               <p className="text-xs text-ink/60 mt-3 leading-relaxed">
-                Open gate dimulai pukul 17:45 WIB. Harap hadir tepat waktu untuk registrasi & sesi red carpet.
+                Open gate dimulai pukul 17:45 WIB dan Live On pada pukul 18.20. Harap hadir tepat waktu untuk registrasi & sesi red carpet.
               </p>
             </div>
           </ScrollReveal>

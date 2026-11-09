@@ -9,6 +9,7 @@
     "start:cpanel": "node server.js",
     "package:cpanel": "node scripts/package-cpanel.cjs",
     "verify:cpanel": "node scripts/verify-cpanel-package.cjs",
+    "check:mysql": "node scripts/check-mysql.cjs",
     "lint": "eslint",
     "hash-pin": "node scripts/hash-pin.cjs"
   },
@@ -17,6 +18,7 @@
     "canvas-confetti": "^1.9.4",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.43.0",
+    "mysql2": "^3.24.6",
     "next": "^16.4.3",
     "nodemailer": "^10.2.1",
     "pg": "^8.23.0",

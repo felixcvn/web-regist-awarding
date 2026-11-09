@@ -45,6 +45,10 @@ function buildEnvironment(appUrl, siteKey) {
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: siteKey,
     // Build-time placeholders are empty: credentials are supplied only in cPanel.
     DATABASE_URL: '',
+    DATABASE_PROVIDER: 'postgres',
+    MYSQL_DATABASE: '',
+    MYSQL_USER: '',
+    MYSQL_PASSWORD: '',
     ADMIN_PIN_HASH: '',
     ADMIN_PIN: '',
     GMAIL_USER: '',
@@ -122,15 +126,16 @@ function main() {
     });
     copyTree(path.join(appDir, 'public'), path.join(releaseDir, 'public'));
     copyTree(path.join(appDir, 'next.config.mjs'), path.join(releaseDir, 'next.config.mjs'));
-    for (const name of ['server.js', 'package-lock.json', 'CPANEL-DEPLOY.md', 'SECURITY-DEPLOYMENT.md', 'scripts/hash-pin.cjs']) {
+    for (const name of ['server.js', 'package-lock.json', 'CPANEL-DEPLOY.md', 'MYSQL-CPANEL.md', 'SECURITY-DEPLOYMENT.md', 'scripts/hash-pin.cjs', 'scripts/check-mysql.cjs']) {
       const destination = path.join(releaseDir, name);
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       copyTree(path.join(source, name), destination);
     }
+    copyTree(path.join(source, 'src/lib/mysqlConfig.cjs'), path.join(releaseDir, 'scripts/mysqlConfig.cjs'));
     // The archive is a runtime release, not a source checkout to build on hosting.
     fs.writeFileSync(path.join(releaseDir, 'package.json'), JSON.stringify({
       ...packageJson,
-      scripts: { start: 'node server.js', 'hash-pin': 'node scripts/hash-pin.cjs' },
+      scripts: { start: 'node server.js', 'hash-pin': 'node scripts/hash-pin.cjs', 'check:mysql': 'node scripts/check-mysql.cjs' },
     }, null, 2) + '\n');
     const manifest = {
       createdAt: new Date().toISOString(),
@@ -140,6 +145,7 @@ function main() {
       platform: process.platform,
       architecture: process.arch,
       nextVersion,
+      databaseProviders: ['postgres', 'mysql'],
       buildId: fs.readFileSync(path.join(nextDir, 'BUILD_ID'), 'utf8').trim(),
       lockfileSha256: crypto.createHash('sha256').update(fs.readFileSync(path.join(releaseDir, 'package-lock.json'))).digest('hex'),
       installCommand: 'npm ci --omit=dev',

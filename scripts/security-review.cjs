@@ -4,6 +4,8 @@
  * Install embedded-postgres in SECURITY_REVIEW_TOOLS before running this file.
  * Use --database-only for focused PostgreSQL checks or --helpers-only for helpers.
  * Use --cpanel to exercise the production server.js entry point end to end.
+ * Use --mysql with SECURITY_REVIEW_MYSQLD for a new isolated MySQL 8+ datadir
+ * or a portable MariaDB Windows server. No operating-system service is created.
  * No project .env files or participant stores are copied into the test app.
  * Security regressions assert the remediated behavior. Deliberately deferred
  * identity/enumeration and Turnstile findings remain explicit observations.
@@ -22,6 +24,7 @@ const ts = require('typescript');
 const XLSX = require('xlsx');
 const bcrypt = require('bcryptjs');
 const { Client, Pool } = require('pg');
+const mysql = require('mysql2/promise');
 const { deflateRawSync } = require('node:zlib');
 const { fromBuffer } = require('yauzl');
 
@@ -35,7 +38,8 @@ const observations = [];
 const databaseOnly = process.argv.includes('--database-only');
 const helpersOnly = process.argv.includes('--helpers-only');
 const cpanel = process.argv.includes('--cpanel');
-const artifacts = { runDir, mode: databaseOnly ? 'database-only' : helpersOnly ? 'helpers-only' : 'full', startup: cpanel ? 'server.js' : 'next start', sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim(), workingTree: true, xlsxVersion: XLSX.version };
+const useMysql = process.argv.includes('--mysql');
+const artifacts = { runDir, databaseProvider: useMysql ? 'mysql' : 'postgres', mode: databaseOnly ? 'database-only' : helpersOnly ? 'helpers-only' : 'full', startup: cpanel ? 'server.js' : 'next start', sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim(), workingTree: true, xlsxVersion: XLSX.version };
 const logStreams = [];
 let database;
 let dbClient;
@@ -44,6 +48,7 @@ let baseUrl;
 let appEnv;
 let adminCookie;
 let csrfToken;
+let databaseEnv;
 
 function record(id, title, evidence) {
   observations.push({ id, title, evidence });
@@ -271,6 +276,14 @@ async function stopApp() {
 }
 
 async function startDatabase() {
+  if (useMysql) {
+    const result = await require('./review-mysql.cjs').startMysql({ runDir, port: await freePort(), logStreams });
+    database = result.database;
+    dbClient = result.dbClient;
+    databaseEnv = result.dbEnv;
+    artifacts.mysqlVersion = result.version;
+    return { dbUrl: '', dbPassword: result.dbPassword };
+  }
   const EmbeddedPostgres = (await import(pathToFileURL(toolsRequire.resolve('embedded-postgres')).href)).default;
   const dbPort = await freePort();
   const dbPassword = crypto.randomBytes(24).toString('hex');
@@ -289,11 +302,13 @@ async function startDatabase() {
   dbClient = new Client({ connectionString: dbUrl });
   await dbClient.connect();
   artifacts.postgresVersion = (await dbClient.query('SHOW server_version')).rows[0].server_version;
+  databaseEnv = { DATABASE_PROVIDER: 'postgres', DATABASE_URL: dbUrl };
   return { dbUrl, dbPassword };
 }
 
 async function stopDatabase() {
   if (!database) return;
+  if (useMysql) { await database.stop(); return; }
   const child = database.process;
   if (process.platform !== 'win32' || !child) {
     await database.stop();
@@ -326,8 +341,10 @@ async function checkActiveBatchQuery(dbUrl) {
       catch (error) { queryErrors.push({ code: error.code, message: error.message }); throw error; }
     }
   }
-  const db = transpiledModule('src/lib/db.ts', { pg: { Pool: ObservedPool } }, {
-    process: { env: { NODE_ENV: 'production', DATABASE_URL: dbUrl }, cwd: () => appDir },
+  const db = transpiledModule('src/lib/db.ts', { pg: { Pool: ObservedPool }, 'mysql2/promise': { ...mysql, createPool(options) {
+    const p = mysql.createPool(options); pools.push(p); return p;
+  } } }, {
+    process: { env: { NODE_ENV: 'production', ...databaseEnv, DATABASE_URL: dbUrl }, cwd: () => appDir },
   });
   try {
     const sessionHash = crypto.randomBytes(32).toString('hex');
@@ -348,10 +365,10 @@ async function checkActiveBatchQuery(dbUrl) {
     assert.equal(active.count, 3);
     assert.equal(active.canRollback, true);
     assert.equal(queryErrors.length, 0);
-    record('IMPORT-11', 'Active batch query against real PostgreSQL', {
+    record('IMPORT-11', `Active batch query against real ${useMysql ? 'MySQL' : 'PostgreSQL'}`, {
       storedActiveBatches: stored.rows[0].count, masterRows: master.rows[0].count,
       returnedActiveBatch: active, queryErrors,
-      scope: 'transpiled application helpers with real isolated PostgreSQL',
+      scope: `transpiled application helpers with real isolated ${useMysql ? 'MySQL' : 'PostgreSQL'}`,
     });
   } finally {
     await Promise.all(pools.map((pool) => pool.end()));
@@ -363,8 +380,10 @@ async function checkPersistentLimits(dbUrl) {
   class TestPool extends Pool {
     constructor(options) { super(options); pools.push(this); }
   }
-  const load = () => transpiledModule('src/lib/db.ts', { pg: { Pool: TestPool } }, {
-    process: { env: { NODE_ENV: 'production', DATABASE_URL: dbUrl }, cwd: () => appDir },
+  const load = () => transpiledModule('src/lib/db.ts', { pg: { Pool: TestPool }, 'mysql2/promise': { ...mysql, createPool(options) {
+    const p = mysql.createPool(options); pools.push(p); return p;
+  } } }, {
+    process: { env: { NODE_ENV: 'production', ...databaseEnv, DATABASE_URL: dbUrl }, cwd: () => appDir },
   });
   const first = load();
   const second = load();
@@ -382,7 +401,12 @@ async function checkPersistentLimits(dbUrl) {
     assert.equal((await freshModule.consumeRateLimit(key, 5, 3_600_000)).allowed, false);
     const elapsed = [];
     for (const minutes of [11, 59, 61]) {
-      await dbClient.query('UPDATE request_rate_limits SET hits = ARRAY(SELECT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT - $2::BIGINT FROM generate_series(1, 5)), expires_at = NOW() + INTERVAL \'1 hour\' WHERE bucket_key = $1', [hash, minutes * 60_000]);
+      if (useMysql) {
+        await dbClient.query("UPDATE request_rate_limits SET hits = $2, expires_at = NOW() + INTERVAL '1 hour' WHERE bucket_key = $1",
+          [hash, JSON.stringify(Array(5).fill(Date.now() - minutes * 60_000))]);
+      } else {
+        await dbClient.query('UPDATE request_rate_limits SET hits = ARRAY(SELECT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT - $2::BIGINT FROM generate_series(1, 5)), expires_at = NOW() + INTERVAL \'1 hour\' WHERE bucket_key = $1', [hash, minutes * 60_000]);
+      }
       const result = await freshModule.consumeRateLimit(key, 5, 3_600_000);
       assert.equal(result.allowed, minutes > 60);
       elapsed.push({ minutes, allowed: result.allowed });
@@ -393,6 +417,155 @@ async function checkPersistentLimits(dbUrl) {
   }
 }
 
+function loadMysqlHelpers(pools, messages = [], fsOverrides = {}, environment = {}) {
+  return transpiledModule('src/lib/db.ts', {
+    pg: { Pool: class ForbiddenPostgresPool { constructor() { throw new Error('MySQL must not open a PostgreSQL pool'); } } },
+    fs: { ...fs, ...fsOverrides },
+    'mysql2/promise': { ...mysql, createPool(options) { const p = mysql.createPool(options); pools.push(p); return p; } },
+  }, {
+    process: { env: { NODE_ENV: 'production', ...databaseEnv, ...environment, DATABASE_URL: 'postgres://synthetic:unused@127.0.0.1:9/ignored' }, cwd: () => appDir },
+    console: { ...console, error(...values) { messages.push(values.map(String).join(' ')); } },
+  });
+}
+
+async function checkMysqlEngineGuard() {
+  const pools = [];
+  const messages = [];
+  let fileReads = 0;
+  try {
+    // Initialization is validated on each fresh process, without modifying an
+    // existing table's engine. All modifications below are to the isolated DB.
+    await dbClient.query('ALTER TABLE participants ENGINE=MyISAM');
+    const cold = loadMysqlHelpers(pools, messages, { existsSync() { fileReads++; throw new Error('Unexpected participant file access'); } });
+    assert.equal(await cold.consumeRateLimit('test:unsafe-engine', 1, 60_000), null);
+    await assert.rejects(cold.getAllParticipants(), (error) => error.status === 503);
+    assert.equal(fileReads, 0);
+    assert.ok(messages.every((message) => message.includes('MYSQL_ENGINE_UNSAFE')));
+    record('MYSQL-01', 'Non-InnoDB initialization fails closed without fallback', { unsafeEngine: 'MyISAM', refusedFreshProcess: true, fileReads, postgresOpened: false });
+  } finally {
+    await dbClient.query('ALTER TABLE participants ENGINE=InnoDB');
+    await Promise.all(pools.map((p) => p.end()));
+  }
+}
+
+async function checkMysqlCorruptQuota() {
+  const pools = [];
+  const messages = [];
+  const key = `test:invalid-limit:${crypto.randomUUID()}`;
+  const hash = crypto.createHash('sha256').update(key).digest('hex');
+  try {
+    const db = loadMysqlHelpers(pools, messages);
+    assert.equal((await db.consumeRateLimit(key, 1, 60_000)).allowed, true);
+    await dbClient.query('UPDATE request_rate_limits SET hits = $2 WHERE bucket_key = $1', [hash, '["invalid timestamp"]']);
+    const limiter = transpiledModule('src/lib/ratelimit.ts', { './db': db });
+    const result = await limiter.rateLimit(key, 1, 60_000);
+    assert.equal(result.allowed, false);
+    assert.equal(result.unavailable, true);
+    assert.equal(limiter.rateLimitResponse(result).status, 503);
+    assert.ok(messages.some((message) => message.includes('MYSQL_LIMIT_STATE_INVALID')));
+    record('MYSQL-02', 'Malformed persisted quota does not reset or fall back', { allowed: false, unavailable: true, status: 503 });
+  } finally {
+    await dbClient.query('DELETE FROM request_rate_limits WHERE bucket_key = $1', [hash]);
+    await Promise.all(pools.map((p) => p.end()));
+  }
+}
+
+async function checkMysqlHelpersAndDiagnostic() {
+  const pools = [];
+  const messages = [];
+  try {
+    const db = loadMysqlHelpers(pools, messages);
+    const fresh = loadMysqlHelpers(pools, messages);
+    const input = { nimNip: `Guest-${crypto.randomUUID()}`, name: 'Peserta Uji ñ 🌷', role: 'Tamu Undangan', category: 'Mahasiswa Fasilkom',
+      batch: '-', prodi: '-', email: 'synthetic-contact@example.test', phone: '080000000000' };
+    const created = await db.createParticipant(input);
+    assert.ok(created.participant);
+    const participant = created.participant;
+    assert.equal(participant.name, input.name);
+    assert.equal(participant.nimNip, input.nimNip.toLowerCase());
+    assert.equal(typeof participant.isCheckedIn, 'boolean');
+    assert.ok(Math.abs(new Date(participant.createdAt).getTime() - Date.now()) < 60_000);
+    assert.equal(await fresh.isNimRegistered(input.nimNip.toUpperCase()), true);
+    assertNoPrivateFields(await fresh.getParticipantByToken(participant.qrToken));
+    assert.equal(await fresh.getParticipantByToken(participant.qrToken.toLowerCase()), null);
+    const scans = await Promise.all(Array.from({ length: 10 }, (_, index) => (index % 2 ? db : fresh).checkInParticipant(participant.qrToken)));
+    assert.equal(scans.filter((scan) => scan.success).length, 1);
+    assert.ok(scans.every((scan) => scan.participant?.isCheckedIn === true));
+    assert.match(scans.find((scan) => scan.success).participant.checkedInAt, /Z$/);
+    assert.equal((await fresh.getAllParticipants()).some((row) => row.id === participant.id && row.name === input.name), true);
+    assert.equal((await db.createParticipant(input)).status, 409);
+    const sessionHash = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 3600_000);
+    assert.equal(await db.createSessionRecord(sessionHash, expiry, '198.18.205.1', 'Synthetic reviewer'), true);
+    assert.equal((await fresh.getSessionRecord(sessionHash)).expiresAt, expiry.toISOString());
+    await fresh.deleteSessionRecord(sessionHash);
+    assert.equal(await db.getSessionRecord(sessionHash), null);
+    for (let index = 0; index < 12; index++) await db.writeAuditLog('login_failed', '198.18.205.1');
+    assert.equal(await fresh.countRecentLoginFailures('198.18.205.1', 15 * 60_000), 12);
+    assert.ok(await fresh.countRecentAudit('login_failed', 15 * 60_000) >= 12);
+    assert.equal(await db.deleteParticipant(participant.id), true);
+    assert.equal(await db.deleteParticipant(participant.id), false);
+    assert.equal(await fresh.getParticipantByToken(participant.qrToken), null);
+    const diagEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+      /^(PATH|PATHEXT|SYSTEMROOT|WINDIR|COMSPEC|USERPROFILE|APPDATA|LOCALAPPDATA|TEMP|TMP|HOME)$/i.test(key)));
+    const output = execFileSync(process.execPath, [path.join(source, 'scripts/check-mysql.cjs')], {
+      cwd: source, env: { ...diagEnv, ...databaseEnv }, encoding: 'utf8', timeout: 30_000,
+    });
+    const diagnostic = JSON.parse(output);
+    assert.equal(diagnostic.connected, true);
+    assert.equal(diagnostic.readOnly, true);
+    assert.equal(diagnostic.applicationTablesFound, 9);
+    assert.equal(diagnostic.schemaWritesVerified, false);
+    assert.equal(output.includes(databaseEnv.MYSQL_PASSWORD), false);
+    assert.equal(messages.some((message) => [input.email, input.phone, input.name, databaseEnv.MYSQL_PASSWORD].some((privateValue) => message.includes(privateValue))), false);
+    record('MYSQL-03', 'Native helpers: Unicode, UTC, exact tokens, sessions and diagnostic', {
+      concurrentScans: 10, successfulScans: 1, utf8mb4Preserved: true, timestampsUtc: true, caseChangedTokenAccepted: false,
+      sessionSharedAcrossModules: true, failuresPersisted: 12, duplicateStatus: 409, diagnosticReadOnly: true, passwordInOutput: false,
+    });
+  } finally { await Promise.all(pools.map((p) => p.end())); }
+}
+
+async function checkMysqlMaximumImport() {
+  const pools = [];
+  try {
+    const db = loadMysqlHelpers(pools);
+    const sessionHash = crypto.randomBytes(32).toString('hex');
+    const files = {};
+    const name = 'ந'.repeat(120);
+    for (const [field, code, count] of [['sistemInformasi', '10', 3334], ['informatika', '30', 3333], ['teknologiInformasi', '20', 3333]]) {
+      const rows = [['NIM', 'NAMA'], ...Array.from({ length: count }, (_, index) => [`23${String(index).padStart(6, '0')}${code}01`, name])];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows), 'Mahasiswa');
+      files[field] = new File([XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx', compression: true })], `${field}.xlsx`);
+    }
+    const before = await dbClient.query('SELECT nim FROM student_master ORDER BY nim');
+    const preview = await db.previewStudentImport(files, sessionHash);
+    assert.equal(preview.errors.length, 0);
+    assert.equal(preview.validRows, 10_000);
+    const bytes = (await dbClient.query('SELECT OCTET_LENGTH(students) AS bytes FROM student_import_previews WHERE batch_id = $1', [preview.batchId])).rows[0].bytes;
+    assert.ok(Number(bytes) > 4 * 1024 * 1024, `Expected a large JSON snapshot; actual bytes: ${bytes}`);
+    await db.commitStudentImport(preview.batchId, sessionHash, '198.18.206.1');
+    const active = await db.getActiveStudentImportBatch();
+    assert.equal(active.count, 10_000);
+    assert.equal(active.canRollback, true);
+    const counts = (await dbClient.query('SELECT COUNT(*) AS count, COUNT(DISTINCT import_batch_id) AS batches FROM student_master')).rows[0];
+    assert.equal(counts.count, 10_000);
+    assert.equal(counts.batches, 1);
+    const unicode = (await dbClient.query('SELECT official_name FROM student_master LIMIT 1')).rows[0];
+    assert.equal(unicode.official_name, name);
+    await assert.rejects(dbClient.query(`INSERT INTO student_import_batches
+      (batch_id, prodi, total_rows, valid_rows, invalid_rows, duplicate_nims, empty_names, invalid_nims, status)
+      VALUES ($1, 'ALL_PRODI', 3, 3, 0, 0, 0, 0, 'ACTIVE')`, [`STU-${crypto.randomUUID()}`]), (error) => error.code === 'ER_DUP_ENTRY');
+    const rollback = await db.rollbackToPreviousBatch();
+    assert.equal(rollback.count, before.rows.length);
+    assert.deepEqual((await dbClient.query('SELECT nim FROM student_master ORDER BY nim')).rows, before.rows);
+    record('MYSQL-04', 'Ten-thousand-row Unicode import and transactional rollback', {
+      rows: 10_000, snapshotBytes: bytes, perStatementRows: 500, oneActiveBatchEnforced: true,
+      restoredRows: rollback.count, originalMasterRestored: true,
+    });
+  } finally { await Promise.all(pools.map((p) => p.end())); }
+}
+
 async function main() {
   console.log(`Review artifacts: ${runDir}`);
 
@@ -400,6 +573,19 @@ async function main() {
     const { dbUrl } = await startDatabase();
     await check('IMPORT-11', 'Active batch metadata and database lifecycle', () => checkActiveBatchQuery(dbUrl));
     await check('RATE-01', 'Persistent concurrent rate limits', () => checkPersistentLimits(dbUrl));
+    if (useMysql) {
+      await check('MYSQL-01', 'Refuse non-transactional engines', checkMysqlEngineGuard);
+      await check('MYSQL-02', 'Persisted quota integrity', checkMysqlCorruptQuota);
+      await check('MYSQL-03', 'MySQL-native data/session helpers and diagnostic', checkMysqlHelpersAndDiagnostic);
+      await check('MYSQL-04', 'Maximum supported import on real MySQL', checkMysqlMaximumImport);
+      await check('MYSQL-06', 'Protocol and pool deadlines on real MySQL', async () => {
+        const evidence = await require('./review-mysql-timeouts.cjs').checkMysqlTimeouts({
+          source, databaseEnv, dbClient,
+          load: (pools, messages, environment) => loadMysqlHelpers(pools, messages, {}, environment),
+        });
+        record('MYSQL-06', 'Complete query deadlines, discarded leases, and safe recovery', evidence);
+      });
+    }
     return;
   }
 
@@ -521,6 +707,14 @@ async function main() {
     record('HELPER-08', 'Central production fallback guard', { guardedHelpers: actions.length, fileReads: reads, errorStatus: 503 });
   });
 
+  await check('HELPER-09', 'MySQL configuration, TLS, and version boundaries', async () => {
+    const output = execFileSync(process.execPath, [path.join(source, 'scripts/check-mysql.cjs'), '--self-test'], { encoding: 'utf8', timeout: 30_000 });
+    const result = JSON.parse(output);
+    assert.equal(result.selfTest, 'passed');
+    assert.equal(result.databaseContacted, false);
+    record('HELPER-09', 'MySQL connection configuration without database contact', result);
+  });
+
   await check('REVOKE-01', 'Historical token fingerprints match the blocked values', async () => {
     const { isTicketRevoked } = transpiledModule('src/lib/revokedTickets.ts');
     const commits = execFileSync('git', ['log', '--all', '--format=%h', '--', '.participants_data.json'], { cwd: source, encoding: 'utf8' }).trim().split(/\s+/).filter(Boolean);
@@ -558,7 +752,7 @@ async function main() {
   const pin = `Review-${crypto.randomUUID()}`;
   appEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => /^(PATH|PATHEXT|SYSTEMROOT|WINDIR|COMSPEC|USERPROFILE|APPDATA|LOCALAPPDATA|TEMP|TMP|HOME|NUMBER_OF_PROCESSORS|PROCESSOR_ARCHITECTURE)$/i.test(key)));
   Object.assign(appEnv, {
-    NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1', DATABASE_URL: dbUrl, TRUSTED_PROXY: 'reverse-proxy',
+    NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1', ...databaseEnv, TRUSTED_PROXY: 'reverse-proxy',
     ADMIN_PIN_HASH: await bcrypt.hash(pin, 12), ADMIN_PIN: '', GMAIL_USER: '', GMAIL_APP_PASSWORD: '',
     TURNSTILE_SECRET_KEY: '', NEXT_PUBLIC_TURNSTILE_SITE_KEY: '', NEXT_PUBLIC_APP_URL: `http://127.0.0.1:${appPort}`, QR_EMAIL_MODE: 'cid',
   });
@@ -894,20 +1088,24 @@ async function main() {
     const before = await dbClient.query('SELECT nim FROM student_master ORDER BY nim');
     const beforeBatches = (await dbClient.query('SELECT COUNT(*)::int AS count FROM student_import_batches')).rows[0].count;
     const preview = await adminRequest('/api/admin/student-imports/preview', { method: 'POST', body: upload(filesFor({ suffix: '08' })) });
-    await dbClient.query("CREATE FUNCTION review_abort_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic review failure during master insert'; END $$");
-    await dbClient.query('CREATE TRIGGER review_abort BEFORE INSERT ON student_master FOR EACH ROW EXECUTE FUNCTION review_abort_insert()');
+    if (useMysql) {
+      await dbClient.query("CREATE TRIGGER review_abort BEFORE INSERT ON student_master FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Synthetic review failure during master insert'");
+    } else {
+      await dbClient.query("CREATE FUNCTION review_abort_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic review failure during master insert'; END $$");
+      await dbClient.query('CREATE TRIGGER review_abort BEFORE INSERT ON student_master FOR EACH ROW EXECUTE FUNCTION review_abort_insert()');
+    }
     let response;
     try {
       response = await adminRequest('/api/admin/student-imports/commit', { method: 'POST', body: { batchId: preview.json.batchId } });
     } finally {
-      await dbClient.query('DROP TRIGGER review_abort ON student_master');
-      await dbClient.query('DROP FUNCTION review_abort_insert()');
+      await dbClient.query(useMysql ? 'DROP TRIGGER review_abort' : 'DROP TRIGGER review_abort ON student_master');
+      if (!useMysql) await dbClient.query('DROP FUNCTION review_abort_insert()');
     }
     const after = await dbClient.query('SELECT nim FROM student_master ORDER BY nim');
     const afterBatches = (await dbClient.query('SELECT COUNT(*)::int AS count FROM student_import_batches')).rows[0].count;
     assert.deepEqual(after.rows, before.rows);
     assert.equal(afterBatches, beforeBatches);
-    assert.equal(response.status, 500);
+    assert.equal(response.status, useMysql ? 503 : 500);
     assert.equal(response.text.includes('Synthetic review failure'), false);
     assert.equal(response.text.includes('review_abort'), false);
     const previewState = (await dbClient.query('SELECT consumed_at, jsonb_array_length(students)::int AS students FROM student_import_previews WHERE batch_id = $1', [preview.json.batchId])).rows[0];
@@ -1093,10 +1291,24 @@ async function main() {
     record('AUTH-04', 'Session lifecycle', { lockedCorrectPinStatus: locked.status, rawTokenStored: false, expiredStatus: expired.status, logoutWithoutCsrfStatus: invalidLogout.status, validLogoutStatus: logout.status, loggedOutTokenReuseStatus: reused.status });
   });
 
+  if (useMysql) {
+    await check('MYSQL-05', 'Lockout-query outage cannot authenticate a correct PIN', async () => {
+      await dbClient.query('RENAME TABLE audit_log TO review_audit_backup');
+      let response;
+      try { response = await request('/api/admin/login', { method: 'POST', body: { pin } }); }
+      finally { await dbClient.query('RENAME TABLE review_audit_backup TO audit_log'); }
+      assert.equal(response.status, 503);
+      assertNoStore(response);
+      assert.equal(response.text.includes('audit_log'), false);
+      record('MYSQL-05', 'Lockout outage after a successful limiter fails closed', { status: response.status, sessionIssued: response.headers.getSetCookie().some((value) => value.startsWith('fan26_session=')) });
+    });
+  }
+
   // A fresh process with a deliberately unreachable local DB tests failure paths.
   await stopApp();
   const faultPort = await freePort();
   appEnv.DATABASE_URL = `postgres://reviewer:synthetic@127.0.0.1:${faultPort}/unavailable`;
+  if (useMysql) { appEnv.DATABASE_URL = ''; appEnv.MYSQL_PORT = String(faultPort); }
   await startApp(appPort);
   await check('FAILURE-01', 'Production database outage behavior', async () => {
     const ticket = await request(`/ticket/${fallbackToken}`);

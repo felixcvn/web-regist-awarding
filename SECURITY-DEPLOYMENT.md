@@ -2,11 +2,11 @@
 
 Panduan untuk perubahan setelah [audit 7 November 2026](SECURITY-AUDIT-2026-11-07.md). Gunakan `.env.example` sebagai acuan; isi kredensial deployment melalui pengaturan hosting.
 
-## PostgreSQL dan sesi admin
+## Database dan sesi admin
 
-- `DATABASE_URL` wajib pada produksi. Seluruh instance harus menggunakan database yang sama untuk peserta, sesi, snapshot impor, dan rate limit.
-- Saat pertama digunakan, aplikasi membuat tabel/index yang diperlukan. Dua tabel tambahan adalah `request_rate_limits` dan `student_import_previews`; akun database membutuhkan izin DDL yang sesuai dengan inisialisasi di `src/lib/db.ts`.
-- Rate limit menggunakan operasi atomik PostgreSQL. Saat store tidak tersedia, endpoint yang dibatasi mengembalikan `503`, bukan beralih ke kuota memori. Kuota memori dan file peserta hanya digunakan pada development.
+- Pilih `DATABASE_PROVIDER=postgres` (default) atau `mysql` (termasuk MariaDB). PostgreSQL membutuhkan `DATABASE_URL`; MySQL membutuhkan `MYSQL_DATABASE`, `MYSQL_USER`, dan `MYSQL_PASSWORD` serta koneksi internal/terverifikasi sesuai [MYSQL-CPANEL.md](./MYSQL-CPANEL.md). Seluruh instance harus menggunakan provider dan database yang sama untuk peserta, sesi, snapshot impor, dan rate limit.
+- Saat pertama digunakan, aplikasi membuat tabel/index yang diperlukan. Akun database membutuhkan izin DDL sesuai `src/lib/db.ts` / `src/lib/mysqlSchema.ts`. MySQL memerlukan InnoDB, MySQL 8.0+ atau MariaDB 10.6+, serta `max_allowed_packet` minimal 16 MiB. Inisialisasi menolak tabel aplikasi non-InnoDB; engine tidak diubah otomatis.
+- Rate limit menggunakan operasi atomik PostgreSQL atau transaksi dengan penguncian row InnoDB pada MySQL. Saat store tidak tersedia, endpoint yang dibatasi mengembalikan `503`, bukan beralih ke kuota memori. MySQL tidak beralih ke provider lain atau file JSON. Kuota memori/file development pada jalur PostgreSQL tetap non-produksi.
 - Gunakan `ADMIN_PIN_HASH` bcrypt, dibuat melalui `npm run hash-pin -- "<pin-kuat>"`. Pada `.env.local`, escape setiap `$` menjadi `\$`; pada dashboard hosting, simpan hash mentah. Sesi berlaku delapan jam dan cookie produksi memerlukan HTTPS.
 - Login tetap dibatasi lima request/menit/IP, dengan lockout tambahan setelah 12 login gagal dalam 15 menit. Batas endpoint lain berada pada handler masing-masing.
 
@@ -52,6 +52,13 @@ Gunakan `TRUSTED_PROXY=reverse-proxy` dan batasi port Next.js ke loopback/jaring
 7. ID karangan, preview sesi lain, kedaluwarsa, atau sudah dipakai menghasilkan `409`. Lakukan preview ulang setelah login ulang, expiry, atau perubahan file.
 8. Aktivasi, pengarsipan batch sebelumnya, dan konsumsi preview dilakukan dalam satu transaksi. Rollback mengembalikan snapshot batch sebelumnya. Setelah commit berhasil, daftar mahasiswa dalam preview dikosongkan; snapshot rollback tetap tersedia pada `student_import_records`.
 
+Pada MySQL, aktivasi/rollback memakai lock row persisten `operation_locks`, bukan
+`GET_LOCK` yang terikat koneksi dan tidak dilepas oleh rollback. Snapshot dimasukkan
+bertahap maksimal 500 mahasiswa per statement dalam transaksi yang sama. Penggantian
+master memakai `DELETE`, bukan `TRUNCATE`/DDL yang melakukan implicit commit.
+Unique generated column memastikan hanya satu batch berstatus `ACTIVE`. Registrasi
+memegang shared row lock pada identitas mahasiswa sampai insert peserta selesai.
+
 Pemeriksaan ZIP membatasi 512 entry, 20 MiB hasil dekompresi per entry, 40 MiB hasil dekompresi total per file, metadata content-type 64 KiB, dan waktu validasi arsip sepuluh detik. Ukuran hasil dekompresi yang benar-benar terbaca juga diperiksa. Batas waktu ini berlaku pada validasi ZIP; parsing SheetJS dilindungi batas ukuran/range dan pembacaan worksheet pertama.
 
 Preview expired dibersihkan saat preview valid berikutnya disimpan. Bucket rate limit expired dibersihkan bertahap saat limiter dipanggil. Penolakan expiry tetap berlaku meskipun pembersihan belum berjalan. Tentukan retensi operasional untuk snapshot rollback dan audit log sesuai kebutuhan acara.
@@ -82,7 +89,7 @@ Sesuai keputusan pengguna, pembuktian kepemilikan NIM tidak ditambahkan. Orang y
 
 ## Verifikasi terisolasi
 
-`scripts/security-review.cjs` kini menuntut perilaku hasil remediasi melalui assertion. Runner memakai database PostgreSQL dan salinan aplikasi baru di folder sementara, environment sintetis, dan SMTP penangkap/nonaktif. Ia tidak menggunakan `.env.local` atau database produksi. Satu fingerprint sintetis ditambahkan hanya ke salinan aplikasi untuk menguji wiring revokasi HTTP; token historis hanya dibandingkan di memori pada uji helper.
+`scripts/security-review.cjs` menuntut perilaku hasil remediasi melalui assertion. Runner memakai database PostgreSQL atau opsi MySQL terisolasi dan salinan aplikasi baru di folder sementara, environment sintetis, dan SMTP penangkap/nonaktif. Ia tidak menggunakan `.env.local` atau database produksi. Satu fingerprint sintetis ditambahkan hanya ke salinan aplikasi untuk menguji wiring revokasi HTTP; token historis hanya dibandingkan di memori pada uji helper.
 
 ```powershell
 $env:SECURITY_REVIEW_TEMP = Join-Path $env:LOCALAPPDATA 'Temp\opencode'
@@ -95,3 +102,33 @@ node scripts/security-review.cjs
 ```
 
 Full run sudah mencakup helper, PostgreSQL bersama, build produksi `--webpack`, serta HTTP. Mode terfokus berguna saat mengubah komponen terkait. Runner mencetak lokasi `observations.json`/log, mengembalikan exit nonzero saat assertion gagal, dan membersihkan cluster uji saat selesai. Observasi SEC-01/SEC-10 dan hostname/action Turnstile dicatat sebagai tindak lanjut, bukan dinyatakan tertutup.
+
+Untuk MySQL, gunakan executable MySQL 8+ yang sudah tersedia (bukan datadir existing):
+
+```powershell
+$env:SECURITY_REVIEW_MYSQLD = 'C:\laragon\bin\mysql\mysql-8.0.44-winx64\bin\mysqld.exe'
+node scripts/check-mysql.cjs --self-test
+node scripts/security-review.cjs --mysql --database-only
+node scripts/security-review.cjs --mysql --cpanel
+```
+
+Binary MariaDB portable Windows juga dapat digunakan pada `SECURITY_REVIEW_MYSQLD`;
+initializer `mariadb-install-db.exe` / `mysql_install_db.exe` harus tersedia di folder
+yang sama. Runner tidak memakai `--service` atau membuat service Windows.
+
+`scripts/review-mysql.cjs` menjalankan server dengan `--no-defaults` dan datadir baru di folder
+review, bind loopback, user/password sintetis, dan shutdown server setelah tes.
+Path executable perlu disesuaikan instalasi mesin pengembang. Database/rootpassword
+Laragon existing tidak digunakan. Assertion HTTP yang sama menguji adapter native
+`src/lib/dbMysql.ts`; hanya query inspeksi/fixture runner yang dinormalisasi antar
+dialect. Diagnostic koneksi hosting sendiri tetap read-only dan tidak menguji
+kapasitas, SMTP, atau hak tulis aplikasi.
+
+Mode `--mysql --database-only` juga menguji deadline dengan proxy TCP loopback
+yang menahan COM_STMT_PREPARE, COM_STMT_EXECUTE, serta COMMIT. Penundaan Prepare
+7 detik diikuti Execute macet tetap memakai satu deadline command 15 detik.
+Tes menguji pembuangan koneksi, rollback insert saat COMMIT belum dikirim,
+pemulihan pada koneksi baru, pengembalian lease pool yang datang terlambat,
+dan diagnostic read-only yang berhenti setelah timeout. Tidak ada write retry
+otomatis; COMMIT yang sudah diterima server tetapi balasannya hilang harus
+diperiksa hasilnya, bukan diasumsikan pasti rollback.

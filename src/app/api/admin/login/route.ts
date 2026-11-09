@@ -18,14 +18,14 @@ export async function POST(request: Request) {
     return rateLimitResponse(limit);
   }
 
-  // Per-IP lockout persisted in the audit log (independent of instance memory).
-  const recentFailures = await countRecentLoginFailures(ip, LOCK_WINDOW_MS);
-  if (recentFailures >= LOCK_MAX_FAILURES) {
-    await writeAuditLog('login_locked', ip);
-    return tooManyResponse(Math.ceil(LOCK_WINDOW_MS / 1000));
-  }
-
   try {
+    // A failed lockout query must fail closed, even if the limiter just worked.
+    const recentFailures = await countRecentLoginFailures(ip, LOCK_WINDOW_MS);
+    if (recentFailures >= LOCK_MAX_FAILURES) {
+      await writeAuditLog('login_locked', ip);
+      return tooManyResponse(Math.ceil(LOCK_WINDOW_MS / 1000));
+    }
+
     const parsed = loginSchema.safeParse(await readJsonBody(request, 1024));
     if (!parsed.success) return NextResponse.json({ error: 'Format PIN tidak valid.' }, { status: 400 });
     if (!(await validatePin(parsed.data.pin))) {

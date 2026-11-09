@@ -15,10 +15,12 @@ DNS kampus mengatur A record khusus `awarding` ke IP Rumahweb tersebut.
    DNS-nya ke IP hosting yang diberikan Rumahweb, lalu aktifkan SSL/AutoSSL.
 2. Pasang aplikasi di **root subdomain** `https://awarding.fasilkomapp.id`, dengan
    kolom path Application URL dikosongkan.
-3. Siapkan PostgreSQL uji terpisah (misalnya database/branch Neon). Akun database
-   perlu izin baca/tulis serta membuat tabel dan index saat inisialisasi. Aplikasi
-   ini memerlukan PostgreSQL eksternal; database MySQL/MariaDB cPanel tidak kompatibel.
-4. Konfirmasikan akses TCP/TLS ke PostgreSQL eksternal dan `smtp.gmail.com:465`.
+3. Siapkan database uji terpisah. Untuk paket yang memblokir PostgreSQL eksternal,
+   gunakan **MySQL/MariaDB internal** melalui [MYSQL-CPANEL.md](./MYSQL-CPANEL.md).
+   Alternatif PostgreSQL tetap tersedia bila koneksi eksternal diizinkan. Akun
+   database perlu izin operasi serta membuat tabel dan index saat inisialisasi.
+4. Konfirmasikan koneksi internal MySQL/socket atau TCP/TLS PostgreSQL sesuai
+   provider yang dipilih, serta akses `smtp.gmail.com:465` secara terpisah.
    Seluruh lapisan proxy/WAF harus menerima request multipart **16 MiB**.
 5. Konfirmasikan header IP yang ditetapkan ingress Rumahweb. Jika ingress menimpa
    `X-Real-IP` dengan IP pengunjung dan backend tidak dapat dilewati, gunakan
@@ -76,7 +78,8 @@ paket mencatat platform build. Gunakan hasil build **Linux** untuk hosting Linux
 - `public/`, `server.js`, `package.json`, dan `package-lock.json`.
 - `next.config.mjs`, hasil kompilasi `next.config.ts` yang sama dengan konfigurasi
   build. Ini memungkinkan instalasi dependency produksi tanpa TypeScript di hosting.
-- `scripts/hash-pin.cjs`, panduan deployment, dan `cpanel-release.json`.
+- `scripts/hash-pin.cjs`, diagnostic read-only `scripts/check-mysql.cjs` beserta
+  config-nya, panduan deployment/MySQL, dan `cpanel-release.json`.
 
 Pembuat paket bekerja di salinan bersih dengan daftar file yang ditentukan.
 `.env.local`, `.git`, `node_modules`, log, file peserta lokal, dan cache build tidak
@@ -108,7 +111,8 @@ bukan di folder tambahan. Aktifkan **Show Hidden Files** untuk memeriksa `.next`
 | Variabel | Nilai |
 | --- | --- |
 | `NODE_ENV` | `production` |
-| `DATABASE_URL` | URL PostgreSQL uji; TLS wajib untuk database eksternal |
+| `DATABASE_PROVIDER` | `mysql` untuk MySQL/MariaDB internal, `postgres` untuk PostgreSQL (default) |
+| `DATABASE_URL` | URL PostgreSQL uji; kosong untuk MySQL |
 | `ADMIN_PIN_HASH` | Hash bcrypt mentah, tanpa tanda kutip atau escape `$` |
 | `GMAIL_USER` | Alamat lengkap akun Gmail panitia |
 | `GMAIL_APP_PASSWORD` | App Password dari akun yang sama, tanpa spasi pemisah |
@@ -117,6 +121,12 @@ bukan di folder tambahan. Aktifkan **Show Hidden Files** untuk memeriksa `.next`
 | `TRUSTED_PROXY` | Sesuai ingress terverifikasi; `reverse-proxy` hanya untuk `X-Real-IP` yang ditimpa ingress |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Sama dengan site key yang digunakan saat build, atau kosong |
 | `TURNSTILE_SECRET_KEY` | Secret untuk site key tersebut, atau kosong jika Turnstile tidak dipakai |
+
+Untuk MySQL, tambahkan `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` beserta
+host/port atau socket sesuai [tabel environment MySQL](./MYSQL-CPANEL.md#5-isi-environment-runtime-nodejs-app).
+Menu phpMyAdmin saja belum membuktikan akses dari Node.js. Gunakan diagnostic
+read-only sebelum mengganti provider live. Rilis lama PostgreSQL harus diganti
+dengan paket baru yang mencantumkan kedua provider dalam manifest.
 
 `server.js` menggunakan port **8080** secara default, mengikuti panduan Rumahweb.
 Jika hosting menentukan port lain, gunakan `PORT`; nama `port` dari contoh lama
@@ -179,7 +189,7 @@ startup ini juga dapat dijalankan dengan `npm run start:cpanel` setelah build.
 - Rute admin, tiket, dan API sensitif mempertahankan `Cache-Control: private, no-store`.
 - Rate limit memakai IP pengunjung yang benar melalui ingress. Batas registrasi
   saat ini adalah lima percobaan/menit/IP; uji juga pemakaian Wi-Fi bersama.
-- Restart aplikasi mempertahankan data PostgreSQL dan sesi yang masih berlaku.
+- Restart aplikasi mempertahankan data database, sesi yang masih berlaku, dan kuota.
 
 Pembukaan halaman depan saja belum menguji database, SMTP, upload, atau kapasitas
 akses bersamaan. Ikuti juga [panduan operasional](SECURITY-DEPLOYMENT.md).
@@ -199,7 +209,7 @@ untuk tiket dan check-in.
 | --- | --- |
 | `Production build missing` | `.next/BUILD_ID` ada langsung di Application Root; ekstraksi tidak bersarang |
 | `Cannot find module` | Environment Node.js benar dan instalasi pada langkah 5 berhasil |
-| Halaman tersedia tetapi API 503 | Koneksi PostgreSQL, TLS, izin inisialisasi tabel/index, log database |
+| Halaman tersedia tetapi API 503 | Provider database, koneksi/TLS atau socket internal, privilege tabel/index, log kode database |
 | `535 / EAUTH` | `GMAIL_USER` dan App Password berasal dari akun yang sama; restart sesudah mengubahnya |
 | Link email menuju domain lama | Buat ulang paket dengan `--url` yang benar |
 | Turnstile menolak registrasi | Site key build, secret runtime, dan allowed hostname harus cocok |
@@ -211,20 +221,42 @@ siapkan alat sebagaimana [SECURITY-DEPLOYMENT.md](SECURITY-DEPLOYMENT.md), kemud
 jalankan `node scripts/security-review.cjs --cpanel`. Pengujian ini tidak memakai
 database atau Gmail produksi.
 
+Untuk regresi MySQL terisolasi pada mesin pengembangan, isi
+`SECURITY_REVIEW_MYSQLD` dengan executable MySQL 8+ kemudian jalankan
+`node scripts/security-review.cjs --mysql --cpanel`. Runner memakai datadir baru,
+tidak membuka database Laragon/cPanel yang sudah ada. Lihat
+[verifikasi database](./SECURITY-DEPLOYMENT.md#verifikasi-terisolasi).
+
 ## Hasil verifikasi persiapan — 9 November 2026
 
-- **43 kelompok pemeriksaan regresi** lulus melalui startup `server.js`, termasuk
-  registrasi, impor/rollback, check-in, sesi lintas restart, serta gangguan database.
-  Upload valid berisi tiga workbook dengan total **12.604.111 byte** berhasil.
-- **9 kelompok pemeriksaan paket** lulus: isi arsip dan checksum, isolasi kredensial,
-  instalasi dependency produksi, layout symlink Selector, startup dari direktori
-  berbeda, aset/optimasi gambar, proteksi API, file privat, serta port huruf kecil.
-- Build dan pengujian runtime dilakukan pada **Windows, Node.js 22.15.0, Next.js
-  16.4.3**, menggunakan URL sintetis `https://cpanel-check.example.invalid`.
+- Regresi alur lengkap melalui startup `server.js` lulus pada **PostgreSQL 18.6
+  (44 kelompok)**, **MySQL 8.0.44 (45 kelompok)**, dan **MariaDB 10.11.14
+  (45 kelompok)**. Cakupannya termasuk registrasi, impor/rollback, check-in,
+  sesi/kuota lintas restart, serta gangguan database. Upload tiga workbook valid
+  dengan total **12.604.111 byte** berhasil pada ketiga provider.
+- Tes database terfokus lulus **7 kelompok pada masing-masing MySQL/MariaDB**:
+  impor 10.000 mahasiswa Unicode, pemulihan snapshot, kuota bersama, sesi,
+  penolakan engine non-transaksional, serta deadline persiapan/eksekusi query.
+  Sepuluh scan bersamaan menghasilkan tepat satu check-in berhasil.
+- **11 kelompok pemeriksaan paket** lulus: isi arsip dan checksum, instalasi
+  dependency produksi, layout symlink Selector, diagnostic/driver MySQL,
+  startup dari direktori berbeda, aset/optimasi gambar, proteksi API kedua
+  provider, file privat, serta port huruf kecil dan shutdown.
+- Build dan verifikasi paket lokal dilakukan pada **Windows, Node.js 22.15.0,
+  Next.js 16.4.3**, dengan URL **`https://awarding.fasilkomapp.id`**. Paket
+  `win32-20261109T163726Z` memuat perbaikan deadline dan lulus verifikasi;
+  paket Windows ini hanya bukti lokal, bukan arsip upload Linux.
+
+Evidence alur lengkap tersimpan dalam `observations.json` pada folder review
+`fan26-review-1i8f6K` (PostgreSQL), `fan26-review-0gm2K2` (MySQL), dan
+`fan26-review-q7kBhC` (MariaDB). Evidence terfokus adalah `fan26-review-7ipYtP`
+(MySQL) dan `fan26-review-jm42oY` (MariaDB). Semua hasil final tersebut memiliki
+nol kegagalan assertion dan nol error cleanup; seluruh database memakai data
+sintetis terisolasi. Email eksternal dan kapasitas Rumahweb belum diukur.
 
 Hasil di atas memverifikasi persiapan lokal. Setiap rilis baru melalui workflow
 menjalankan pemeriksaan runtime Linux dan menyertakan hasilnya pada
-`.verification.json`. Pengujian langsung Passenger/cPanel, koneksi PostgreSQL/SMTP,
+`.verification.json`. Pengujian langsung ingress cPanel/LiteSpeed, koneksi database/SMTP,
 batas unggahan ingress, serta kapasitas akses bersamaan dilakukan di hosting tujuan.
 
 Referensi: [Next.js custom server](https://nextjs.org/docs/app/guides/custom-server),

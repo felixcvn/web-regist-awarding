@@ -2,7 +2,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Security and deployment
 
-See [SECURITY-DEPLOYMENT.md](SECURITY-DEPLOYMENT.md) for PostgreSQL prerequisites, trusted proxy configuration, student-import limits, ticket revocation, and isolated regression checks. Environment variables are documented in [`.env.example`](.env.example).
+See [SECURITY-DEPLOYMENT.md](SECURITY-DEPLOYMENT.md) for database prerequisites, trusted proxy configuration, student-import limits, ticket revocation, and isolated regression checks. For Rumahweb's internal MySQL/MariaDB, follow [MYSQL-CPANEL.md](MYSQL-CPANEL.md). Environment variables are documented in [`.env.example`](.env.example).
 
 The baseline findings and remediation status are recorded in [SECURITY-AUDIT-2026-11-07.md](SECURITY-AUDIT-2026-11-07.md).
 

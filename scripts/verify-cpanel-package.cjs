@@ -127,7 +127,7 @@ async function main() {
   assert.equal(digest(archive), fs.readFileSync(`${archive}.sha256`, 'utf8').trim().split(/\s+/)[0], 'Archive checksum mismatch');
   const entries = execFileSync('tar', ['-tzf', archive], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 })
     .split(/\r?\n/).filter(Boolean).map((entry) => entry.replace(/^\.\//, '')).filter(Boolean);
-  const allowedRoots = new Set(['.next', 'public', 'scripts', 'server.js', 'next.config.mjs', 'package.json', 'package-lock.json', 'CPANEL-DEPLOY.md', 'SECURITY-DEPLOYMENT.md', 'cpanel-release.json']);
+  const allowedRoots = new Set(['.next', 'public', 'scripts', 'server.js', 'next.config.mjs', 'package.json', 'package-lock.json', 'CPANEL-DEPLOY.md', 'MYSQL-CPANEL.md', 'SECURITY-DEPLOYMENT.md', 'cpanel-release.json']);
   for (const entry of entries) {
     assert.ok(allowedRoots.has(entry.split('/')[0]), `Unexpected archive path: ${entry}`);
     assert.doesNotMatch(entry, /(?:^|\/)\.\.(?:\/|$)|\\/);
@@ -174,6 +174,11 @@ async function main() {
   assert.equal(fs.lstatSync(modulesLink).isSymbolicLink(), true);
   assert.equal(fs.realpathSync(modulesLink), fs.realpathSync(modulesTarget));
   checks.push('selector node_modules link preserved');
+  assert.deepEqual(manifest.databaseProviders, ['postgres', 'mysql']);
+  const mysqlSelfTest = execFileSync(process.execPath, [path.join(runtime, 'scripts/check-mysql.cjs'), '--self-test'], { cwd: runtime, env, encoding: 'utf8', timeout: 15000 });
+  assert.equal(JSON.parse(mysqlSelfTest).selfTest, 'passed');
+  execFileSync(process.execPath, ['-e', "require('mysql2/promise')"], { cwd: runtime, env, timeout: 15000 });
+  checks.push('packaged read-only MySQL diagnostic and runtime driver');
 
   let baseUrl = await startServer(runtime, env);
   const home = await request(baseUrl);
@@ -224,10 +229,16 @@ async function main() {
   }
   checks.push('application-root files remain private');
   await stopServer(true);
-  baseUrl = await startServer(runtime, env, true);
+  baseUrl = await startServer(runtime, { ...env, DATABASE_PROVIDER: 'mysql', MYSQL_DATABASE: '', MYSQL_USER: '', MYSQL_PASSWORD: '' }, true);
   const restarted = await request(baseUrl);
   assert.equal(restarted.status, 200);
   await restarted.arrayBuffer();
+  for (const route of ['/api/admin/login', '/api/register']) {
+    const response = await request(`${baseUrl}${route}`, { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json' } });
+    assert.equal(response.status, 503, `MySQL must fail closed without credentials: ${route}`);
+    await response.text();
+  }
+  checks.push('MySQL provider fail-closed without credentials');
   await stopServer(true);
   checks.push('lowercase port and server shutdown');
 

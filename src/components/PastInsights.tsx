@@ -9,14 +9,14 @@ export default function PastInsights() {
   const stats = [
     {
       label: 'Tamu Hadir & Audiens',
-      value: '520+',
+      value: '600+',
       desc: 'Mahasiswa, Dosen, Staf & Alumni Fasilkom',
       icon: Users,
       accent: '#FFB5E8',
     },
     {
       label: 'Kategori Penghargaan',
-      value: '18',
+      value: '15',
       desc: 'Akademik, Organisasi, Riset & Pengabdian',
       icon: Trophy,
       accent: '#FFF3B0',
@@ -34,24 +34,6 @@ export default function PastInsights() {
       desc: 'Rating kepuasan penyelenggaraan edisi 2025',
       icon: Star,
       accent: '#E7C6FF',
-    },
-  ];
-
-  const highlights = [
-    {
-      title: 'Malam Apresiasi Paling Dinamis',
-      desc: 'Tahun 2025 mencatatkan rekor partisipasi voting kategori terfavorit terbanyak dengan lebih dari 3.800 suara civitas akademika.',
-      tag: 'Rekor Partisipasi',
-    },
-    {
-      title: 'Kategori Baru: Outstanding Tech Innovator',
-      desc: 'Inovasi karya riset mahasiswa Fasilkom berhasil meraih hibah nasional dan mendapatkan apresiasi khusus langsung dari Rektorat.',
-      tag: 'Inovasi Karya',
-    },
-    {
-      title: 'Harmoni & Keakraban Lintas Generasi',
-      desc: 'Dosen dan mahasiswa tampil bersama dalam pertunjukan musik akustik orkestra yang menjadi momen paling berkesan tahun lalu.',
-      tag: 'Kolaborasi Budaya',
     },
   ];
 
@@ -108,27 +90,6 @@ export default function PastInsights() {
               </ScrollReveal>
             );
           })}
-        </div>
-
-        {/* Story Highlight Boxes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {highlights.map((h, i) => (
-            <ScrollReveal key={i} animation="fade-up" delay={i * 120}>
-              <div className="p-6 sm:p-7 rounded-3xl bg-surface-card-2/70 border border-gold/20 hover:border-gold/50 transition-all shadow-lg flex flex-col justify-between h-full">
-                <div>
-                  <span className="inline-block text-[10px] uppercase font-bold tracking-widest text-gold bg-surface-card px-2.5 py-1 rounded-full border border-gold/30 mb-4">
-                    {h.tag}
-                  </span>
-                  <h3 className="font-cinzel text-lg sm:text-xl font-bold text-ivory mb-2.5">
-                    {h.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-ink/75 leading-relaxed font-light">
-                    {h.desc}
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-          ))}
         </div>
 
       </div>

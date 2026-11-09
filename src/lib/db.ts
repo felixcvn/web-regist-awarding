@@ -3,12 +3,16 @@ import { Participant, PublicTicket, RegistrationInput } from './types';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import * as XLSX from 'xlsx';
 import { ApiError, DatabaseUnavailableError } from './apiErrors';
 import { isTicketRevoked } from './revokedTickets';
-import { MAX_STUDENT_FILE_BYTES, MAX_STUDENT_IMPORT_ROWS, type StudentImportFiles } from './studentImportFiles';
-import { validateXlsxArchive } from './xlsxArchive';
+import { type StudentImportFiles } from './studentImportFiles';
 import { toPublicTicket } from './publicTicket';
+import { normalizeName, normalizeNim, parseStudentImportFiles, type ImportedStudent, type StudentImportResult } from './studentImportParser';
+import * as mysqlStore from './dbMysql';
+
+export type { StudentImportResult } from './studentImportParser';
+const DATABASE_PROVIDER = process.env.DATABASE_PROVIDER || 'postgres';
+const USE_MYSQL = DATABASE_PROVIDER === 'mysql';
 
 // --- Student import tables ---
 
@@ -78,21 +82,13 @@ async function initStudentImportTables(p: Pool): Promise<boolean> {
   }
 }
 
-function normalizeName(name: string): string {
-  return name.trim().replace(/\s+/g, ' ').normalize('NFKC').toLocaleLowerCase('id-ID');
-}
-
-function normalizeNim(nim: string): string {
-  return nim.trim().toLowerCase();
-}
-
 // In production the filesystem is ephemeral/read-only (serverless), so the JSON
 // fallback is disabled — a failed DB connection must surface, not silently lose data.
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const fallbackFilePath = path.join(process.cwd(), '.participants_data.json');
 
 // Lazy production guard: failure surfaces after runtime, not at module load.
-if (IS_PRODUCTION && !process.env.DATABASE_URL) {
+if (IS_PRODUCTION && !USE_MYSQL && !process.env.DATABASE_URL) {
   console.error('[DB] DATABASE_URL is not set in production.');
 }
 
@@ -156,6 +152,10 @@ function saveFallbackData(data: Participant[]): void {
 let pool: Pool | null = null;
 
 function getPool(): Pool | null {
+  if (DATABASE_PROVIDER !== 'postgres') {
+    console.error('[DB] DATABASE_PROVIDER must be postgres or mysql.');
+    return null;
+  }
   if (!process.env.DATABASE_URL) {
     if (IS_PRODUCTION) console.error('[DB] DATABASE_URL is not set in production.');
     return null;
@@ -188,6 +188,7 @@ let lastRateLimitCleanup = 0;
 // Atomic per-key sliding window shared by every application instance. Keys are
 // hashed so recipient addresses and client IPs are not stored in this table.
 export async function consumeRateLimit(key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; retryAfter: number } | null> {
+  if (USE_MYSQL) return mysqlStore.consumeRateLimit(key, limit, windowMs);
   const p = getPool();
   if (!p) return null;
   try {
@@ -284,6 +285,7 @@ async function initPostgresTable(p: Pool): Promise<boolean> {
 }
 
 export async function createParticipant(input: RegistrationInput): Promise<{ participant?: Participant; error?: string; status?: number }> {
+  if (USE_MYSQL) return mysqlStore.createParticipant(input);
   const p = getPool();
   const id = 'TKT-' + crypto.randomBytes(4).toString('hex').toUpperCase();
   const qrToken = 'FAN26-' + crypto.randomUUID();
@@ -388,6 +390,7 @@ export async function createParticipant(input: RegistrationInput): Promise<{ par
 }
 
 export async function getParticipantByToken(qrToken: string): Promise<PublicTicket | null> {
+  if (USE_MYSQL) return mysqlStore.getParticipantByToken(qrToken);
   if (isTicketRevoked(qrToken)) return null;
   const p = getPool();
   if (p) {
@@ -412,6 +415,7 @@ export async function getParticipantByToken(qrToken: string): Promise<PublicTick
 }
 
 export async function checkInParticipant(qrToken: string): Promise<{ success: boolean; message: string; participant?: Participant }> {
+  if (USE_MYSQL) return mysqlStore.checkInParticipant(qrToken);
   if (isTicketRevoked(qrToken)) {
     return { success: false, message: 'Tiket tidak berlaku. Silakan hubungi panitia untuk penggantian.' };
   }
@@ -495,6 +499,7 @@ export async function checkInParticipant(qrToken: string): Promise<{ success: bo
 }
 
 export async function getAllParticipants(): Promise<Participant[]> {
+  if (USE_MYSQL) return mysqlStore.getAllParticipants();
   const p = getPool();
   if (p) {
     try {
@@ -515,6 +520,7 @@ export async function getAllParticipants(): Promise<Participant[]> {
 }
 
 export async function isNimRegistered(nimNip: string): Promise<boolean> {
+  if (USE_MYSQL) return mysqlStore.isNimRegistered(nimNip);
   const normalized = normalizeNim(nimNip);
   if (!normalized) return false;
 
@@ -535,6 +541,7 @@ export async function isNimRegistered(nimNip: string): Promise<boolean> {
 }
 
 export async function validateStudentIdentity(nim: string, name: string): Promise<'valid' | 'invalid' | 'unavailable'> {
+  if (USE_MYSQL) return mysqlStore.validateStudentIdentity(nim, name);
   const p = getPool();
   if (!p) return 'unavailable';
 
@@ -554,6 +561,7 @@ export async function validateStudentIdentity(nim: string, name: string): Promis
 }
 
 export async function deleteParticipant(id: string): Promise<boolean> {
+  if (USE_MYSQL) return mysqlStore.deleteParticipant(id);
   const p = getPool();
   if (p) {
     try {
@@ -582,6 +590,7 @@ export async function createSessionRecord(
   ip: string,
   userAgent: string
 ): Promise<boolean> {
+  if (USE_MYSQL) return mysqlStore.createSessionRecord(tokenHash, expiresAt, ip, userAgent);
   const p = getPool();
   if (!p) return false;
   try {
@@ -601,6 +610,7 @@ export async function createSessionRecord(
 }
 
 export async function getSessionRecord(tokenHash: string): Promise<{ expiresAt: string } | null> {
+  if (USE_MYSQL) return mysqlStore.getSessionRecord(tokenHash);
   const p = getPool();
   if (!p) return null;
   try {
@@ -615,6 +625,7 @@ export async function getSessionRecord(tokenHash: string): Promise<{ expiresAt: 
 }
 
 export async function deleteSessionRecord(tokenHash: string): Promise<void> {
+  if (USE_MYSQL) return mysqlStore.deleteSessionRecord(tokenHash);
   const p = getPool();
   if (!p) return;
   try {
@@ -626,6 +637,7 @@ export async function deleteSessionRecord(tokenHash: string): Promise<void> {
 }
 
 export async function purgeExpiredSessions(): Promise<void> {
+  if (USE_MYSQL) return mysqlStore.purgeExpiredSessions();
   const p = getPool();
   if (!p) return;
   try {
@@ -641,6 +653,7 @@ export async function purgeExpiredSessions(): Promise<void> {
 // Count recent audit rows for a given action (e.g. failed logins). Used for
 // cross-instance lockouts where an in-memory counter would reset on cold start.
 export async function countRecentAudit(action: string, windowMs: number): Promise<number> {
+  if (USE_MYSQL) return mysqlStore.countRecentAudit(action, windowMs);
   const p = getPool();
   if (!p) return 0;
   try {
@@ -660,6 +673,7 @@ export async function countRecentAudit(action: string, windowMs: number): Promis
 // Count recent failed logins for one IP. DB-backed so the lockout survives
 // serverless cold starts and multiple instances.
 export async function countRecentLoginFailures(ip: string, windowMs: number): Promise<number> {
+  if (USE_MYSQL) return mysqlStore.countRecentLoginFailures(ip, windowMs);
   const p = getPool();
   if (!p) return 0;
   try {
@@ -678,6 +692,7 @@ export async function countRecentLoginFailures(ip: string, windowMs: number): Pr
 }
 
 export async function writeAuditLog(action: string, actorIp: string, targetId?: string, detail?: string): Promise<void> {
+  if (USE_MYSQL) return mysqlStore.writeAuditLog(action, actorIp, targetId, detail);
   const p = getPool();
   if (!p) return;
   try {
@@ -692,201 +707,8 @@ export async function writeAuditLog(action: string, actorIp: string, targetId?: 
   }
 }
 
-export interface StudentImportResult {
-  batchId: string;
-  totalRows: number;
-  validRows: number;
-  invalidRows: number;
-  duplicateNims: number;
-  emptyNames: number;
-  invalidNims: number;
-  errors: string[];
-}
-
-interface ImportedStudent {
-  nim: string;
-  name: string;
-  normalizedName: string;
-  prodi: string;
-  batchYear: string;
-}
-
-interface ParsedStudentImport {
-  students: ImportedStudent[];
-  result: StudentImportResult;
-}
-
-const STUDENT_PRODI_CODES: Record<string, string> = {
-  '10': 'Sistem Informasi',
-  '11': 'Sistem Informasi',
-  '20': 'Teknologi Informasi',
-  '21': 'Teknologi Informasi',
-  '30': 'Informatika',
-  '31': 'Informatika',
-};
-
-const MAX_IMPORT_ERRORS = 100;
-
-async function parseStudentImportFiles(files: StudentImportFiles): Promise<ParsedStudentImport> {
-  const students: ImportedStudent[] = [];
-  const seenNims = new Set<string>();
-  const errors: string[] = [];
-  let totalRows = 0;
-  let duplicateNims = 0;
-  let emptyNames = 0;
-  let invalidNims = 0;
-  let errorsTruncated = false;
-
-  const addError = (message: string) => {
-    if (errors.length < MAX_IMPORT_ERRORS - 1) errors.push(message);
-    else errorsTruncated = true;
-  };
-
-  const processFile = async (
-    file: File | undefined,
-    label: string,
-    expectedProdi: string
-  ): Promise<void> => {
-    if (!file) {
-      addError(`File ${label} belum diunggah.`);
-      return;
-    }
-    if (file.size === 0 || file.size > MAX_STUDENT_FILE_BYTES) {
-      addError(`File ${label}: ukuran file harus antara 1 byte dan 5 MB.`);
-      return;
-    }
-
-    let rows: unknown[][];
-    try {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      await validateXlsxArchive(buffer);
-      const workbook = XLSX.read(buffer, { type: 'buffer', sheets: 0, sheetRows: MAX_STUDENT_IMPORT_ROWS + 1 });
-      const sheetName = workbook.SheetNames[0];
-      if (!sheetName) {
-        addError(`File ${label} tidak memiliki worksheet.`);
-        return;
-      }
-      const sheet = workbook.Sheets[sheetName];
-      const range = XLSX.utils.decode_range(sheet['!fullref'] || sheet['!ref'] || 'A1');
-      if (range.e.r > MAX_STUDENT_IMPORT_ROWS || range.e.c > 127) {
-        addError(`File ${label}: maksimal ${MAX_STUDENT_IMPORT_ROWS} baris data dan 128 kolom.`);
-        return;
-      }
-      rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
-        header: 1,
-        defval: '',
-        raw: true,
-      });
-    } catch (error) {
-      addError(`File ${label}: ${error instanceof ApiError ? error.message : 'tidak dapat dibaca sebagai Excel .xlsx.'}`);
-      return;
-    }
-
-    const headerIndex = rows.findIndex((row) =>
-      row.some((cell) => String(cell).trim().toLocaleUpperCase('id-ID') === 'NIM')
-    );
-    if (headerIndex < 0) {
-      addError(`File ${label}: header kolom NIM tidak ditemukan.`);
-      return;
-    }
-
-    const header = rows[headerIndex].map((cell) => String(cell).trim().toLocaleUpperCase('id-ID'));
-    const nimColumn = header.indexOf('NIM');
-    const nameColumn = header.findIndex((value) => value === 'NAMA' || value === 'NAMA LENGKAP');
-    if (nameColumn < 0) {
-      addError(`File ${label}: kolom NAMA atau NAMA LENGKAP tidak ditemukan.`);
-      return;
-    }
-
-    const validBeforeFile = students.length;
-    for (let rowIndex = headerIndex + 1; rowIndex < rows.length; rowIndex++) {
-      const row = rows[rowIndex];
-      if (!row || row.every((cell) => String(cell).trim() === '')) continue;
-
-      totalRows++;
-      if (totalRows > MAX_STUDENT_IMPORT_ROWS) {
-        throw new ApiError(`Maksimal total impor adalah ${MAX_STUDENT_IMPORT_ROWS} baris mahasiswa.`, 400);
-      }
-      const rowLabel = `Baris ${rowIndex + 1} (${label})`;
-      const nim = String(row[nimColumn] ?? '').trim();
-      const name = String(row[nameColumn] ?? '').trim().replace(/\s+/g, ' ');
-
-      if (!name) {
-        emptyNames++;
-        addError(`${rowLabel}: nama kosong.`);
-        continue;
-      }
-      if (name.length > 120 || normalizeName(name).length > 120) {
-        addError(`${rowLabel}: nama maksimal 120 karakter.`);
-        continue;
-      }
-
-      if (!/^\d{12}$/.test(nim)) {
-        invalidNims++;
-        addError(`${rowLabel}: NIM wajib terdiri dari tepat 12 digit.`);
-        continue;
-      }
-
-      const yearDigit = nim.slice(0, 2);
-      if (!['23', '24', '25', '26'].includes(yearDigit)) {
-        invalidNims++;
-        addError(`${rowLabel}: NIM tidak memiliki angkatan valid (2023–2026).`);
-        continue;
-      }
-
-      const prodi = STUDENT_PRODI_CODES[nim.slice(8, 10)];
-      if (!prodi) {
-        invalidNims++;
-        addError(`${rowLabel}: kode program studi pada NIM tidak dikenali.`);
-        continue;
-      }
-
-      if (prodi !== expectedProdi) {
-        invalidNims++;
-        addError(`${rowLabel}: NIM menunjukkan prodi ${prodi}, bukan ${expectedProdi}.`);
-        continue;
-      }
-
-      const normalizedNim = normalizeNim(nim);
-      if (seenNims.has(normalizedNim)) {
-        duplicateNims++;
-        addError(`${rowLabel}: NIM duplikat ditemukan pada file yang diunggah.`);
-        continue;
-      }
-
-      seenNims.add(normalizedNim);
-      students.push({
-        nim: normalizedNim,
-        name,
-        normalizedName: normalizeName(name),
-        prodi,
-        batchYear: `20${yearDigit}`,
-      });
-    }
-    if (students.length === validBeforeFile) addError(`File ${label} tidak memiliki baris mahasiswa valid.`);
-  };
-
-  await processFile(files.sistemInformasi, 'Sistem Informasi', 'Sistem Informasi');
-  await processFile(files.informatika, 'Informatika', 'Informatika');
-  await processFile(files.teknologiInformasi, 'Teknologi Informasi', 'Teknologi Informasi');
-
-  if (errorsTruncated) errors.push('Kesalahan lainnya tidak ditampilkan. Periksa semua baris pada file yang diunggah.');
-
-  const result: StudentImportResult = {
-    batchId: `STU-${crypto.randomUUID()}`,
-    totalRows,
-    validRows: students.length,
-    invalidRows: totalRows - students.length,
-    duplicateNims,
-    emptyNames,
-    invalidNims,
-    errors,
-  };
-
-  return { students, result };
-}
-
 export async function previewStudentImport(files: StudentImportFiles, sessionHash: string): Promise<StudentImportResult> {
+  if (USE_MYSQL) return mysqlStore.previewStudentImport(files, sessionHash);
   const p = getPool();
   if (!p) throw new DatabaseUnavailableError();
   if (!/^[a-f0-9]{64}$/.test(sessionHash)) throw new ApiError('Sesi impor tidak valid.', 401);
@@ -910,6 +732,7 @@ export async function commitStudentImport(
   sessionHash: string,
   committedByIp: string
 ): Promise<void> {
+  if (USE_MYSQL) return mysqlStore.commitStudentImport(batchId, sessionHash, committedByIp);
   const p = getPool();
   if (!p) throw new DatabaseUnavailableError();
 
@@ -1014,6 +837,7 @@ export async function commitStudentImport(
 }
 
 export async function rollbackToPreviousBatch(): Promise<{ batchId: string; count: number }> {
+  if (USE_MYSQL) return mysqlStore.rollbackToPreviousBatch();
   const p = getPool();
   if (!p) {
     throw new DatabaseUnavailableError();
@@ -1089,6 +913,7 @@ export async function getActiveStudentImportBatch(): Promise<{
   count: number;
   canRollback: boolean;
 } | null> {
+  if (USE_MYSQL) return mysqlStore.getActiveStudentImportBatch();
   const p = getPool();
   if (!p) throw new DatabaseUnavailableError();
 
