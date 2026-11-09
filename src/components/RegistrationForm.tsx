@@ -346,7 +346,7 @@ export default function RegistrationForm() {
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: Arya Yudhistira"
+                  placeholder="Isikan Nama Anda Sesuai Dengan SIAKAD UNEJ..."
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className={`w-full pl-11 pr-11 py-3.5 rounded-xl bg-surface-card-2 border text-sm text-ivory placeholder-ink/40 outline-hidden transition-all ${

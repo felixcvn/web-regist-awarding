@@ -72,7 +72,7 @@ export default function Gallery() {
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent mx-auto mt-4" />
             <p className="text-sm sm:text-base text-ink/80 mt-4 leading-relaxed font-light">
-              Kilasan momen magis, kehangatan panggung, dan apresiasi tulus yang diabadikan dari perhelatan Fasilkom Awarding Night.
+              Kilasan momen magis, kehangatan panggung, dan apresiasi tulus yang diabadikan dari perhelatan Fasilkom Awarding Night 2025.
             </p>
           </div>
         </ScrollReveal>

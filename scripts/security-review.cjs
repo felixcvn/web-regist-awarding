@@ -3,6 +3,7 @@
  * production-build copy of the app under the OpenCode temporary directory.
  * Install embedded-postgres in SECURITY_REVIEW_TOOLS before running this file.
  * Use --database-only for focused PostgreSQL checks or --helpers-only for helpers.
+ * Use --ordering-only for Pemesanan persistence, authorization, and HTTP checks.
  * Use --cpanel to exercise the production server.js entry point end to end.
  * Use --mysql with SECURITY_REVIEW_MYSQLD for a new isolated MySQL 8+ datadir
  * or a portable MariaDB Windows server. No operating-system service is created.
@@ -37,9 +38,10 @@ const appDir = path.join(runDir, 'app');
 const observations = [];
 const databaseOnly = process.argv.includes('--database-only');
 const helpersOnly = process.argv.includes('--helpers-only');
+const orderingOnly = process.argv.includes('--ordering-only');
 const cpanel = process.argv.includes('--cpanel');
 const useMysql = process.argv.includes('--mysql');
-const artifacts = { runDir, databaseProvider: useMysql ? 'mysql' : 'postgres', mode: databaseOnly ? 'database-only' : helpersOnly ? 'helpers-only' : 'full', startup: cpanel ? 'server.js' : 'next start', sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim(), workingTree: true, xlsxVersion: XLSX.version };
+const artifacts = { runDir, databaseProvider: useMysql ? 'mysql' : 'postgres', mode: databaseOnly ? 'database-only' : helpersOnly ? 'helpers-only' : orderingOnly ? 'ordering-only' : 'full', startup: cpanel ? 'server.js' : 'next start', sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim(), workingTree: true, xlsxVersion: XLSX.version };
 const logStreams = [];
 let database;
 let dbClient;
@@ -417,6 +419,134 @@ async function checkPersistentLimits(dbUrl) {
   }
 }
 
+async function checkOrderingPersistence(dbUrl) {
+  const pools = [];
+  class TestPool extends Pool {
+    constructor(options) { super(options); pools.push(this); }
+  }
+  const load = () => transpiledModule('src/lib/db.ts', { pg: { Pool: TestPool }, 'mysql2/promise': { ...mysql, createPool(options) {
+    const p = mysql.createPool(options); pools.push(p); return p;
+  } } }, {
+    process: { env: { NODE_ENV: 'production', ...databaseEnv, DATABASE_URL: dbUrl }, cwd: () => appDir },
+  });
+  const first = load();
+  const second = load();
+  const link = 'https://tally.so/r/Review123?source=synthetic';
+  try {
+    const initial = await Promise.all([first.getOrderingSettings(), second.getOrderingSettings()]);
+    for (const settings of initial) assert.deepEqual({ ...settings }, { visible: true, tallyUrl: '' });
+    await Promise.all([
+      first.updateOrderingSettings({ visible: false }, '198.18.207.1'),
+      second.updateOrderingSettings({ tallyUrl: link }, '198.18.207.2'),
+    ]);
+    const fresh = load();
+    const expected = { visible: false, tallyUrl: link };
+    assert.deepEqual({ ...await fresh.getOrderingSettings() }, expected);
+    assert.equal((await dbClient.query('SELECT COUNT(*)::int AS count FROM site_settings')).rows[0].count, 1);
+
+    // A failed audit must roll back the setting instead of returning a false
+    // failure after the public configuration was already changed.
+    await dbClient.query('ALTER TABLE audit_log RENAME TO review_ordering_audit_backup');
+    try {
+      await assert.rejects(first.updateOrderingSettings({ visible: true }, '198.18.207.1'), (error) => error.status === 503);
+      assert.deepEqual({ ...await first.getOrderingSettings() }, expected);
+    } finally {
+      await dbClient.query('ALTER TABLE review_ordering_audit_backup RENAME TO audit_log');
+    }
+    const logs = await dbClient.query("SELECT detail FROM audit_log WHERE action = 'ordering_settings_updated'");
+    assert.equal(logs.rows.length, 2);
+    assert.ok(logs.rows.every((row) => !row.detail.includes(link) && !row.detail.includes('source=')));
+    assert.deepEqual({ ...await second.updateOrderingSettings({ tallyUrl: '' }, '198.18.207.2') }, { visible: false, tallyUrl: '' });
+    assert.deepEqual({ ...await first.updateOrderingSettings({ visible: true }, '198.18.207.1') }, { visible: true, tallyUrl: '' });
+    record('ORDERING-DB', 'Persisted singleton, disjoint concurrent patches, and transactional audit', {
+      defaultVisible: true, defaultPopup: true, freshModulePreservesSettings: true, singletonRows: 1,
+      bothConcurrentChangesPreserved: true, failedAuditRolledBack: true, formQueryNotLogged: true,
+    });
+  } finally { await Promise.all(pools.map((pool) => pool.end())); }
+}
+
+async function checkOrderingHttp(appPort) {
+  await check('ORDERING-AUTH', 'Ordering API authorization, CSRF, and strict inputs', async () => {
+    const publicSettings = await request('/api/ordering');
+    assert.equal(publicSettings.status, 200);
+    assert.deepEqual(publicSettings.json, { visible: true, tallyUrl: '' });
+    assert.match(publicSettings.headers.get('cache-control'), /no-store/);
+    const denied = [
+      await request('/api/admin/ordering'),
+      await request('/api/admin/ordering', { method: 'PATCH', body: { visible: false } }),
+      await request('/api/admin/ordering', { cookie: 'fan26_session=forged' }),
+      await adminRequest('/api/admin/ordering', { method: 'PATCH', csrf: undefined, body: { visible: false } }),
+      await adminRequest('/api/admin/ordering', { method: 'PATCH', origin: 'https://other.example.test', body: { visible: false } }),
+    ];
+    assert.deepEqual(denied.map((response) => response.status), [401, 401, 401, 403, 403]);
+    for (const response of denied) assertNoStore(response);
+    const invalidBodies = [null, [], {}, { visible: 'false' }, { visible: false, injected: true },
+      ...['javascript:alert(1)', 'http://tally.so/r/Review123', 'https://tally.so.evil.test/r/Review123',
+        'https://tally.so@evil.test/r/Review123', 'https://user:pass@tally.so/r/Review123',
+        'https://tally.so:8443/r/Review123', 'https://tally.so/', 'https://tally.so/embed/Review123',
+        'https://tally.so/r/Rev\niew123', 'x'.repeat(2049)].map((tallyUrl) => ({ tallyUrl }))];
+    for (const body of invalidBodies) {
+      const response = await adminRequest('/api/admin/ordering', { method: 'PATCH', body });
+      assert.equal(response.status, 400, JSON.stringify(body));
+      assertNoStore(response);
+    }
+    const wrongType = await adminRequest('/api/admin/ordering', { method: 'PATCH', body: '{}', headers: { 'Content-Type': 'text/plain' } });
+    const malformed = await adminRequest('/api/admin/ordering', { method: 'PATCH', body: '{', headers: { 'Content-Type': 'application/json' } });
+    const tooLarge = await adminRequest('/api/admin/ordering', { method: 'PATCH', body: { tallyUrl: 'x'.repeat(5000) } });
+    assert.deepEqual([wrongType.status, malformed.status, tooLarge.status], [415, 400, 413]);
+    assert.deepEqual((await request('/api/ordering')).json, { visible: true, tallyUrl: '' });
+    assert.equal((await request('/api/ordering', { method: 'PATCH', body: { visible: false } })).status, 405);
+    record('ORDERING-AUTH', 'Only authorized same-origin admins can save valid settings', {
+      deniedStatuses: denied.map((response) => response.status), invalidBodiesRejected: invalidBodies.length,
+      wrongMediaType: 415, malformedJson: 400, oversizedBody: 413, publicMutation: 405,
+    });
+  });
+
+  await check('ORDERING-HTTP', 'Visibility, Tally mode, and persistence across app restart', async () => {
+    const link = 'https://tally.so/r/Review123?source=synthetic';
+    const updates = await Promise.all([
+      adminRequest('/api/admin/ordering', { method: 'PATCH', body: { visible: false } }),
+      adminRequest('/api/admin/ordering', { method: 'PATCH', body: { tallyUrl: `  ${link}  ` } }),
+    ]);
+    assert.ok(updates.every((response) => response.status === 200));
+    const saved = await adminRequest('/api/admin/ordering');
+    assertNoStore(saved);
+    assert.deepEqual(saved.json, { visible: false, tallyUrl: link });
+    assert.deepEqual((await request('/api/ordering')).json, { visible: false, tallyUrl: '' });
+    await stopApp();
+    await startApp(appPort);
+    assert.deepEqual((await adminRequest('/api/admin/ordering')).json, saved.json);
+    assert.deepEqual((await request('/api/ordering')).json, { visible: false, tallyUrl: '' });
+    assert.equal((await adminRequest('/api/admin/ordering', { method: 'PATCH', body: { visible: true } })).status, 200);
+    assert.deepEqual((await request('/api/ordering')).json, { visible: true, tallyUrl: link });
+    assert.equal((await adminRequest('/api/admin/ordering', { method: 'PATCH', body: { tallyUrl: '' } })).status, 200);
+    assert.deepEqual((await request('/api/ordering')).json, { visible: true, tallyUrl: '' });
+    record('ORDERING-HTTP', 'Admin toggle and optional Tally link are shared across visitors and restarts', {
+      hiddenLinkNotPublic: true, trimmedLinkSaved: true, survivedProcessRestart: true,
+      previousAdminSessionStillValid: true, tallyModeEnabled: true, clearingLinkRestoresPopup: true,
+    });
+  });
+
+  await check('ORDERING-FAILURE', 'Settings outage does not report success or overwrite persisted state', async () => {
+    const before = (await adminRequest('/api/admin/ordering')).json;
+    await dbClient.query('ALTER TABLE site_settings RENAME TO review_ordering_settings_backup');
+    try {
+      const responses = [await request('/api/ordering'), await adminRequest('/api/admin/ordering'),
+        await adminRequest('/api/admin/ordering', { method: 'PATCH', body: { visible: false } })];
+      for (const response of responses) {
+        assert.equal(response.status, 503);
+        assertNoStore(response);
+        assert.equal(response.text.includes('site_settings'), false);
+      }
+    } finally {
+      await dbClient.query('ALTER TABLE review_ordering_settings_backup RENAME TO site_settings');
+    }
+    assert.deepEqual((await adminRequest('/api/admin/ordering')).json, before);
+    assert.deepEqual((await request('/api/ordering')).json, before);
+    record('ORDERING-FAILURE', 'Unavailable settings fail closed and recover without resetting', { publicRead: 503, adminRead: 503, adminWrite: 503, restoredOriginalSettings: true });
+  });
+}
+
 function loadMysqlHelpers(pools, messages = [], fsOverrides = {}, environment = {}) {
   return transpiledModule('src/lib/db.ts', {
     pg: { Pool: class ForbiddenPostgresPool { constructor() { throw new Error('MySQL must not open a PostgreSQL pool'); } } },
@@ -514,7 +644,7 @@ async function checkMysqlHelpersAndDiagnostic() {
     const diagnostic = JSON.parse(output);
     assert.equal(diagnostic.connected, true);
     assert.equal(diagnostic.readOnly, true);
-    assert.equal(diagnostic.applicationTablesFound, 9);
+    assert.equal(diagnostic.applicationTablesFound, 10);
     assert.equal(diagnostic.schemaWritesVerified, false);
     assert.equal(output.includes(databaseEnv.MYSQL_PASSWORD), false);
     assert.equal(messages.some((message) => [input.email, input.phone, input.name, databaseEnv.MYSQL_PASSWORD].some((privateValue) => message.includes(privateValue))), false);
@@ -571,6 +701,7 @@ async function main() {
 
   if (databaseOnly) {
     const { dbUrl } = await startDatabase();
+    await check('ORDERING-DB', 'Shared ordering settings and transactional updates', () => checkOrderingPersistence(dbUrl));
     await check('IMPORT-11', 'Active batch metadata and database lifecycle', () => checkActiveBatchQuery(dbUrl));
     await check('RATE-01', 'Persistent concurrent rate limits', () => checkPersistentLimits(dbUrl));
     if (useMysql) {
@@ -733,6 +864,7 @@ async function main() {
   if (helpersOnly) return;
 
   const { dbUrl, dbPassword } = await startDatabase();
+  await check('ORDERING-DB', 'Shared ordering settings and transactional updates', () => checkOrderingPersistence(dbUrl));
   await check('RATE-01', 'Persistent concurrent rate limits', () => checkPersistentLimits(dbUrl));
   const appPort = await freePort();
   const syntheticRevokedToken = `FAN26-${crypto.randomUUID()}`;
@@ -819,6 +951,9 @@ async function main() {
     }
     record('CSRF-01', 'CSRF rejection', results);
   });
+
+  await checkOrderingHttp(appPort);
+  if (orderingOnly) return;
 
   await check('IMPORT-01', 'Normal three-file preview and commit', async () => {
     const files = filesFor();

@@ -15,7 +15,6 @@ export default function GardenFrame({ variant = 'full' }: GardenFrameProps) {
   // screen ratio so the cropped edge of the PNG never shows.
   const bushW = isSubtle ? 'w-[max(18vw,36vh)]' : 'w-[max(21vw,38vh)]';
   const grassW = isSubtle ? 'w-[max(11vw,20vh)]' : 'w-[max(13vw,24vh)]';
-  const glowW = isSubtle ? 'w-[20vw]' : 'w-[24vw]';
   // Grass crest sits mid-screen; fade its top edge so it melts into the dark.
   const grassFade = '[mask-image:linear-gradient(to_bottom,transparent_0,black_22%)]';
 
@@ -27,11 +26,6 @@ export default function GardenFrame({ variant = 'full' }: GardenFrameProps) {
       }`}
     >
       {/* ── LEFT SIDE ── */}
-      {/* glow rising from behind the foliage */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.glowEllipse}
-        className={`fixed -bottom-[6vh] -left-[6vw] ${glowW} opacity-40`}
-      />
       {/* back layer: grass, inset toward center, faded crest */}
       <GardenArtwork
         src={GARDEN_IMAGES.grassRight}
@@ -141,10 +135,6 @@ export default function GardenFrame({ variant = 'full' }: GardenFrameProps) {
 
       {/* ── RIGHT SIDE (mirrored, loosely varied) ── */}
       <GardenArtwork
-        src={GARDEN_IMAGES.glowEllipse}
-        className={`fixed -bottom-[8vh] -right-[7vw] ${glowW} opacity-40`}
-      />
-      <GardenArtwork
         src={GARDEN_IMAGES.grassRight}
         interaction="swaySoft"
         className={`fixed -bottom-2 right-[7vw] ${grassW} origin-bottom opacity-75 ${grassFade}`}
@@ -244,16 +234,6 @@ export default function GardenFrame({ variant = 'full' }: GardenFrameProps) {
         src={GARDEN_IMAGES.clusterSmall3}
         interaction="float"
         className="fixed bottom-[72vh] right-[5vw] w-[5.5vw] opacity-80 rotate-3 scale-x-[-1]"
-      />
-
-      {/* floating glow wisps mid-screen for extra liveliness */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.glowEllipse}
-        className="fixed top-[14vh] left-[16vw] w-[9vw] opacity-20"
-      />
-      <GardenArtwork
-        src={GARDEN_IMAGES.glowEllipse}
-        className="fixed top-[22vh] right-[15vw] w-[7vw] opacity-15"
       />
 
       {/* dark veil ABOVE the foliage: dims the garden frame so the foliage

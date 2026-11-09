@@ -42,7 +42,7 @@ export default function Hero() {
             &ldquo;Secret Garden: Dreams to History&rdquo;
           </p>
           <p className="text-xs sm:text-sm text-ink/80 font-light leading-relaxed">
-            <span className="italic text-gold">Every Dream Blooms into History</span> — Ruang bertumbuhnya mimpi, dedikasi, dan potensi seluruh civitas Fasilkom UNEJ yang mekar menjadi jejak sejarah membanggakan.
+            <span className="italic text-gold">Every Dream Blooms into History</span> — Ruang bertumbuhnya mimpi, dedikasi, dan potensi seluruh Sivitas Akademika Fasilkom UNEJ yang mekar menjadi jejak sejarah membanggakan.
           </p>
         </div>
 
@@ -54,7 +54,7 @@ export default function Hero() {
           </div>
           <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-surface-card-2/85 border border-bloom-pink/25 shadow-[0_4px_20px_rgba(0,0,0,0.4)] backdrop-blur-md hover:border-bloom-pink/50 transition-colors">
             <MapPin className="w-4 h-4 text-bloom-pink" />
-            <span>Gedung Soetardjo, Universitas Jember</span>
+            <span>Gedung Soetardjo</span>
           </div>
         </div>
 

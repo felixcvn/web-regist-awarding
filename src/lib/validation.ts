@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isTallyFormUrl } from './orderingSettings';
 
 // CSV formula-injection guard: values starting with = + - @ can execute in spreadsheets.
 export function csvSafe(value: unknown): string {
@@ -31,3 +32,13 @@ export const studentIdentitySchema = z.object({ nim: studentNimSchema, name: z.s
 export const studentImportCommitSchema = z.object({
   batchId: z.string().regex(/^STU-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
 }).strict();
+
+export const orderingSettingsUpdateSchema = z.object({
+  visible: z.boolean().optional(),
+  tallyUrl: z.string().trim().max(2048).refine(
+    (value) => value === '' || isTallyFormUrl(value),
+    'Gunakan link form Tally dengan format https://tally.so/r/… atau kosongkan link.',
+  ).optional(),
+}).strict().refine((value) => value.visible !== undefined || value.tallyUrl !== undefined, {
+  message: 'Pilih pengaturan Pemesanan yang ingin diubah.',
+});

@@ -203,6 +203,24 @@ key publik memerlukan build baru. Simpan paket rilis sebelumnya serta backup
 database untuk pemulihan. Hosting tetap diperlukan sampai acara 1 Desember 2026
 untuk tiket dan check-in.
 
+## Menu Pemesanan
+
+Di **Dashboard Admin → Menu Pemesanan**:
+
+- **Tampilkan di halaman publik** langsung menyimpan perubahan tampil/sembunyi.
+  Menu tersedia di navigasi desktop dan menu HP. Bawaan pertama: **tampil**.
+- **Link Tally** awalnya kosong, sehingga pengunjung melihat pop-up
+  **“Fitur akan segera tersedia”** saat mengeklik Pemesanan.
+- Saat form makanan/minuman siap, isi link `https://tally.so/r/ID_FORM` lalu klik
+  **Simpan Link**. Menu akan membuka Tally di tab baru. Kosongkan dan simpan kembali
+  untuk mengembalikan pop-up.
+
+Pengaturan tersimpan pada tabel `site_settings` di database provider yang aktif,
+termasuk setelah restart atau pergantian paket aplikasi. Tabel dibuat otomatis;
+pengaturan yang sudah tersimpan tidak direset saat startup. Halaman publik membaca
+ulang saat dibuka, saat kembali ke tab, dan setiap satu menit selama tab terlihat.
+Jika database tidak tersedia, menu disembunyikan sampai pengaturan dapat dibaca.
+
 ## Pemecahan masalah
 
 | Gejala | Periksa |

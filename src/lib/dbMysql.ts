@@ -8,6 +8,7 @@ import { toPublicTicket } from './publicTicket';
 import { normalizeName, normalizeNim, parseStudentImportFiles, type ImportedStudent, type StudentImportResult } from './studentImportParser';
 import { MAX_STUDENT_IMPORT_ROWS, type StudentImportFiles } from './studentImportFiles';
 import type { Participant, PublicTicket, RegistrationInput } from './types';
+import { isOrderingSettings, orderingAuditDetail, type OrderingSettings, type OrderingSettingsUpdate } from './orderingSettings';
 
 const QUERY_TIMEOUT_MS = 15_000;
 let pool: Pool | null = null;
@@ -106,6 +107,7 @@ async function ensureSchema(): Promise<void> {
         throw Object.assign(new Error('Application tables must use InnoDB.'), { code: 'MYSQL_ENGINE_UNSAFE' });
       }
       await execute(connection, "INSERT INTO operation_locks (lock_key) VALUES ('student-import') ON DUPLICATE KEY UPDATE lock_key = lock_key");
+      await execute(connection, 'INSERT INTO site_settings (id) VALUES (1) ON DUPLICATE KEY UPDATE id = id');
     }).catch((error) => { schemaReady = null; throw error; });
   }
   await schemaReady;
@@ -158,6 +160,43 @@ function toParticipant(row: ParticipantRow): Participant {
 function parseJson(value: unknown): unknown {
   if (Buffer.isBuffer(value)) return JSON.parse(value.toString('utf8'));
   return typeof value === 'string' ? JSON.parse(value) : value;
+}
+
+async function readOrderingSettings(connection: PoolConnection): Promise<OrderingSettings> {
+  const rows = await execute<(RowDataPacket & { visible: number; tallyUrl: string })[]>(connection,
+    'SELECT ordering_visible AS visible, ordering_tally_url AS tallyUrl FROM site_settings WHERE id = 1');
+  const row = rows[0];
+  if (!row || (row.visible !== 0 && row.visible !== 1)) throw new DatabaseUnavailableError();
+  const settings = { visible: row.visible === 1, tallyUrl: row.tallyUrl };
+  if (!isOrderingSettings(settings)) throw new DatabaseUnavailableError();
+  return settings;
+}
+
+export async function getOrderingSettings(): Promise<OrderingSettings> {
+  return read('Ordering settings', readOrderingSettings);
+}
+
+export async function updateOrderingSettings(update: OrderingSettingsUpdate, actorIp: string): Promise<OrderingSettings> {
+  try {
+    await ensureSchema();
+    return await transaction(async (connection) => {
+      // Patch only supplied fields so a visibility change cannot overwrite a
+      // Tally link saved by another admin. The row lock covers the audit too.
+      await execute(connection,
+        `UPDATE site_settings SET ordering_visible = COALESCE(?, ordering_visible),
+         ordering_tally_url = COALESCE(?, ordering_tally_url), updated_at = UTC_TIMESTAMP(3) WHERE id = 1`,
+        [update.visible ?? null, update.tallyUrl ?? null]);
+      const settings = await readOrderingSettings(connection);
+      await execute(connection,
+        'INSERT INTO audit_log (action, actor_ip, target_id, detail) VALUES (?, ?, ?, ?)',
+        ['ordering_settings_updated', actorIp.slice(0, 64), 'ordering', orderingAuditDetail(settings)]);
+      return settings;
+    });
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    logFailure('Ordering settings update', error);
+    throw new DatabaseUnavailableError();
+  }
 }
 
 export async function consumeRateLimit(key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; retryAfter: number } | null> {

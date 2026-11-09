@@ -1,39 +1,31 @@
 'use client';
 
 import React from 'react';
-import { Award, Users, Trophy, Star } from 'lucide-react';
+import { Users, Trophy } from 'lucide-react';
 import { StarlightGlow } from './StarlightGlow';
 import ScrollReveal from './ScrollReveal';
 
 export default function PastInsights() {
   const stats = [
     {
+      id: 'audience',
       label: 'Tamu Hadir & Audiens',
       value: '600+',
-      desc: 'Mahasiswa, Dosen, Staf & Alumni Fasilkom',
+      desc: 'Satu malam untuk berbagi inspirasi, mempererat kebersamaan, dan merayakan perjalanan serta pencapaian yang membanggakan bagi Fasilkom.',
+      detailsLabel: 'Keluarga besar Fasilkom',
+      details: ['Mahasiswa', 'Dosen', 'Staf', 'Alumni'],
       icon: Users,
       accent: '#FFB5E8',
     },
     {
+      id: 'awards',
       label: 'Kategori Penghargaan',
       value: '15',
-      desc: 'Akademik, Organisasi, Riset & Pengabdian',
+      desc: 'Apresiasi atas dedikasi, karya, dan kontribusi Sivitas Akademika Fasilkom yang menginspirasi serta membawa dampak bagi Fakultas dan Universitas.',
+      detailsLabel: 'Bidang yang diapresiasi',
+      details: ['Akademik', 'Organisasi', 'Program Studi', 'Dosen'],
       icon: Trophy,
       accent: '#FFF3B0',
-    },
-    {
-      label: 'Nominasi Berbakat',
-      value: '76',
-      desc: 'Kandidat terkurasi dari seluruh program studi',
-      icon: Award,
-      accent: '#AFF8DB',
-    },
-    {
-      label: 'Tingkat Kepuasan',
-      value: '99.4%',
-      desc: 'Rating kepuasan penyelenggaraan edisi 2025',
-      icon: Star,
-      accent: '#E7C6FF',
     },
   ];
 
@@ -56,37 +48,64 @@ export default function PastInsights() {
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-transparent via-gold to-transparent mx-auto mt-4" />
             <p className="text-sm sm:text-base text-ink/80 mt-4 leading-relaxed font-light">
-              Menengok kembali taman mimpi yang telah mekar menjadi sejarah membanggakan bagi individu, UKM, dan Ormawa Fasilkom UNEJ.
+              Menengok kembali taman mimpi yang telah mekar menjadi sejarah membanggakan bagi Sivitas Akademika Fasilkom UNEJ.
             </p>
           </div>
         </ScrollReveal>
 
-        {/* 4 Big Numbers / Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-16">
+        {/* Full-width event metrics */}
+        <div className="grid w-full grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-16">
           {stats.map((item, index) => {
             const Icon = item.icon;
             return (
-              <ScrollReveal key={index} animation="fade-up" delay={index * 100}>
-                <div className="relative rounded-3xl p-6 bg-gradient-to-b from-surface-card-2/90 to-surface-base/90 border border-bloom-pink/20 hover:border-bloom-pink/50 transition-all duration-300 shadow-xl group h-full">
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: `${item.accent}20`, border: `1px solid ${item.accent}50`, color: item.accent }}
-                  >
-                    <Icon className="w-6 h-6" />
+              <ScrollReveal
+                key={item.id}
+                animation="fade-up"
+                delay={index * 100}
+                className="h-full motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none"
+              >
+                <article
+                  aria-labelledby={`insight-${item.id}-title`}
+                  className="relative flex h-full flex-col rounded-3xl p-6 sm:p-7 lg:p-8 bg-gradient-to-b from-surface-card-2/95 to-surface-base/95 border border-bloom-pink/20 hover:border-bloom-pink/50 transition-colors duration-300 shadow-xl"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <p
+                      className="min-w-0 font-cinzel font-black text-6xl lg:text-7xl xl:text-8xl leading-none tracking-tight"
+                      style={{ color: item.accent }}
+                    >
+                      {item.value}
+                    </p>
+                    <div
+                      aria-hidden="true"
+                      className="w-12 h-12 lg:w-14 lg:h-14 shrink-0 rounded-2xl flex items-center justify-center"
+                      style={{ backgroundColor: `${item.accent}20`, border: `1px solid ${item.accent}50`, color: item.accent }}
+                    >
+                      <Icon className="w-6 h-6 lg:w-7 lg:h-7" />
+                    </div>
                   </div>
-                  <div
-                    className="font-cinzel font-black text-3xl sm:text-4xl lg:text-5xl tracking-tight mb-1"
-                    style={{ color: item.accent }}
-                  >
-                    {item.value}
-                  </div>
-                  <div className="text-xs sm:text-sm font-bold text-ivory mb-1">
+                  <h3 id={`insight-${item.id}-title`} className="text-xl lg:text-2xl font-bold leading-snug text-ivory mt-4">
                     {item.label}
-                  </div>
-                  <div className="text-[11px] sm:text-xs text-ink/60 leading-relaxed font-light">
+                  </h3>
+                  <p className="text-sm lg:text-base text-ink/80 leading-relaxed mt-3">
                     {item.desc}
+                  </p>
+                  <div className="mt-auto pt-6">
+                    <div className="border-t border-ink/10 pt-5">
+                      <p className="text-xs font-medium text-ink/60">{item.detailsLabel}</p>
+                      <ul className="grid grid-cols-2 xl:grid-cols-4 gap-x-4 gap-y-3 mt-3">
+                        {item.details.map((detail) => (
+                          <li
+                            key={detail}
+                            className="border-l-2 pl-3 text-sm font-medium leading-snug text-ink/90"
+                            style={{ borderColor: `${item.accent}70` }}
+                          >
+                            {detail}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                </div>
+                </article>
               </ScrollReveal>
             );
           })}

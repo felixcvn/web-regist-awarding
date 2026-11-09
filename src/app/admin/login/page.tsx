@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Shield, KeyRound, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
-import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
 import GardenFrame from '@/components/GardenFrame';
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -40,7 +39,6 @@ export default function AdminLoginPage() {
 
   return (
     <main className="relative min-h-screen bg-transparent text-ink flex flex-col items-center justify-center p-4 overflow-hidden">
-      <GlobalGardenBackdrop />
       <GardenFrame variant="subtle" />
       {/* Small flower accents — admin stays minimal */}
       <GardenArtwork

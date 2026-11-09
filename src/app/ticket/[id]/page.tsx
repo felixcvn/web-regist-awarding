@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Enchanted3DCanvas from '@/components/Enchanted3DCanvas';
 import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
-import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
 import GardenFrame from '@/components/GardenFrame';
 import { qrTokenSchema } from '@/lib/validation';
 
@@ -27,14 +26,9 @@ export default async function TicketPage({ params }: TicketPageProps) {
 
   return (
     <main className="relative min-h-screen bg-transparent text-ink flex flex-col justify-between selection:bg-bloom-pink selection:text-on-accent overflow-hidden">
-      <GlobalGardenBackdrop />
       <GardenFrame variant="subtle" />
       <Enchanted3DCanvas />
-      {/* Soft glow behind the ticket + flower accent */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.glowEllipse}
-        className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[480px] sm:w-[640px] z-0 opacity-25"
-      />
+      {/* Flower accent */}
       <GardenArtwork
         src={GARDEN_IMAGES.flowerPink}
         interaction="swaySoft"

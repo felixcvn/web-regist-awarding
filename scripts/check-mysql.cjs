@@ -72,7 +72,7 @@ async function main() {
       throw Object.assign(new Error('InnoDB is required.'), { code: 'MYSQL_ENGINE_UNSAFE' });
     }
     const [tables] = await connection.query({ sql:
-      "SELECT TABLE_NAME AS tableName, ENGINE AS engine FROM information_schema.tables WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('participants', 'admin_sessions', 'audit_log', 'student_import_batches', 'student_master', 'student_import_records', 'student_import_previews', 'request_rate_limits', 'operation_locks')", timeout: 15000 });
+      "SELECT TABLE_NAME AS tableName, ENGINE AS engine FROM information_schema.tables WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('participants', 'admin_sessions', 'audit_log', 'student_import_batches', 'student_master', 'student_import_records', 'student_import_previews', 'request_rate_limits', 'operation_locks', 'site_settings')", timeout: 15000 });
     if (tables.some((table) => String(table.engine).toLowerCase() !== 'innodb')) {
       throw Object.assign(new Error('Existing application tables must use InnoDB.'), { code: 'MYSQL_ENGINE_UNSAFE' });
     }

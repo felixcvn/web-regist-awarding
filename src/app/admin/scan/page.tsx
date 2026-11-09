@@ -8,7 +8,6 @@ import Link from 'next/link';
 import Dialog from '@/components/Dialog';
 import { secureFetch } from '@/lib/csrfClient';
 import GardenArtwork, { GARDEN_IMAGES } from '@/components/GardenArtwork';
-import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
 import GardenFrame from '@/components/GardenFrame';
 
 export default function AdminScanPage() {
@@ -165,7 +164,6 @@ export default function AdminScanPage() {
 
   return (
     <main className="relative min-h-screen bg-transparent text-ink px-4 pb-8 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pt-12 overflow-hidden">
-      <GlobalGardenBackdrop />
       <GardenFrame variant="subtle" />
       {/* Small flower accents — matches the login page */}
       <GardenArtwork

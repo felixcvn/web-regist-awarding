@@ -6,9 +6,9 @@ import { Participant } from '@/lib/types';
 import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { secureFetch } from '@/lib/csrfClient';
-import GlobalGardenBackdrop from '@/components/GlobalGardenBackdrop';
 import GardenFrame from '@/components/GardenFrame';
 import Dialog from '@/components/Dialog';
+import OrderingSettingsPanel from '@/components/OrderingSettingsPanel';
 
 interface StudentImportPreview {
   batchId: string;
@@ -232,7 +232,6 @@ export default function AdminDashboardPage() {
 
   return (
     <main className="relative min-h-screen bg-transparent text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
-      <GlobalGardenBackdrop />
       <GardenFrame variant="subtle" />
       <div className="relative z-10 max-w-7xl mx-auto space-y-6">
         
@@ -294,6 +293,8 @@ export default function AdminDashboardPage() {
             </button>
           </div>
         </div>
+
+        <OrderingSettingsPanel />
 
         {/* 4 Big Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

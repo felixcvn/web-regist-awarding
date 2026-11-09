@@ -15,7 +15,6 @@ export const GARDEN_IMAGES = {
   // Storybook garden elements (flat illustration, transparent bg)
   bushRight: '/garden/bush-right.png',
   grassRight: '/garden/grass-right.png',
-  glowEllipse: '/garden/glow-ellipse.png',
   clusterSmall1: '/garden/cluster-small-1.png',
   clusterSmall2: '/garden/cluster-small-2.png',
   clusterSmall3: '/garden/cluster-small-3.png',
@@ -35,7 +34,6 @@ export const GARDEN_DIMS: Record<string, { width: number; height: number }> = {
   [GARDEN_IMAGES.butterfly]: { width: 674, height: 1263 },
   [GARDEN_IMAGES.bushRight]: { width: 394, height: 1190 },
   [GARDEN_IMAGES.grassRight]: { width: 442, height: 1190 },
-  [GARDEN_IMAGES.glowEllipse]: { width: 601, height: 741 },
   [GARDEN_IMAGES.clusterSmall1]: { width: 226, height: 358 },
   [GARDEN_IMAGES.clusterSmall2]: { width: 326, height: 258 },
   [GARDEN_IMAGES.clusterSmall3]: { width: 155, height: 237 },

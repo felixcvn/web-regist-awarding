@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, Info } from 'lucide-react';
 
@@ -29,18 +29,50 @@ export default function Dialog({
   onConfirm,
   onClose,
 }: DialogProps) {
+  const titleId = useId();
+  const messageId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !busy) onClose();
+      if (e.key !== 'Tab') return;
+      const buttons = dialogRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
+      if (!buttons?.length) {
+        e.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+      const first = buttons[0];
+      const last = buttons[buttons.length - 1];
+      const outside = !dialogRef.current?.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || outside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || outside)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
     };
   }, [open, busy, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const firstButton = dialogRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)');
+    (firstButton || dialogRef.current)?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -56,8 +88,12 @@ export default function Dialog({
         onClick={() => !busy && onClose()}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={messageId}
+        tabIndex={-1}
         className="relative w-full max-w-md rounded-3xl overflow-hidden border bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base shadow-[0_0_60px_rgba(0,0,0,0.85)] animate-[dialogIn_180ms_cubic-bezier(0.16,1,0.3,1)]"
         style={{ borderColor: `${accent}66` }}
       >
@@ -74,10 +110,10 @@ export default function Dialog({
             >
               <Icon className="w-8 h-8" style={{ color: accent }} />
             </div>
-            <h3 className="font-cinzel text-lg sm:text-xl font-bold text-ivory tracking-wide mt-4">
+            <h3 id={titleId} className="font-cinzel text-lg sm:text-xl font-bold text-ivory tracking-wide mt-4">
               {title}
             </h3>
-            <p className="mt-2 text-sm text-ink/75 leading-relaxed whitespace-pre-line max-w-sm">
+            <p id={messageId} className="mt-2 text-sm text-ink/75 leading-relaxed whitespace-pre-line max-w-sm">
               {message}
             </p>
           </div>

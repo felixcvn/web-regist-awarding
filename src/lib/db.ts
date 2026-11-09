@@ -9,6 +9,7 @@ import { type StudentImportFiles } from './studentImportFiles';
 import { toPublicTicket } from './publicTicket';
 import { normalizeName, normalizeNim, parseStudentImportFiles, type ImportedStudent, type StudentImportResult } from './studentImportParser';
 import * as mysqlStore from './dbMysql';
+import { isOrderingSettings, orderingAuditDetail, type OrderingSettings, type OrderingSettingsUpdate } from './orderingSettings';
 
 export type { StudentImportResult } from './studentImportParser';
 const DATABASE_PROVIDER = process.env.DATABASE_PROVIDER || 'postgres';
@@ -185,6 +186,91 @@ function getPool(): Pool | null {
 let rateLimitTableReady: Promise<void> | null = null;
 let lastRateLimitCleanup = 0;
 
+async function initializePostgresSchema(p: Pool, statements: string): Promise<void> {
+  const client = await p.connect();
+  let discard = false;
+  try {
+    await client.query('BEGIN');
+    // IF NOT EXISTS alone can race in PostgreSQL's system catalog when two
+    // application processes create the same table on their first request.
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('fan26-schema'))");
+    await client.query(statements);
+    await client.query('COMMIT');
+  } catch (error) {
+    try { await client.query('ROLLBACK'); }
+    catch { discard = true; }
+    throw error;
+  } finally {
+    client.release(discard);
+  }
+}
+
+let orderingSettingsReady: Promise<void> | null = null;
+
+async function initOrderingSettings(p: Pool): Promise<void> {
+  if (!orderingSettingsReady) {
+    orderingSettingsReady = initializePostgresSchema(p, `
+      CREATE TABLE IF NOT EXISTS site_settings (
+        id SMALLINT PRIMARY KEY CHECK (id = 1),
+        ordering_visible BOOLEAN NOT NULL DEFAULT TRUE,
+        ordering_tally_url VARCHAR(2048) NOT NULL DEFAULT '',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      INSERT INTO site_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+    `).then(() => {}).catch((error) => { orderingSettingsReady = null; throw error; });
+  }
+  await orderingSettingsReady;
+}
+
+export async function getOrderingSettings(): Promise<OrderingSettings> {
+  if (USE_MYSQL) return mysqlStore.getOrderingSettings();
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+  try {
+    await initOrderingSettings(p);
+    const result = await p.query<OrderingSettings>(
+      'SELECT ordering_visible AS visible, ordering_tally_url AS "tallyUrl" FROM site_settings WHERE id = 1');
+    if (!isOrderingSettings(result.rows[0])) throw new DatabaseUnavailableError();
+    return result.rows[0];
+  } catch {
+    throw new DatabaseUnavailableError();
+  }
+}
+
+export async function updateOrderingSettings(update: OrderingSettingsUpdate, actorIp: string): Promise<OrderingSettings> {
+  if (USE_MYSQL) return mysqlStore.updateOrderingSettings(update, actorIp);
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+  try {
+    await initOrderingSettings(p);
+    if (!await initPostgresTable(p)) throw new DatabaseUnavailableError();
+    const client = await p.connect();
+    let discard = false;
+    try {
+      await client.query('BEGIN');
+      const result = await client.query<OrderingSettings>(
+        `UPDATE site_settings SET ordering_visible = COALESCE($1, ordering_visible),
+         ordering_tally_url = COALESCE($2, ordering_tally_url), updated_at = NOW() WHERE id = 1
+         RETURNING ordering_visible AS visible, ordering_tally_url AS "tallyUrl"`,
+        [update.visible ?? null, update.tallyUrl ?? null]);
+      const settings = result.rows[0];
+      if (!isOrderingSettings(settings)) throw new DatabaseUnavailableError();
+      await client.query('INSERT INTO audit_log (action, actor_ip, target_id, detail) VALUES ($1, $2, $3, $4)',
+        ['ordering_settings_updated', actorIp.slice(0, 64), 'ordering', orderingAuditDetail(settings)]);
+      await client.query('COMMIT');
+      return settings;
+    } catch (error) {
+      try { await client.query('ROLLBACK'); }
+      catch { discard = true; }
+      throw error;
+    } finally {
+      client.release(discard);
+    }
+  } catch {
+    throw new DatabaseUnavailableError();
+  }
+}
+
 // Atomic per-key sliding window shared by every application instance. Keys are
 // hashed so recipient addresses and client IPs are not stored in this table.
 export async function consumeRateLimit(key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; retryAfter: number } | null> {
@@ -238,7 +324,7 @@ let isTableInitialized = false;
 async function initPostgresTable(p: Pool): Promise<boolean> {
   if (isTableInitialized) return true;
   try {
-    await p.query(`
+    await initializePostgresSchema(p, `
       CREATE TABLE IF NOT EXISTS participants (
         id VARCHAR(64) PRIMARY KEY,
         nim_nip VARCHAR(50) UNIQUE NOT NULL,

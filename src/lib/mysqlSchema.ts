@@ -5,7 +5,7 @@ const tableOptions = 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin'
 export const MYSQL_TABLE_NAMES = [
   'participants', 'admin_sessions', 'audit_log', 'student_import_batches',
   'student_master', 'student_import_records', 'student_import_previews',
-  'request_rate_limits', 'operation_locks',
+  'request_rate_limits', 'operation_locks', 'site_settings',
 ];
 
 export const MYSQL_SCHEMA = [
@@ -103,5 +103,11 @@ export const MYSQL_SCHEMA = [
   ) ${tableOptions}`,
   `CREATE TABLE IF NOT EXISTS operation_locks (
     lock_key VARCHAR(64) PRIMARY KEY
+  ) ${tableOptions}`,
+  `CREATE TABLE IF NOT EXISTS site_settings (
+    id SMALLINT PRIMARY KEY CHECK (id = 1),
+    ordering_visible BOOLEAN NOT NULL DEFAULT TRUE,
+    ordering_tally_url VARCHAR(2048) NOT NULL DEFAULT '',
+    updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
   ) ${tableOptions}`,
 ];

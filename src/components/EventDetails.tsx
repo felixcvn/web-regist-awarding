@@ -4,7 +4,6 @@ import React from 'react';
 import Image from 'next/image';
 import { Calendar, MapPin, Shirt, Award, Music, Camera } from 'lucide-react';
 import { StarlightGlow } from './StarlightGlow';
-import GardenArtwork, { GARDEN_IMAGES } from './GardenArtwork';
 import ScrollReveal from './ScrollReveal';
 
 export default function EventDetails() {
@@ -12,70 +11,63 @@ export default function EventDetails() {
   const rundownItems = [
     {
       time: '17:45 - 18:15 WIB',
-      title: 'Open Gate & Band Etalase',
+      title: 'Open Gate',
       icon: Camera,
       tag: 'Opening Phase',
     },
     {
       time: '18:15 - 18:25 WIB',
-      title: 'Persembahan Tari dan pembukaan ',
-      desc: 'Tari pembuka tematik "Botanical Fairy Tale" dan sambutan Dekan Fasilkom UNEJ.',
+      title: 'Persembahan Tari ',
+      desc: 'Tari pembuka Sekar Panguripan.',
       icon: Music,
       tag: 'Ceremony',
     },
     {
       time: '18:25 - 18:30 WIB',
-      title: 'Indonesia Raya dan Hymne Unej',
+      title: 'Indonesia Raya dan Mars Unej',
       desc: 'Penganugerahan Kategori Mahasiswa Berprestasi, Dosen Terfavorit, dan Riset Unggulan 2026.',
       icon: Award,
-      tag: 'Penganugerahan',
+      tag: 'Ceremony',
     },
     {
       time: '18:30 - 18:40 WIB',
-      title: 'Opening Fasilkom Awarding dari MC & Penjelasan Acara + doa',
-      desc: 'Makan malam bersama diiringi penampilan musik akustik civitas Fasilkom.',
+      title: 'Opening Fasilkom Awarding',
+      desc: 'Pembukaan Oleh MC.',
       icon: Music,
       tag: 'Intermezzo',
     },
     {
-      time: '18:55 - 19:05 WIB',
-      title: 'Sambutan Dekan Fasilkom Unej',
-      desc: 'Pengumuman Organisasi Mahasiswa Terbaik, Duta Fasilkom 2026, dan Pengumuman Doorprize Utama.',
+      time: '18:55 - 19:15 WIB',
+      title: 'Sambutan Sambutan',
+      desc: 'Sambutan dari para tamu kehormatan, pimpinan dll.',
       icon: Award,
       tag: 'Puncak Acara',
     },
     {
-      time: '19:05 - 19:10 WIB',
-      title: 'Sambutan Wakil Rektor I Universitas Jember',
-      desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
-      icon: Camera,
-      tag: 'Penutupan',
-    },
-    {
       time: '19:15 - 19:35 WIB',
       title: 'Pemutaran Video Opening Awarding',
-      desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
+      desc: 'Sesi pemutaran video pembuka Fasilkom Awarding Night.',
       icon: Camera,
       tag: 'Penutupan',
     },
     {
       time: '19:35 - 19:45 WIB',
       title: 'Pembacaan Nominasi dan Pengumuman Pemenang',
-      desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
+      desc: 'Sesi pengumuman pemenang dari kategori-kategori yang telah ditentukan.',
       icon: Camera,
       tag: 'Penutupan',
     },
     {
       time: '19:45 - 21:15 WIB',
       title: 'Perform Guest Star',
-      desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
+      desc: 'Penampilan dari bintang tamu spesial yang menghibur seluruh audiens.',
       icon: Camera,
       tag: 'Penutupan',
     },
     {
       time: '21:15 - 21:45 WIB',
       title: 'Closing',
-      desc: 'Sesi dokumentasi bersama seluruh jajaran pimpinan, panitia, pemenang, dan audiens.',
+      desc: 'Sesi penutupan acara dan ucapan terima kasih.',
       icon: Camera,
       tag: 'Penutupan',
     },
@@ -113,12 +105,6 @@ export default function EventDetails() {
       {/* Ambient background glows */}
       <StarlightGlow className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-surface-card/30" />
 
-      {/* Soft glow orb behind the section title */}
-      <GardenArtwork
-        src={GARDEN_IMAGES.glowEllipse}
-        className="absolute top-16 left-1/2 -translate-x-1/2 w-[420px] sm:w-[560px] z-0 opacity-20"
-      />
-
       <div className="max-w-7xl mx-auto relative z-10">
         
         {/* Section Title */}
@@ -133,41 +119,42 @@ export default function EventDetails() {
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent mx-auto mt-4" />
             <p className="text-sm sm:text-base text-ink/80 mt-4 leading-relaxed font-light">
-              Saksikan mekarnya perjuangan para civitas akademik dalam panggung kehormatan Fasilkom Universitas Jember.
+              Saksikan mekarnya perjuangan para Sivitas Akademika dalam panggung kehormatan Fakultas Ilmu Komputer Universitas Jember.
             </p>
           </div>
         </ScrollReveal>
 
-        {/* 2 Philosophy Cards based on Theme */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <ScrollReveal animation="fade-right" delay={100}>
-            <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-surface-card to-surface-base border border-bloom-pink/30 shadow-xl overflow-hidden group h-full">
-              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-bloom-pink bg-surface-card px-3 py-1 rounded-full border border-bloom-pink/30">
-                Filosofi Utama
+        {/* Unified theme philosophy and vision */}
+        <ScrollReveal
+          animation="fade-up"
+          delay={100}
+          className="mb-12 motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none"
+        >
+          <article
+            aria-labelledby="event-philosophy-title"
+            className="relative p-6 sm:p-8 lg:p-10 rounded-3xl bg-gradient-to-br from-surface-card to-surface-base border border-bloom-pink/30 shadow-xl overflow-hidden"
+          >
+            <div className="max-w-4xl mx-auto">
+              <span className="inline-flex text-[10px] font-bold uppercase tracking-[0.25em] text-bloom-pink bg-surface-card px-3 py-1 rounded-full border border-bloom-pink/30">
+                Filosofi, Visi & Apresiasi
               </span>
-              <h3 className="font-cinzel text-xl sm:text-2xl font-bold text-gold mt-3 mb-2">
+              <h3 id="event-philosophy-title" className="font-cinzel text-xl sm:text-2xl lg:text-3xl font-bold text-gold leading-snug mt-4">
                 The Secret Garden of Dreams
               </h3>
-              <p className="text-xs sm:text-sm text-ink/80 leading-relaxed font-light">
-                Melambangkan sebuah taman yang menjadi ruang bertumbuhnya mimpi, harapan, dan potensi. Layaknya bunga yang mekar melalui proses yang panjang, setiap insan menempuh perjalanan yang dipenuhi dedikasi, kerja keras, kolaborasi, serta semangat untuk terus berkembang hingga mampu meraih prestasi yang membanggakan.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal animation="fade-left" delay={200}>
-            <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-surface-card to-surface-base border border-bloom-pink/30 shadow-xl overflow-hidden group h-full">
-              <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-bloom-pink bg-surface-card px-3 py-1 rounded-full border border-bloom-pink/30">
-                Visi & Apresiasi
-              </span>
-              <h3 className="font-cinzel text-xl sm:text-2xl font-bold text-gold mt-3 mb-2">
+              <p className="text-sm sm:text-base font-medium text-bloom-pink mt-2">
                 Every Dream Blooms into History
-              </h3>
-              <p className="text-xs sm:text-sm text-ink/80 leading-relaxed font-light">
-                Menggambarkan bahwa setiap mimpi yang diperjuangkan memiliki kesempatan berkembang menjadi pencapaian berarti. Prestasi yang diraih bukan sekadar keberhasilan sesaat, melainkan jejak sejarah yang abadi bagi individu maupun Fakultas Ilmu Komputer, menjadi inspirasi bagi lahirnya prestasi-prestasi baru.
               </p>
+              <div className="space-y-4 text-sm sm:text-base text-ink/80 leading-relaxed font-light mt-5">
+                <p>
+                  Tema ini melambangkan sebuah taman yang menjadi ruang bertumbuhnya mimpi, harapan, dan potensi. Layaknya bunga yang mekar melalui proses yang panjang, setiap insan menempuh perjalanan yang dipenuhi dedikasi, kerja keras, kolaborasi, serta semangat untuk terus berkembang hingga mampu meraih prestasi yang membanggakan.
+                </p>
+                <p>
+                  Setiap mimpi yang diperjuangkan memiliki kesempatan berkembang menjadi pencapaian berarti. Prestasi yang diraih bukan sekadar keberhasilan sesaat, melainkan jejak sejarah yang abadi bagi individu maupun Fakultas Ilmu Komputer, menjadi inspirasi bagi lahirnya prestasi-prestasi baru.
+                </p>
+              </div>
             </div>
-          </ScrollReveal>
-        </div>
+          </article>
+        </ScrollReveal>
 
         {/* 3 Main Highlights Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
@@ -194,8 +181,8 @@ export default function EventDetails() {
                 <MapPin className="w-6 h-6" />
               </div>
               <h3 className="font-cinzel text-xl font-bold text-gold mb-2">Lokasi & Venue</h3>
-              <p className="text-sm text-ink/90 font-medium">Gedung Soetardjo Unniversitas Jember</p>
-              <p className="text-xs text-bloom-pink mt-1">Fakultas Ilmu Komputer, Universitas Jember</p>
+              <p className="text-sm text-ink/90 font-medium">Gedung Soetardjo</p>
+              <p className="text-xs text-bloom-pink mt-1">Universitas Jember</p>
               <p className="text-xs text-ink/60 mt-3 leading-relaxed">
                 Jl. Kalimantan No. 37, Kampus Tegalboto, Sumbersari, Jember, Jawa Timur.
               </p>
@@ -208,11 +195,11 @@ export default function EventDetails() {
               <div className="w-12 h-12 rounded-2xl bg-surface-card border border-lavender/40 flex items-center justify-center text-lavender mb-5 group-hover:scale-110 transition-transform">
                 <Shirt className="w-6 h-6" />
               </div>
-              <h3 className="font-cinzel text-xl font-bold text-gold mb-2">Kode Busana (Dress Code)</h3>
-              <p className="text-sm text-ink/90 font-medium">Secret Garden Gala & Fairy Tale</p>
-              <p className="text-xs text-lavender mt-1">Jas / Gaun / Batik Formal Tematik</p>
+              <h3 className="font-cinzel text-xl font-bold text-gold mb-2">Dress Code</h3>
+              <p className="text-sm text-ink/90 font-medium">Secret Garden Enchanted Veil</p>
+              <p className="text-xs text-lavender mt-1">No T-Shirt, No Hoodie, No All-Black Outfit, No Backpack</p>
               <p className="text-xs text-ink/60 mt-3 leading-relaxed">
-                Dominasi warna Deep Emerald, Starlight Gold, Fairy Pink, dan Lavender bernuansa taman magis.
+                Dresscode ini mengedepankan kombinasi warna cerah hingga soft yang memukau untuk menghadirkan kesan anggun dan penuh pesona.
               </p>
             </div>
           </ScrollReveal>
@@ -300,7 +287,7 @@ export default function EventDetails() {
                 Inspirasi Busana Undangan
               </div>
               <h3 className="font-cinzel text-2xl sm:text-3xl md:text-4xl font-bold text-ivory">
-                Inspirasi Dresscode: Secret Garden Gala
+                Inspirasi Dresscode Secret Garden
               </h3>
               <div className="w-20 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent mx-auto mt-3" />
               <p className="text-xs sm:text-sm text-ink/80 mt-3 font-light leading-relaxed">
