@@ -2,6 +2,9 @@
 
 Panduan singkat agar sistem tetap berfungsi setelah di-hosting (bukan localhost).
 
+Untuk **cPanel Rumahweb**, gunakan [CPANEL-DEPLOY.md](./CPANEL-DEPLOY.md): startup
+`server.js`, paket runtime dari build Linux, dan konfigurasi PostgreSQL eksternal.
+
 ## 1. Environment Variables (WAJIB di hosting)
 
 Set semua ini di dashboard hosting (Vercel → Project → Settings → Environment Variables):

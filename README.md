@@ -6,6 +6,18 @@ See [SECURITY-DEPLOYMENT.md](SECURITY-DEPLOYMENT.md) for PostgreSQL prerequisite
 
 The baseline findings and remediation status are recorded in [SECURITY-AUDIT-2026-11-07.md](SECURITY-AUDIT-2026-11-07.md).
 
+## cPanel / Rumahweb
+
+See [CPANEL-DEPLOY.md](CPANEL-DEPLOY.md) for the Node.js 22 startup, Linux build
+workflow, database and environment setup, and upload instructions. Build a release
+with `npm run package:cpanel -- --url https://your-subdomain.example.com` on Linux,
+or run **Build cPanel package** in GitHub Actions. Packages are saved in
+`build/cpanel/`; the cPanel startup file is `server.js`.
+
+Run `npm run verify:cpanel` after packaging to check the extracted release with
+production-only dependencies and a selector-style `node_modules` symlink. The
+Linux workflow runs this check before publishing its artifact.
+
 ## Getting Started
 
 First, run the development server:

@@ -1,0 +1,47 @@
+name: Build cPanel package
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: HTTPS origin for this release (no subfolder)
+        required: true
+        type: string
+        default: https://awarding.fasilkomapp.id
+      turnstile_site_key:
+        description: Public Turnstile site key (leave empty to disable Turnstile)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install build dependencies
+        run: npm ci --include=dev
+      - name: Build and package
+        env:
+          CPANEL_APP_URL: ${{ inputs.app_url }}
+          CPANEL_TURNSTILE_SITE_KEY: ${{ inputs.turnstile_site_key }}
+        run: npm run package:cpanel
+      - name: Verify extracted Linux runtime
+        run: npm run verify:cpanel
+      - name: Upload cPanel release
+        uses: actions/upload-artifact@v4
+        with:
+          name: fan26-cpanel-linux
+          path: |
+            build/cpanel/*.tar.gz
+            build/cpanel/*.sha256
+            build/cpanel/*.verification.json
+          if-no-files-found: error
+          retention-days: 7

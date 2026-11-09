@@ -3,6 +3,7 @@
  * production-build copy of the app under the OpenCode temporary directory.
  * Install embedded-postgres in SECURITY_REVIEW_TOOLS before running this file.
  * Use --database-only for focused PostgreSQL checks or --helpers-only for helpers.
+ * Use --cpanel to exercise the production server.js entry point end to end.
  * No project .env files or participant stores are copied into the test app.
  * Security regressions assert the remediated behavior. Deliberately deferred
  * identity/enumeration and Turnstile findings remain explicit observations.
@@ -33,7 +34,8 @@ const appDir = path.join(runDir, 'app');
 const observations = [];
 const databaseOnly = process.argv.includes('--database-only');
 const helpersOnly = process.argv.includes('--helpers-only');
-const artifacts = { runDir, mode: databaseOnly ? 'database-only' : helpersOnly ? 'helpers-only' : 'full', sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim(), workingTree: true, xlsxVersion: XLSX.version };
+const cpanel = process.argv.includes('--cpanel');
+const artifacts = { runDir, mode: databaseOnly ? 'database-only' : helpersOnly ? 'helpers-only' : 'full', startup: cpanel ? 'server.js' : 'next start', sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim(), workingTree: true, xlsxVersion: XLSX.version };
 const logStreams = [];
 let database;
 let dbClient;
@@ -237,8 +239,9 @@ async function runProcess(args, logName, env) {
 async function startApp(port) {
   const log = fs.createWriteStream(path.join(runDir, 'server.log'), { flags: 'a' });
   logStreams.push(log);
-  server = spawn(process.execPath, [path.join(source, 'node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(port)], {
-    cwd: appDir, env: appEnv, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
+  const args = cpanel ? [path.join(appDir, 'server.js')] : [path.join(source, 'node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(port)];
+  server = spawn(process.execPath, args, {
+    cwd: appDir, env: { ...appEnv, PORT: String(port), HOST: '127.0.0.1' }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
   });
   server.stdout.pipe(log, { end: false });
   server.stderr.pipe(log, { end: false });
@@ -248,7 +251,7 @@ async function startApp(port) {
     server.once('error', (error) => { clearTimeout(timer); reject(error); });
     server.once('exit', (code) => { clearTimeout(timer); reject(new Error(`Next exited before readiness: ${code}`)); });
     server.stdout.on('data', (chunk) => {
-      if (/Ready in/i.test(chunk.toString())) { clearTimeout(timer); resolve(); }
+      if (/Ready (?:in|on)/i.test(chunk.toString())) { clearTimeout(timer); resolve(); }
     });
   });
 }
@@ -546,6 +549,7 @@ async function main() {
   for (const name of ['src', 'public', 'package.json', 'package-lock.json', 'next.config.ts', 'tsconfig.json', 'next-env.d.ts', 'postcss.config.mjs']) {
     fs.cpSync(path.join(source, name), path.join(appDir, name), { recursive: true });
   }
+  if (cpanel) fs.copyFileSync(path.join(source, 'server.js'), path.join(appDir, 'server.js'));
   // Exercise deployed revocation wiring using a synthetic fingerprint only.
   fs.appendFileSync(path.join(appDir, 'src/lib/revokedTickets.ts'), `\nrevokedTokenHashes.add('${crypto.createHash('sha256').update(syntheticRevokedToken).digest('hex')}');\n`);
   artifacts.syntheticRevocationFixture = true;

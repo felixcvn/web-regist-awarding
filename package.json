@@ -6,6 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:cpanel": "node server.js",
+    "package:cpanel": "node scripts/package-cpanel.cjs",
+    "verify:cpanel": "node scripts/verify-cpanel-package.cjs",
     "lint": "eslint",
     "hash-pin": "node scripts/hash-pin.cjs"
   },
