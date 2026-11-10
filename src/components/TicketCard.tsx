@@ -248,7 +248,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       ctx.textAlign = 'left';
       ctx.font = '16px sans-serif';
       ctx.fillStyle = '#FAF7F0';
-      ctx.fillText('📅  Selasa, 1 Desember 2026 • 17:30 WIB', 120, 1150);
+      ctx.fillText('📅  Selasa, 1 Desember 2026 • 17:45 WIB', 120, 1150);
 
       ctx.textAlign = 'right';
       ctx.fillText('📍  Gedung Soetardjo, Universitas Jember', width - 120, 1150);
@@ -407,7 +407,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
             <div className="pt-4 border-t border-bloom-pink/20 grid grid-cols-2 gap-2 text-[11px] text-ink/80">
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-bloom-pink shrink-0" />
-                <span>Selasa, 1 Des 2026 &bull; 17:30 WIB</span>
+                <span>Selasa, 1 Des 2026 &bull; 17:45 WIB</span>
               </div>
               <div className="flex items-center gap-1.5 justify-end">
                 <MapPin className="w-3.5 h-3.5 text-bloom-pink shrink-0" />
