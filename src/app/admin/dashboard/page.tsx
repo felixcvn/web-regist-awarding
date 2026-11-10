@@ -3,12 +3,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Participant } from '@/lib/types';
-import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2, Upload } from 'lucide-react';
+import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2, Upload, Plus, Edit3, Image, Copy, CheckCircle2, AlertCircle, LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { secureFetch } from '@/lib/csrfClient';
 import GardenFrame from '@/components/GardenFrame';
 import Dialog from '@/components/Dialog';
 import OrderingSettingsPanel from '@/components/OrderingSettingsPanel';
+
+interface NominasiTeam {
+  id: string;
+  namaTeam: string;
+  qrToken: string;
+  isCheckedIn: boolean;
+  checkedInAt: string | null;
+  createdAt: string;
+  members: NominasiTeamMember[];
+}
+
+interface NominasiTeamMember {
+  id: string;
+  nimNip: string;
+  nama: string;
+  isCheckedIn: boolean;
+  checkedInAt: string | null;
+}
 
 interface StudentImportPreview {
   batchId: string;
@@ -46,6 +64,20 @@ export default function AdminDashboardPage() {
     canRollback: boolean;
   } | null>(null);
 
+  // Nominasi team state
+  const [nominasiTeams, setNominasiTeams] = useState<NominasiTeam[]>([]);
+  const [nominasiLoading, setNominasiLoading] = useState(false);
+  const [showNominasiDialog, setShowNominasiDialog] = useState(false);
+  const [nominasiDialogMode, setNominasiDialogMode] = useState<'create' | 'edit'>('create');
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [teamNama, setTeamNama] = useState('');
+  const [teamMembers, setTeamMembers] = useState<string[]>([]);
+  const [checkinResult, setCheckinResult] = useState<{
+    status: 'idle' | 'success' | 'warning' | 'error';
+    message: string;
+    team?: NominasiTeam;
+  }>({ status: 'idle', message: '' });
+
   const fetchParticipants = useCallback(async () => {
     setLoading(true);
     try {
@@ -62,6 +94,29 @@ export default function AdminDashboardPage() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  }, [router]);
+
+  const fetchNominasiTeams = useCallback(async () => {
+    setNominasiLoading(true);
+    try {
+      const res = await secureFetch('/api/admin/nominasi/teams');
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setNotice(data.error || 'Gagal mengambil daftar tim nominasi.');
+        return;
+      }
+      const data = await res.json();
+      setNominasiTeams(data.teams || []);
+    } catch (err) {
+      console.error(err);
+      setNotice('Koneksi gagal saat memuat tim nominasi.');
+    } finally {
+      setNominasiLoading(false);
     }
   }, [router]);
 
@@ -93,9 +148,10 @@ export default function AdminDashboardPage() {
     const timer = window.setTimeout(() => {
       void fetchParticipants();
       void fetchActiveBatch();
+      void fetchNominasiTeams();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [fetchParticipants, fetchActiveBatch]);
+  }, [fetchParticipants, fetchActiveBatch, fetchNominasiTeams]);
 
   const totalRegistered = participants.length;
   const totalCheckedIn = participants.filter((p) => p.isCheckedIn).length;
@@ -230,6 +286,127 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // --- Nominasi Team Handlers ---
+
+  const openCreateTeamDialog = () => {
+    setNominasiDialogMode('create');
+    setEditingTeamId(null);
+    setTeamNama('');
+    setTeamMembers([]);
+    setShowNominasiDialog(true);
+  };
+
+  const openEditTeamDialog = (team: NominasiTeam) => {
+    setNominasiDialogMode('edit');
+    setEditingTeamId(team.id);
+    setTeamNama(team.namaTeam);
+    setTeamMembers(team.members.map((m) => m.nimNip));
+    setShowNominasiDialog(true);
+  };
+
+  const handleSaveTeam = async () => {
+    if (!teamNama.trim()) {
+      setNotice('Nama tim harus diisi.');
+      return;
+    }
+    if (teamMembers.length === 0) {
+      setNotice('Pilih minimal satu anggota tim.');
+      return;
+    }
+
+    setNominasiLoading(true);
+    try {
+      if (nominasiDialogMode === 'create') {
+        const res = await secureFetch('/api/admin/nominasi/teams', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ namaTeam: teamNama.trim(), memberNims: teamMembers }),
+        });
+        if (res.status === 401) {
+          router.push('/admin/login');
+          return;
+        }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Gagal membuat tim.');
+        }
+        const data = await res.json();
+        setCheckinResult({ status: 'success', message: `Tim "${data.team.namaTeam}" berhasil dibuat.`, team: data.team });
+      } else {
+        if (!editingTeamId) throw new Error('ID tim tidak valid.');
+        const res = await secureFetch(`/api/admin/nominasi/teams/${editingTeamId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ namaTeam: teamNama.trim(), memberNims: teamMembers }),
+        });
+        if (res.status === 401) {
+          router.push('/admin/login');
+          return;
+        }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Gagal memperbarui tim.');
+        }
+        const data = await res.json();
+        setCheckinResult({ status: 'success', message: `Tim "${data.team.namaTeam}" berhasil diperbarui.`, team: data.team });
+      }
+      setShowNominasiDialog(false);
+      await fetchNominasiTeams();
+    } catch (err) {
+      setNotice((err as Error).message || 'Gagal menyimpan tim nominasi.');
+    } finally {
+      setNominasiLoading(false);
+    }
+  };
+
+  const handleDeleteTeam = async (id: string, namaTeam: string) => {
+    if (!confirm(`Hapus tim "${namaTeam}"? Semua anggota dan QR-nya akan hilang.`)) return;
+    setNominasiLoading(true);
+    try {
+      const res = await secureFetch(`/api/admin/nominasi/teams/${id}`, { method: 'DELETE' });
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Gagal menghapus tim.');
+      }
+      await fetchNominasiTeams();
+      setNotice(`Tim "${namaTeam}" berhasil dihapus.`);
+    } catch (err) {
+      setNotice((err as Error).message || 'Gagal menghapus tim nominasi.');
+    } finally {
+      setNominasiLoading(false);
+    }
+  };
+
+  const handleTeamCheckIn = async (qrToken: string, namaTeam: string) => {
+    setNominasiLoading(true);
+    try {
+      const res = await secureFetch('/api/admin/nominasi/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qrToken }),
+      });
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json();
+      if (data.success) {
+        setCheckinResult({ status: 'success', message: data.message, team: data.team });
+        await fetchNominasiTeams();
+      } else {
+        setCheckinResult({ status: 'warning', message: data.message, team: data.team });
+      }
+    } catch (err) {
+      setNotice((err as Error).message || 'Gagal memproses check-in tim.');
+    } finally {
+      setNominasiLoading(false);
+    }
+  };
+
   return (
     <main className="relative min-h-screen bg-transparent text-ink p-4 sm:p-6 lg:p-8 overflow-hidden">
       <GardenFrame variant="subtle" />
@@ -295,6 +472,163 @@ export default function AdminDashboardPage() {
         </div>
 
         <OrderingSettingsPanel />
+
+        {/* Nominasi Team Panel */}
+        <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-[0_0_30px_rgba(183,156,232,0.15)]">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="font-cinzel text-xl font-bold text-ivory tracking-wide">
+                Kehadiran Nominasi Tim
+              </h3>
+              <p className="text-[10px] text-ink/60 font-light mt-1">
+                Buat tim nominasi dengan satu QR. Saat QR dipindai, semua anggota tim tercatat hadir.
+              </p>
+            </div>
+            <button
+              onClick={openCreateTeamDialog}
+              disabled={nominasiLoading}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-bloom-pink hover:bg-bloom-pink-deep text-on-accent font-bold text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Buat Tim
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-surface-card text-gold uppercase tracking-wider font-semibold border-b border-bloom-pink/20">
+                <tr>
+                  <th className="py-3 px-4">Nama Tim</th>
+                  <th className="py-3 px-4">Jumlah Anggota</th>
+                  <th className="py-3 px-4">QR Code</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {nominasiLoading ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-ink/50">
+                      Memuat data tim nominasi...
+                    </td>
+                  </tr>
+                ) : nominasiTeams.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-ink/50">
+                      Belum ada tim nominasi. Klik &quot;Buat Tim&quot; untuk memulai.
+                    </td>
+                  </tr>
+                ) : (
+                  nominasiTeams.map((team) => (
+                    <tr key={team.id} className="hover:bg-surface-card/60 transition-colors">
+                      <td className="py-3 px-4 font-medium text-ivory">
+                        {team.namaTeam}
+                        <span className="block text-[10px] font-mono text-ink/50">{team.id}</span>
+                      </td>
+                      <td className="py-3 px-4 font-mono text-bloom-pink">
+                        {team.members.length}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={`/api/qr/${team.qrToken}`}
+                            alt={`QR ${team.namaTeam}`}
+                            className="w-10 h-10 rounded-lg border border-bloom-pink/30"
+                            loading="lazy"
+                          />
+                          <span className="text-[10px] font-mono text-ink/60 truncate max-w-xs" title={team.qrToken}>
+                            {team.qrToken}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {team.isCheckedIn ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-card text-mint border border-mint/40">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Sudah Hadir
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-ink/60 border border-white/10">
+                            Belum Hadir
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleTeamCheckIn(team.qrToken, team.namaTeam)}
+                            disabled={team.isCheckedIn || nominasiLoading}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gold/40 bg-surface-card text-gold text-[10px] font-bold hover:bg-surface-card transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Scan QR untuk check-in tim"
+                          >
+                            <Image className="w-3 h-3 mr-1" />
+                            {team.isCheckedIn ? 'Sudah' : 'Scan'}
+                          </button>
+                          <button
+                            onClick={() => openEditTeamDialog(team)}
+                            className="px-2.5 py-1.5 rounded-lg bg-surface-card border border-bloom-pink/30 text-xs font-bold text-ink hover:bg-surface-card transition-colors"
+                            title="Edit tim"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTeam(team.id, team.namaTeam)}
+                            className="px-2.5 py-1.5 rounded-lg bg-red-950/50 border border-red-500/40 text-red-300 text-[10px] font-bold hover:bg-red-900/60 hover:text-red-200 transition-colors"
+                            title="Hapus tim"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {checkinResult.status !== 'idle' && (
+            <div
+              className={`mt-4 p-4 rounded-xl text-xs ${
+                checkinResult.status === 'success'
+                  ? 'bg-surface-card border border-mint/40 text-mint'
+                  : 'bg-red-950/30 border border-red-500/30 text-red-200'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                {checkinResult.status === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                )}
+                <div>
+                  <p className="font-bold">{checkinResult.message}</p>
+                  {checkinResult.team && checkinResult.team.members.length > 0 && (
+                    <div className="mt-1 max-h-40 overflow-y-auto">
+                      <div className="text-[9px] text-ink/50 font-bold mb-1">
+                        Anggota Tim:
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {checkinResult.team.members.map((m) => (
+                          <span
+                            key={m.id}
+                            className={`px-2 py-1 rounded bg-white/10 text-[9px] border ${
+                              m.isCheckedIn
+                                ? 'border-mint/40 text-mint'
+                                : 'border-white/10 text-ink/60'
+                            }`}
+                          >
+                            {m.nama} ({m.nimNip})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* 4 Big Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -511,6 +845,120 @@ export default function AdminDashboardPage() {
         onClose={() => !rollbackLoading && setConfirmRollback(false)}
         onConfirm={handleRollback}
       />
+
+      {/* Nominasi Team Dialog */}
+      <div
+        className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${showNominasiDialog ? '' : 'hidden'}`}
+      >
+        <div
+          className="absolute inset-0 bg-surface-base/80 backdrop-blur-sm"
+          onClick={() => setShowNominasiDialog(false)}
+        />
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base shadow-[0_0_60px_rgba(0,0,0,0.85)] animate-[dialogIn_180ms_cubic-bezier(0.16,1,0.3,1)]"
+          style={{ borderColor: 'rgba(183, 156, 232, 0.4)' }}
+        >
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent" />
+
+          <div className="p-6 sm:p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-cinzel text-xl font-bold text-ivory tracking-wide">
+                {nominasiDialogMode === 'create' ? 'Buat Tim Nominasi' : 'Edit Tim Nominasi'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowNominasiDialog(false)}
+                disabled={nominasiLoading}
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-ink transition-colors disabled:opacity-50"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveTeam(); }} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-gold mb-2">Nama Tim <span className="text-red-400">*</span></label>
+                <input
+                  type="text"
+                  value={teamNama}
+                  onChange={(e) => setTeamNama(e.target.value)}
+                  placeholder="Contoh: Tim Inovasi Fasilkom 2026"
+                  disabled={nominasiLoading}
+                  className="w-full px-4 py-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory placeholder-ink/40 outline-hidden focus:border-bloom-pink"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gold mb-2">Anggota Tim <span className="text-red-400">*</span></label>
+                <p className="text-[10px] text-ink/50 mb-2">
+                  Pilih mahasiswa yang tergabung dalam tim nominasi ini. Satu mahasiswa bisa tergabung di banyak tim.
+                </p>
+                <div className="max-h-48 overflow-y-auto border border-bloom-pink/20 rounded-xl p-2 bg-field">
+                  {participants.length === 0 ? (
+                    <p className="text-[10px] text-ink/50 text-center">Tidak ada data mahasiswa. Unggah data mahasiswa terlebih dahulu.</p>
+                  ) : (
+                    participants.map((p) => {
+                      const isSelected = teamMembers.includes(p.nimNip);
+                      return (
+                        <label
+                          key={p.nimNip}
+                          onClick={() => {
+                            if (isSelected) {
+                              setTeamMembers(teamMembers.filter((n) => n !== p.nimNip));
+                            } else {
+                              setTeamMembers([...teamMembers, p.nimNip]);
+                            }
+                          }}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-bloom-pink/20 border-bloom-pink/50'
+                              : 'bg-white/5 border-white/10 hover:bg-surface-card/50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            className="w-4 h-4 text-bloom-pink border-bloom-pink rounded"
+                          />
+                          <div>
+                            <div className="text-[10px] font-bold text-ivory">{p.name}</div>
+                            <div className="text-[9px] text-ink/50 font-mono">{p.nimNip}</div>
+                            <div className="text-[9px] text-ink/40">{p.prodi}</div>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+                <p className="text-[10px] text-ink/50 mt-1">
+                  Terpilih: <span className="font-bold text-bloom-pink">{teamMembers.length}</span> anggota
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowNominasiDialog(false)}
+                  disabled={nominasiLoading}
+                  className="flex-1 px-4 py-3 rounded-xl bg-surface-card border border-bloom-pink/30 text-xs font-bold text-bloom-pink hover:bg-surface-card transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={nominasiLoading || !teamNama.trim() || teamMembers.length === 0}
+                  className="flex-1 px-4 py-3 rounded-xl bg-gold text-ink text-xs font-bold hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                >
+                  {nominasiLoading ? 'Menyimpan...' : nominasiDialogMode === 'create' ? 'Buat Tim' : 'Simpan Perubahan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
       {/* Student Import Dialog */}
             {/* Student Import Dialog */}

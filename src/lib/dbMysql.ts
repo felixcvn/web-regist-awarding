@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { createPool, type Pool, type PoolConnection, type RowDataPacket, type ResultSetHeader, type QueryResult, type ExecuteValues } from 'mysql2/promise';
+import type { CreateNominasiTeamInput } from './db';
 import { getMysqlOptions, assertMysqlServer } from './mysqlConfig.cjs';
 import { MYSQL_SCHEMA, MYSQL_TABLE_NAMES } from './mysqlSchema';
 import { ApiError, DatabaseUnavailableError } from './apiErrors';
@@ -511,5 +512,230 @@ export async function getActiveStudentImportBatch(): Promise<{ batchId: string; 
       batchId: rows[0].batch_id, createdAt: rows[0].created_at.toISOString(), count: Number(rows[0].count),
       canRollback: Boolean(rows[0].previous_batch_id && rows[0].can_rollback),
     } : null;
+  });
+}
+
+// ============================================================================
+// Nominasi Teams (MySQL implementation)
+// ============================================================================
+
+interface NominasiTeam {
+  id: string;
+  namaTeam: string;
+  qrToken: string;
+  isCheckedIn: boolean;
+  checkedInAt: string | null;
+  createdAt: string;
+  members: NominasiTeamMember[];
+}
+
+interface NominasiTeamMember {
+  id: string;
+  nimNip: string;
+  nama: string;
+  isCheckedIn: boolean;
+  checkedInAt: string | null;
+}
+
+type NominasiTeamRow = RowDataPacket & {
+  id: string;
+  nama_team: string;
+  qr_token: string;
+  is_checked_in: number;
+  checked_in_at: Date | null;
+  created_at: Date;
+};
+
+type NominasiMemberRow = RowDataPacket & {
+  id: string;
+  team_id: string;
+  nim_nip: string;
+  nama: string;
+  is_checked_in: number;
+  checked_in_at: Date | null;
+  created_at: Date;
+};
+
+function toNominasiTeam(row: NominasiTeamRow, members: NominasiMemberRow[]): NominasiTeam {
+  return {
+    id: row.id,
+    namaTeam: row.nama_team,
+    qrToken: row.qr_token,
+    isCheckedIn: Boolean(row.is_checked_in),
+    checkedInAt: row.checked_in_at ? row.checked_in_at.toISOString() : null,
+    createdAt: row.created_at.toISOString(),
+    members: members.map((m) => ({
+      id: m.id,
+      nimNip: m.nim_nip,
+      nama: m.nama,
+      isCheckedIn: Boolean(m.is_checked_in),
+      checkedInAt: m.checked_in_at ? m.checked_in_at.toISOString() : null,
+    })),
+  };
+}
+
+export async function getNominasiTeams(): Promise<NominasiTeam[]> {
+  return read('Nominasi teams', async (connection) => {
+    const teams = await execute<NominasiTeamRow[]>(connection,
+      `SELECT * FROM nominasi_teams ORDER BY created_at DESC`);
+    const result: NominasiTeam[] = [];
+    for (const t of teams) {
+      const members = await execute<NominasiMemberRow[]>(connection,
+        `SELECT * FROM nominasi_team_members WHERE team_id = ? ORDER BY nama`, [t.id]);
+      result.push(toNominasiTeam(t, members));
+    }
+    return result;
+  });
+}
+
+export async function getNominasiTeamById(id: string): Promise<NominasiTeam | null> {
+  return read('Nominasi team by id', async (connection) => {
+    const teams = await execute<NominasiTeamRow[]>(connection,
+      `SELECT * FROM nominasi_teams WHERE id = ? LIMIT 1`, [id.trim()]);
+    if (!teams.length) return null;
+    const members = await execute<NominasiMemberRow[]>(connection,
+      `SELECT * FROM nominasi_team_members WHERE team_id = ? ORDER BY nama`, [teams[0].id]);
+    return toNominasiTeam(teams[0], members);
+  });
+}
+
+export async function getNominasiTeamByQrToken(qrToken: string): Promise<NominasiTeam | null> {
+  return read('Nominasi team by qr', async (connection) => {
+    const teams = await execute<NominasiTeamRow[]>(connection,
+      `SELECT * FROM nominasi_teams WHERE qr_token = ? LIMIT 1`, [qrToken.trim()]);
+    if (!teams.length) return null;
+    const members = await execute<NominasiMemberRow[]>(connection,
+      `SELECT * FROM nominasi_team_members WHERE team_id = ? ORDER BY nama`, [teams[0].id]);
+    return toNominasiTeam(teams[0], members);
+  });
+}
+
+export async function createNominasiTeam(input: CreateNominasiTeamInput): Promise<NominasiTeam> {
+  return transaction(async (connection) => {
+    const id = 'NOM-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+    const qrToken = 'FAN26-NOM-' + crypto.randomUUID();
+    const now = new Date();
+
+    await execute(connection,
+      `INSERT INTO nominasi_teams (id, nama_team, qr_token, created_at)
+       VALUES (?, ?, ?, ?)`,
+      [id, input.namaTeam.trim(), qrToken, now]);
+
+    for (const nim of input.memberNims) {
+      const memberId = 'NOM-M-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+      const students = await execute<(RowDataPacket & { official_name: string })[]>(connection,
+        `SELECT official_name FROM student_master WHERE nim = ? AND is_active = TRUE LIMIT 1`, [nim.trim()]);
+      const nama = students[0]?.official_name || nim.trim();
+      await execute(connection,
+        `INSERT INTO nominasi_team_members (id, team_id, nim_nip, nama, created_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [memberId, id, nim.trim(), nama, now]);
+    }
+
+    const team = await getNominasiTeamById(id);
+    if (!team) throw new Error('Gagal memuat tim setelah dibuat.');
+    return team;
+  });
+}
+
+export async function updateNominasiTeam(
+  id: string,
+  input: { namaTeam?: string; memberNims?: string[] }
+): Promise<NominasiTeam> {
+  return transaction(async (connection) => {
+    const existing = await execute<RowDataPacket[]>(connection,
+      `SELECT id FROM nominasi_teams WHERE id = ? LIMIT 1`, [id.trim()]);
+    if (!existing.length) throw new ApiError('Tim nominasi tidak ditemukan.', 404);
+
+    if (input.namaTeam !== undefined) {
+      await execute(connection,
+        `UPDATE nominasi_teams SET nama_team = ? WHERE id = ?`,
+        [input.namaTeam.trim(), id.trim()]);
+    }
+
+    if (input.memberNims !== undefined) {
+      await execute(connection, `DELETE FROM nominasi_team_members WHERE team_id = ?`, [id.trim()]);
+      const now = new Date();
+      for (const nim of input.memberNims) {
+        const memberId = 'NOM-M-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+        const students = await execute<(RowDataPacket & { official_name: string })[]>(connection,
+          `SELECT official_name FROM student_master WHERE nim = ? AND is_active = TRUE LIMIT 1`, [nim.trim()]);
+        const nama = students[0]?.official_name || nim.trim();
+        await execute(connection,
+          `INSERT INTO nominasi_team_members (id, team_id, nim_nip, nama, created_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          [memberId, id, nim.trim(), nama, now]);
+      }
+    }
+
+    const team = await getNominasiTeamById(id);
+    if (!team) throw new Error('Gagal memuat tim setelah diupdate.');
+    return team;
+  });
+}
+
+export async function deleteNominasiTeam(id: string): Promise<void> {
+  await read('Delete nominasi team', async (connection) => {
+    await execute(connection, `DELETE FROM nominasi_teams WHERE id = ?`, [id.trim()]);
+  });
+}
+
+export async function checkInNominasiTeam(qrToken: string): Promise<{
+  success: boolean;
+  message: string;
+  team?: NominasiTeam;
+  newlyCheckedIn: NominasiTeamMember[];
+}> {
+  return transaction(async (connection) => {
+    const teams = await execute<NominasiTeamRow[]>(connection,
+      `SELECT * FROM nominasi_teams WHERE qr_token = ? LIMIT 1 FOR UPDATE`, [qrToken.trim()]);
+    if (!teams.length) {
+      return { success: false, message: 'QR Code tim nominasi tidak valid!', newlyCheckedIn: [] };
+    }
+
+    const team = teams[0];
+    if (Boolean(team.is_checked_in)) {
+      const members = await execute<NominasiMemberRow[]>(connection,
+        `SELECT * FROM nominasi_team_members WHERE team_id = ? ORDER BY nama`, [team.id]);
+      return {
+        success: false,
+        message: `Tim "${team.nama_team}" sudah pernah check-in!`,
+        team: toNominasiTeam(team, members),
+        newlyCheckedIn: [],
+      };
+    }
+
+    const now = new Date();
+    await execute(connection,
+      `UPDATE nominasi_teams SET is_checked_in = TRUE, checked_in_at = ? WHERE id = ?`,
+      [now, team.id]);
+
+    const members = await execute<NominasiMemberRow[]>(connection,
+      `SELECT * FROM nominasi_team_members WHERE team_id = ? ORDER BY nama`, [team.id]);
+
+    const newlyCheckedIn: NominasiTeamMember[] = [];
+    for (const m of members) {
+      if (!Boolean(m.is_checked_in)) {
+        newlyCheckedIn.push({
+          id: m.id,
+          nimNip: m.nim_nip,
+          nama: m.nama,
+          isCheckedIn: true,
+          checkedInAt: now.toISOString(),
+        });
+        await execute(connection,
+          `UPDATE nominasi_team_members SET is_checked_in = TRUE, checked_in_at = ? WHERE id = ?`,
+          [now, m.id]);
+      }
+    }
+
+    const fullTeam = await getNominasiTeamById(team.id);
+    if (!fullTeam) throw new Error('Gagal memuat tim setelah check-in.');
+    return {
+      success: true,
+      message: `Check-in tim "${team.nama_team}" berhasil! ${newlyCheckedIn.length} anggota terdeteksi hadir.`,
+      team: fullTeam,
+      newlyCheckedIn,
+    };
   });
 }

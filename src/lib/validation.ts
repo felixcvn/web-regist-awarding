@@ -8,7 +8,7 @@ export function csvSafe(value: unknown): string {
   return /^[\s\u0000-\u001f]*[=+\-@]/.test(escaped) ? `'${escaped}` : escaped;
 }
 
-export const studentNimSchema = z.string().trim().regex(/^2[3-6]\d{6}(?:1[01]|2[01]|3[01])\d{2}$/, 'NIM harus 12 digit dengan angkatan dan kode prodi yang valid');
+export const studentNimSchema = z.string().trim().regex(/^2[2-6]\d{6}(?:1[01]|2[01]|3[01])\d{2}$/, 'NIM harus 12 digit dengan angkatan dan kode prodi yang valid');
 
 export const registrationSchema = z.object({
   nimNip: studentNimSchema,
@@ -41,4 +41,20 @@ export const orderingSettingsUpdateSchema = z.object({
   ).optional(),
 }).strict().refine((value) => value.visible !== undefined || value.tallyUrl !== undefined, {
   message: 'Pilih pengaturan Pemesanan yang ingin diubah.',
+});
+
+export const nominasiTeamSchema = z.object({
+  namaTeam: z.string().trim().min(1).max(120),
+  memberNims: z.array(z.string().trim().min(1)).min(1, 'Pilih minimal satu anggota tim.'),
+}).strict();
+
+export const nominasiTeamUpdateSchema = z.object({
+  namaTeam: z.string().trim().min(1).max(120).optional(),
+  memberNims: z.array(z.string().trim().min(1)).optional(),
+}).strict().refine((value) => value.namaTeam !== undefined || value.memberNims !== undefined, {
+  message: 'Pilih pengaturan yang ingin diubah.',
+});
+
+export const nominasiCheckinSchema = z.object({
+  qrToken: qrTokenSchema,
 });

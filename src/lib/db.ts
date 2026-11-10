@@ -361,6 +361,23 @@ async function initPostgresTable(p: Pool): Promise<boolean> {
         detail VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS nominasi_teams (
+        id VARCHAR(64) PRIMARY KEY,
+        nama_team VARCHAR(120) NOT NULL,
+        qr_token VARCHAR(64) UNIQUE NOT NULL,
+        is_checked_in BOOLEAN DEFAULT FALSE,
+        checked_in_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS nominasi_team_members (
+        id VARCHAR(64) PRIMARY KEY,
+        team_id VARCHAR(64) NOT NULL,
+        nim_nip VARCHAR(50) NOT NULL,
+        nama VARCHAR(120) NOT NULL,
+        is_checked_in BOOLEAN DEFAULT FALSE,
+        checked_in_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
     isTableInitialized = true;
     return true;
@@ -1031,6 +1048,359 @@ export async function getActiveStudentImportBatch(): Promise<{
     };
   } catch (error) {
     console.error('[DB] Active student batch unavailable:', (error as Error).message);
+    throw new DatabaseUnavailableError();
+  }
+}
+
+// ============================================================================
+// Nominasi Teams (tim nominasi - satu QR untuk seluruh anggota tim)
+// ============================================================================
+
+export interface NominasiTeam {
+  id: string;
+  namaTeam: string;
+  qrToken: string;
+  isCheckedIn: boolean;
+  checkedInAt: string | null;
+  createdAt: string;
+  members: NominasiTeamMember[];
+}
+
+export interface NominasiTeamMember {
+  id: string;
+  nimNip: string;
+  nama: string;
+  isCheckedIn: boolean;
+  checkedInAt: string | null;
+}
+
+export interface CreateNominasiTeamInput {
+  namaTeam: string;
+  memberNims: string[]; // NIM yang sudah divalidasi di frontend
+}
+
+export async function getNominasiTeams(): Promise<NominasiTeam[]> {
+  if (USE_MYSQL) return mysqlStore.getNominasiTeams();
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) throw new DatabaseUnavailableError();
+
+    const teamRes = await p.query(
+      `SELECT id, nama_team AS "namaTeam", qr_token AS "qrToken",
+              is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt",
+              created_at AS "createdAt"
+       FROM nominasi_teams ORDER BY created_at DESC`
+    );
+    const teams: NominasiTeam[] = [];
+    for (const row of teamRes.rows) {
+      const memberRes = await p.query(
+        `SELECT id, nim_nip AS "nimNip", nama, is_checked_in AS "isCheckedIn",
+                checked_in_at AS "checkedInAt"
+         FROM nominasi_team_members WHERE team_id = $1 ORDER BY nama`,
+        [row.id]
+      );
+      teams.push({ ...row, members: memberRes.rows });
+    }
+    return teams;
+  } catch (error) {
+    console.error('[DB] getNominasiTeams error:', (error as Error).message);
+    throw new DatabaseUnavailableError();
+  }
+}
+
+export async function getNominasiTeamById(id: string): Promise<NominasiTeam | null> {
+  if (USE_MYSQL) return mysqlStore.getNominasiTeamById(id);
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) throw new DatabaseUnavailableError();
+
+    const teamRes = await p.query(
+      `SELECT id, nama_team AS "namaTeam", qr_token AS "qrToken",
+              is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt",
+              created_at AS "createdAt"
+       FROM nominasi_teams WHERE id = $1 LIMIT 1`,
+      [id.trim()]
+    );
+    if (teamRes.rows.length === 0) return null;
+
+    const memberRes = await p.query(
+      `SELECT id, nim_nip AS "nimNip", nama, is_checked_in AS "isCheckedIn",
+              checked_in_at AS "checkedInAt"
+       FROM nominasi_team_members WHERE team_id = $1 ORDER BY nama`,
+      [id.trim()]
+    );
+    return { ...teamRes.rows[0], members: memberRes.rows };
+  } catch (error) {
+    console.error('[DB] getNominasiTeamById error:', (error as Error).message);
+    throw new DatabaseUnavailableError();
+  }
+}
+
+export async function getNominasiTeamByQrToken(qrToken: string): Promise<NominasiTeam | null> {
+  if (USE_MYSQL) return mysqlStore.getNominasiTeamByQrToken(qrToken);
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) throw new DatabaseUnavailableError();
+
+    const teamRes = await p.query(
+      `SELECT id, nama_team AS "namaTeam", qr_token AS "qrToken",
+              is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt",
+              created_at AS "createdAt"
+       FROM nominasi_teams WHERE qr_token = $1 LIMIT 1`,
+      [qrToken.trim()]
+    );
+    if (teamRes.rows.length === 0) return null;
+
+    const memberRes = await p.query(
+      `SELECT id, nim_nip AS "nimNip", nama, is_checked_in AS "isCheckedIn",
+              checked_in_at AS "checkedInAt"
+       FROM nominasi_team_members WHERE team_id = $1 ORDER BY nama`,
+      [teamRes.rows[0].id]
+    );
+    return { ...teamRes.rows[0], members: memberRes.rows };
+  } catch (error) {
+    console.error('[DB] getNominasiTeamByQrToken error:', (error as Error).message);
+    throw new DatabaseUnavailableError();
+  }
+}
+
+export async function createNominasiTeam(input: CreateNominasiTeamInput): Promise<NominasiTeam> {
+  if (USE_MYSQL) return mysqlStore.createNominasiTeam(input);
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+
+  const id = 'NOM-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+  const qrToken = 'FAN26-NOM-' + crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) throw new DatabaseUnavailableError();
+
+    const client = await p.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('nominasi-team'))");
+
+      await client.query(
+        `INSERT INTO nominasi_teams (id, nama_team, qr_token, created_at)
+         VALUES ($1, $2, $3, $4)`,
+        [id, input.namaTeam.trim(), qrToken, createdAt]
+      );
+
+      for (const nim of input.memberNims) {
+        const memberId = 'NOM-M-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+        // Ambil nama dari student_master jika ada, gunakan NIM sebagai fallback
+        const studentRes = await client.query(
+          `SELECT official_name FROM ${STUDENT_MASTER_TABLE} WHERE nim = $1 AND is_active = TRUE LIMIT 1`,
+          [nim.trim()]
+        );
+        const nama = studentRes.rows[0]?.official_name || nim.trim();
+        await client.query(
+          `INSERT INTO nominasi_team_members (id, team_id, nim_nip, nama)
+           VALUES ($1, $2, $3, $4)`,
+          [memberId, id, nim.trim(), nama]
+        );
+      }
+
+      await client.query('COMMIT');
+
+      // Kembalikan team lengkap dengan anggota
+      const team = await getNominasiTeamById(id);
+      if (!team) throw new Error('Gagal memuat tim setelah dibuat.');
+      return team;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('[DB] createNominasiTeam error:', (error as Error).message);
+    throw new DatabaseUnavailableError();
+  }
+}
+
+export async function updateNominasiTeam(
+  id: string,
+  input: { namaTeam?: string; memberNims?: string[] }
+): Promise<NominasiTeam> {
+  if (USE_MYSQL) return mysqlStore.updateNominasiTeam(id, input);
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) throw new DatabaseUnavailableError();
+
+    const client = await p.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('nominasi-team'))");
+
+      // Cek apakah team ada
+      const existing = await client.query(
+        `SELECT id FROM nominasi_teams WHERE id = $1 LIMIT 1`,
+        [id.trim()]
+      );
+      if (existing.rows.length === 0) {
+        throw new ApiError('Tim nominasi tidak ditemukan.', 404);
+      }
+
+      if (input.namaTeam !== undefined) {
+        await client.query(
+          `UPDATE nominasi_teams SET nama_team = $1 WHERE id = $2`,
+          [input.namaTeam.trim(), id.trim()]
+        );
+      }
+
+      if (input.memberNims !== undefined) {
+        // Hapus anggota lama, tambah baru
+        await client.query(`DELETE FROM nominasi_team_members WHERE team_id = $1`, [id.trim()]);
+        for (const nim of input.memberNims) {
+          const memberId = 'NOM-M-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+          const studentRes = await client.query(
+            `SELECT official_name FROM ${STUDENT_MASTER_TABLE} WHERE nim = $1 AND is_active = TRUE LIMIT 1`,
+            [nim.trim()]
+          );
+          const nama = studentRes.rows[0]?.official_name || nim.trim();
+          await client.query(
+            `INSERT INTO nominasi_team_members (id, team_id, nim_nip, nama)
+             VALUES ($1, $2, $3, $4)`,
+            [memberId, id.trim(), nim.trim(), nama]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+
+      const team = await getNominasiTeamById(id);
+      if (!team) throw new Error('Gagal memuat tim setelah diupdate.');
+      return team;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    if ((error as { status?: number })?.status === 404) throw error;
+    console.error('[DB] updateNominasiTeam error:', (error as Error).message);
+    throw new DatabaseUnavailableError();
+  }
+}
+
+export async function deleteNominasiTeam(id: string): Promise<void> {
+  if (USE_MYSQL) return mysqlStore.deleteNominasiTeam(id);
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) throw new DatabaseUnavailableError();
+    await p.query('DELETE FROM nominasi_teams WHERE id = $1', [id.trim()]);
+  } catch (error) {
+    console.error('[DB] deleteNominasiTeam error:', (error as Error).message);
+    throw new DatabaseUnavailableError();
+  }
+}
+
+export async function checkInNominasiTeam(qrToken: string): Promise<{
+  success: boolean;
+  message: string;
+  team?: NominasiTeam;
+  newlyCheckedIn: NominasiTeamMember[];
+}> {
+  if (USE_MYSQL) return mysqlStore.checkInNominasiTeam(qrToken);
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) throw new DatabaseUnavailableError();
+
+    const client = await p.connect();
+    try {
+      await client.query('BEGIN');
+
+      const teamRes = await client.query(
+        `SELECT id, nama_team AS "namaTeam", qr_token AS "qrToken",
+                is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt",
+                created_at AS "createdAt"
+         FROM nominasi_teams WHERE qr_token = $1 LIMIT 1 FOR UPDATE`,
+        [qrToken.trim()]
+      );
+      if (teamRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return { success: false, message: 'QR Code tim nominasi tidak valid!', newlyCheckedIn: [] };
+      }
+
+      const team = teamRes.rows[0];
+      if (team.isCheckedIn) {
+        // Ambil anggota untuk ditampilkan
+        const memberRes = await client.query(
+          `SELECT id, nim_nip AS "nimNip", nama, is_checked_in AS "isCheckedIn",
+                  checked_in_at AS "checkedInAt"
+           FROM nominasi_team_members WHERE team_id = $1 ORDER BY nama`,
+          [team.id]
+        );
+        await client.query('ROLLBACK');
+        return {
+          success: false,
+          message: `Tim "${team.namaTeam}" sudah pernah check-in!`,
+          team: { ...team, members: memberRes.rows },
+          newlyCheckedIn: [],
+        };
+      }
+
+      const now = new Date().toISOString();
+      await client.query(
+        `UPDATE nominasi_teams SET is_checked_in = TRUE, checked_in_at = NOW() WHERE id = $1`,
+        [team.id]
+      );
+
+      // Tandai semua anggota sebagai checked_in
+      const memberRes = await client.query(
+        `SELECT id, nim_nip AS "nimNip", nama, is_checked_in AS "isCheckedIn",
+                checked_in_at AS "checkedInAt"
+         FROM nominasi_team_members WHERE team_id = $1 ORDER BY nama`,
+        [team.id]
+      );
+
+      const newlyCheckedIn: NominasiTeamMember[] = [];
+      for (const m of memberRes.rows) {
+        if (!m.isCheckedIn) {
+          newlyCheckedIn.push(m);
+          await client.query(
+            `UPDATE nominasi_team_members SET is_checked_in = TRUE, checked_in_at = NOW() WHERE id = $1`,
+            [m.id]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+
+      const fullTeam = await getNominasiTeamById(team.id);
+      if (!fullTeam) throw new Error('Gagal memuat tim setelah check-in.');
+      return {
+        success: true,
+        message: `Check-in tim "${team.namaTeam}" berhasil! ${newlyCheckedIn.length} anggota terdeteksi hadir.`,
+        team: fullTeam,
+        newlyCheckedIn,
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('[DB] checkInNominasiTeam error:', (error as Error).message);
     throw new DatabaseUnavailableError();
   }
 }

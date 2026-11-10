@@ -112,7 +112,7 @@ export default function RegistrationForm() {
 
   const batchFromNim = (nim: string): BatchType => {
     const year = nim.trim().slice(0, 2);
-    return ['23', '24', '25', '26'].includes(year) ? (`20${year}` as BatchType) : '-';
+    return ['22','23', '24', '25', '26'].includes(year) ? (`20${year}` as BatchType) : '-';
   };
 
   useEffect(() => {

@@ -6,6 +6,7 @@ export const MYSQL_TABLE_NAMES = [
   'participants', 'admin_sessions', 'audit_log', 'student_import_batches',
   'student_master', 'student_import_records', 'student_import_previews',
   'request_rate_limits', 'operation_locks', 'site_settings',
+  'nominasi_teams', 'nominasi_team_members',
 ];
 
 export const MYSQL_SCHEMA = [
@@ -109,5 +110,28 @@ export const MYSQL_SCHEMA = [
     ordering_visible BOOLEAN NOT NULL DEFAULT TRUE,
     ordering_tally_url VARCHAR(2048) NOT NULL DEFAULT '',
     updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+  ) ${tableOptions}`,
+  `CREATE TABLE IF NOT EXISTS nominasi_teams (
+    id VARCHAR(64) PRIMARY KEY,
+    nama_team VARCHAR(120) NOT NULL,
+    qr_token VARCHAR(64) NOT NULL UNIQUE,
+    is_checked_in BOOLEAN NOT NULL DEFAULT FALSE,
+    checked_in_at DATETIME(3) NULL,
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    INDEX idx_nominasi_teams_qr (qr_token),
+    INDEX idx_nominasi_teams_checked (is_checked_in)
+  ) ${tableOptions}`,
+  `CREATE TABLE IF NOT EXISTS nominasi_team_members (
+    id VARCHAR(64) PRIMARY KEY,
+    team_id VARCHAR(64) NOT NULL,
+    nim_nip VARCHAR(50) NOT NULL,
+    nama VARCHAR(120) NOT NULL,
+    is_checked_in BOOLEAN NOT NULL DEFAULT FALSE,
+    checked_in_at DATETIME(3) NULL,
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    INDEX idx_nominasi_members_team (team_id),
+    INDEX idx_nominasi_members_nim (nim_nip),
+    INDEX idx_nominasi_members_checked (is_checked_in),
+    FOREIGN KEY (team_id) REFERENCES nominasi_teams(id) ON DELETE CASCADE
   ) ${tableOptions}`,
 ];
