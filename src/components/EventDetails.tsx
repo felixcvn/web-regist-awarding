@@ -10,64 +10,56 @@ export default function EventDetails() {
 
   const rundownItems = [
     {
-      time: '17:45 - 18:15 WIB',
+      time: '17:45 - 18:20 WIB',
       title: 'Open Gate',
       icon: Camera,
       tag: 'Opening Phase',
     },
     {
-      time: '18:15 - 18:25 WIB',
-      title: 'Persembahan Tari ',
-      desc: 'Tari pembuka Sekar Panguripan.',
-      icon: Music,
-      tag: 'Ceremony',
+      time: '18.20 - 18:34 WIB',
+      title: 'Live On',
+      icon: Camera,
+      tag: 'Live On Acara',
     },
     {
-      time: '18:25 - 18:30 WIB',
+      time: '18:34 - 18:39 WIB',
       title: 'Indonesia Raya dan Mars Unej',
-      desc: 'Penganugerahan Kategori Mahasiswa Berprestasi, Dosen Terfavorit, dan Riset Unggulan 2026.',
       icon: Award,
       tag: 'Ceremony',
     },
     {
-      time: '18:30 - 18:40 WIB',
+      time: '18:39 - 18:49 WIB',
       title: 'Opening Fasilkom Awarding',
-      desc: 'Pembukaan Oleh MC.',
       icon: Music,
       tag: 'Intermezzo',
     },
     {
-      time: '18:55 - 19:15 WIB',
+      time: '18:49 - 19:09 WIB',
       title: 'Sambutan Sambutan',
-      desc: 'Sambutan dari para tamu kehormatan, pimpinan dll.',
       icon: Award,
-      tag: 'Puncak Acara',
+      tag: 'Sambutan',
     },
     {
-      time: '19:15 - 19:35 WIB',
+      time: '19:09 - 19:11 WIB',
       title: 'Pemutaran Video Opening Awarding',
-      desc: 'Sesi pemutaran video pembuka Fasilkom Awarding Night.',
       icon: Camera,
-      tag: 'Penutupan',
+      tag: 'Pemutaran',
     },
     {
-      time: '19:35 - 19:45 WIB',
-      title: 'Pembacaan Nominasi dan Pengumuman Pemenang',
-      desc: 'Sesi pengumuman pemenang dari kategori-kategori yang telah ditentukan.',
+      time: '19:11 - 20:51 WIB',
+      title: 'Pembacaan Nominasi, Pengumuman Pemenang dan Hiburan',
       icon: Camera,
-      tag: 'Penutupan',
+      tag: 'Nominasi dan Hiburan',
     },
     {
-      time: '19:45 - 21:15 WIB',
+      time: '20:51 - 21:51 WIB',
       title: 'Perform Guest Star',
-      desc: 'Penampilan dari bintang tamu spesial yang menghibur seluruh audiens.',
       icon: Camera,
-      tag: 'Penutupan',
+      tag: 'Performance',
     },
     {
-      time: '21:15 - 21:45 WIB',
+      time: '21:51 - 21:54 WIB',
       title: 'Closing',
-      desc: 'Sesi penutupan acara dan ucapan terima kasih.',
       icon: Camera,
       tag: 'Penutupan',
     },
@@ -256,9 +248,6 @@ export default function EventDetails() {
                               <h4 className="font-cinzel text-base sm:text-lg font-bold text-ivory group-hover:text-bloom-pink transition-colors">
                                 {item.title}
                               </h4>
-                              <p className="text-xs sm:text-sm text-ink/70 mt-1 leading-relaxed">
-                                {item.desc}
-                              </p>
                             </div>
                           </div>
                         </div>
