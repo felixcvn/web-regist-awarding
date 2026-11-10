@@ -18,7 +18,6 @@ Set semua ini di dashboard hosting (Vercel → Project → Settings → Environm
 | `GMAIL_USER` | `panitia@gmail.com` | Akun pengirim email. |
 | `GMAIL_APP_PASSWORD` | `xxxx xxxx xxxx xxxx` | App Password Gmail (bukan password akun). |
 | `NEXT_PUBLIC_APP_URL` | `https://fan2026.domainkamu.com` | Tanpa trailing slash. Perbaiki link tiket di email. |
-| `QR_EMAIL_MODE` | `cid` | `cid` = QR inline (aman di semua client). `url` perlu URL publik. |
 
 > Kalau `NEXT_PUBLIC_APP_URL` kosong di Vercel, sistem otomatis pakai `VERCEL_URL`.
 > Di luar Vercel tanpa variabel ini → link jatuh ke `localhost` (salah).
@@ -37,8 +36,14 @@ Set semua ini di dashboard hosting (Vercel → Project → Settings → Environm
 - Gmail memiliki kuota pengiriman; jangan menganggap 600–700 undangan dapat dikirim
   dalam sehari tanpa memeriksa kuota akun. Pengiriman gagal tidak memiliki queue
   retry otomatis dan tetap perlu ditangani panitia.
-- `QR_EMAIL_MODE=cid` direkomendasikan: QR ditempel inline, tidak butuh URL publik.
-- Kalau ganti ke `url`, pastikan `NEXT_PUBLIC_APP_URL` benar-benar bisa diakses publik.
+- Email berupa konfirmasi pendaftaran dengan tombol **Lihat & Unduh Tiket**,
+  tautan cadangan, dan versi teks biasa. Tidak ada gambar QR atau lampiran PNG.
+- QR dan unduhan PNG tersedia di halaman tiket. `NEXT_PUBLIC_APP_URL` harus bisa
+  diakses peserta; minta peserta menyimpan tiket sebelum tiba di lokasi acara.
+- `QR_EMAIL_MODE` tidak lagi diperlukan. Nilai lama `cid`/`url` di hosting diabaikan.
+- `emailSent: true` hanya berarti SMTP menerima pesan. Format tanpa gambar dan
+  autentikasi yang valid tidak menjamin Inbox atau notifikasi penerima. Uji folder
+  penerimaan pada beberapa akun panitia tanpa mengirim ulang secara massal.
 
 ## 4. Build & Run
 
@@ -57,7 +62,7 @@ Hosting platform (Vercel/Netlify) menjalankan ini otomatis.
 - [ ] `GMAIL_USER` + `GMAIL_APP_PASSWORD` valid (uji kirim 1 email).
 - [ ] `NEXT_PUBLIC_APP_URL` = domain produksi.
 - [ ] Login admin + buka scanner bekerja.
-- [ ] Unduh tiket (PNG) & scan QR dari email berhasil.
+- [ ] Tombol/tautan email membuka tiket yang benar; unduh PNG & scan QR berhasil.
 - [ ] Security headers aktif (cek `curl -I`).
 - [ ] Backup database sebelum hari-H.
 

@@ -117,7 +117,6 @@ bukan di folder tambahan. Aktifkan **Show Hidden Files** untuk memeriksa `.next`
 | `GMAIL_USER` | Alamat lengkap akun Gmail panitia |
 | `GMAIL_APP_PASSWORD` | App Password dari akun yang sama, tanpa spasi pemisah |
 | `NEXT_PUBLIC_APP_URL` | Origin HTTPS yang sama dengan `appUrl` dalam `cpanel-release.json` |
-| `QR_EMAIL_MODE` | `cid` |
 | `TRUSTED_PROXY` | Sesuai ingress terverifikasi; `reverse-proxy` hanya untuk `X-Real-IP` yang ditimpa ingress |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Sama dengan site key yang digunakan saat build, atau kosong |
 | `TURNSTILE_SECRET_KEY` | Secret untuk site key tersebut, atau kosong jika Turnstile tidak dipakai |
@@ -177,15 +176,53 @@ Paket tidak membawa `node_modules` dari laptop.
 Perintah startup dalam **paket** adalah `node server.js`; pada source project,
 startup ini juga dapat dijalankan dengan `npm run start:cpanel` setelah build.
 
+### Memperbarui aplikasi yang sudah berjalan
+
+1. Klik **Stop** pada Setup NodeJS App dan pastikan proses aplikasi pada Application
+   Root tersebut sudah berhenti sebelum mengganti hasil build.
+2. Pindahkan folder `.next` lama, lalu ekstrak paket baru ke Application Root.
+   Aktifkan **Show Hidden Files** jika menggunakan File Manager. Contoh Terminal:
+
+   ```bash
+   cd /home/awaw8329/fan26-test
+   mv .next ".next-backup-$(date +%Y%m%d-%H%M%S)"
+   tar -xzf "NAMA_PAKET_TERBARU.tar.gz"
+   ```
+
+3. Jalankan instalasi melalui prefix Selector pada langkah 5, lalu klik **Start**.
+4. Periksa tampilan halaman depan dan dashboard sesudah aplikasi berjalan kembali.
+
+Pada Next.js 16.4, salinan halaman runtime disimpan di
+**`.next/server/route-cache`**. Mengekstrak paket langsung menimpa `.next` lama dapat
+menyisakan salinan ini. Akibatnya, `BUILD_ID` dan file asli di `server/app` sudah
+baru, tetapi halaman yang disajikan masih berasal dari rilis sebelumnya, bahkan
+sesudah seluruh proses direstart. Mengganti folder `.next` secara utuh mencegah
+cache runtime rilis lama terbawa ke rilis baru.
+
+Jika paket terbaru sudah terpasang dan checksum file halamannya sudah sesuai,
+pemulihan dapat dilakukan dengan **Stop** aplikasi, memindahkan cache runtime,
+lalu **Start** kembali:
+
+```bash
+cd /home/awaw8329/fan26-test
+mv .next/server/route-cache ".route-cache-backup-$(date +%Y%m%d-%H%M%S)"
+```
+
 ## 6. Tes pada domain uji
 
+- Email konfirmasi berisi tombol **Lihat & Unduh Tiket**, tautan cadangan, dan versi
+  teks biasa, tanpa gambar QR atau lampiran PNG. QR tetap tampil di halaman tiket
+  dan dapat disimpan melalui unduhan tiket. `QR_EMAIL_MODE` tidak diperlukan;
+  nilai lama `cid`/`url` yang masih ada di cPanel diabaikan oleh format baru.
 - Halaman depan, gambar, dan JavaScript termuat tanpa error.
 - Login/logout admin berhasil; cookie sesi produksi menggunakan HTTPS.
 - Preview tiga `.xlsx`, aktivasi, dan rollback berjalan dengan data uji.
 - Upload gabungan yang besar mencapai handler Node.js tanpa 413 dari hosting.
   Pengaturan upload PHP tidak menentukan batas request untuk aplikasi Node.js ini.
-- Registrasi mahasiswa uji menghasilkan tiket, email, dan QR yang dapat dipakai
-  check-in. Email dapat masuk Spam; log `535 / EAUTH` berarti kredensial ditolak.
+- Registrasi mahasiswa uji menghasilkan tiket dan email dengan tautan ke halaman
+  tiket yang benar. Unduh PNG dari halaman tersebut dan uji QR untuk check-in.
+  Email dapat masuk Spam; log `535 / EAUTH` berarti kredensial ditolak. Flag
+  `emailSent: true` berarti SMTP menerima pesan, bukan konfirmasi masuk Inbox.
 - Rute admin, tiket, dan API sensitif mempertahankan `Cache-Control: private, no-store`.
 - Rate limit memakai IP pengunjung yang benar melalui ingress. Batas registrasi
   saat ini adalah lima percobaan/menit/IP; uji juga pemakaian Wi-Fi bersama.
@@ -226,6 +263,7 @@ Jika database tidak tersedia, menu disembunyikan sampai pengaturan dapat dibaca.
 | Gejala | Periksa |
 | --- | --- |
 | `Production build missing` | `.next/BUILD_ID` ada langsung di Application Root; ekstraksi tidak bersarang |
+| Build ID baru tetapi halaman masih versi lama | Stop aplikasi, pindahkan `.next/server/route-cache`, lalu Start; untuk update berikutnya ganti `.next` secara utuh |
 | `Cannot find module` | Environment Node.js benar dan instalasi pada langkah 5 berhasil |
 | Halaman tersedia tetapi API 503 | Provider database, koneksi/TLS atau socket internal, privilege tabel/index, log kode database |
 | `535 / EAUTH` | `GMAIL_USER` dan App Password berasal dari akun yang sama; restart sesudah mengubahnya |

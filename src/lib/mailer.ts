@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import QRCode from 'qrcode';
 
 const EVENT = {
   title: 'Fasilkom Awarding Night 2026',
@@ -50,96 +49,113 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function buildHtml({ name, category, batch, qrToken, imgSrc, ticketUrl }: { name: string; category: string; batch: string; qrToken: string; imgSrc: string; ticketUrl: string }): string {
+interface InvitationContent {
+  name: string;
+  category: string;
+  batch: string;
+  ticketUrl: string;
+}
+
+function buildHtml({ name, category, batch, ticketUrl }: InvitationContent): string {
   const batchLabel = batch !== '-' ? batch : '';
-  // User-controlled values must be escaped: the invitation is HTML email.
+  // Escape both visible text and link attributes in the HTML alternative.
   const safeName = escapeHtml(name);
   const categoryLine = escapeHtml(category);
   const batchLine = batchLabel ? ` • Angkatan: ${escapeHtml(batchLabel)}` : '';
+  const safeTicketUrl = escapeHtml(ticketUrl);
 
-  return `
-  <table width="100%" style="font-family:Arial,Helvetica,sans-serif;background:#061510;">
-    <tr><td align="center" style="padding:32px 16px;">
-      <table width="560" style="margin:0 auto;background:#0E2A20;border:1px solid rgba(255,181,232,0.3);border-radius:20px;overflow:hidden;color:#EDE8DF;">
+  return `<!DOCTYPE html>
+  <html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body style="margin:0;padding:0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;font-family:Arial,Helvetica,sans-serif;background:#061510;">
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;margin:0 auto;background:#0E2A20;border:1px solid #315044;border-radius:16px;color:#EDE8DF;">
         <tr>
-          <td style="padding:28px 24px 12px;text-align:center;">
-            <table width="100%" style="margin:0 auto;">
-              <tr>
-                <td style="text-align:center;">
-                  <span style="display:inline-block;padding:4px 14px;border-radius:999px;background:#184535;color:#FFB5E8;font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(255,181,232,0.5);">
-                    Official VIP Pass
-                  </span>
-                </td>
-              </tr>
-              <tr><td style="padding-top:14px;">
-                <h1 style="margin:4px 0;font-size:22px;color:#FAF7F0;font-family:Georgia,'Times New Roman',serif;letter-spacing:1px;">
-                  FASILKOM AWARDING NIGHT 2026
-                </h1>
-                <p style="margin:0;font-size:12px;color:#FFB5E8;letter-spacing:3px;text-transform:uppercase;">
-                  ${EVENT.tagline}
-                </p>
-              </td></tr>
-            </table>
+          <td style="padding:28px 24px 12px;">
+            <p style="margin:0 0 10px;font-size:12px;font-weight:bold;color:#FFB5E8;">
+              Konfirmasi Pendaftaran
+            </p>
+            <h1 style="margin:0 0 8px;font-size:22px;line-height:1.4;color:#FAF7F0;font-family:Georgia,'Times New Roman',serif;">
+              ${EVENT.title}
+            </h1>
+            <p style="margin:0;font-size:12px;line-height:1.6;color:#EDE8DF;">
+              ${EVENT.tagline}
+            </p>
           </td>
         </tr>
         <tr>
-          <td style="padding:8px 28px 28px;text-align:center;">
-            <p style="margin:16px 0 4px;font-size:14px;color:#EDE8DF;">
-              Halo, <b style="color:#FFB5E8;">${safeName}</b>
+          <td style="padding:8px 24px 24px;">
+            <p style="margin:12px 0;font-size:14px;line-height:1.7;color:#EDE8DF;">
+              Halo, <b>${safeName}</b>.
             </p>
-            <p style="margin:0 0 22px;font-size:13px;color:rgba(237,232,223,0.8);">
-              Registrasi Anda berhasil. Berikut QR undangan resmi Anda.
+            <p style="margin:0 0 12px;font-size:14px;line-height:1.7;color:#EDE8DF;">
+              Pendaftaran Anda berhasil. Anda menerima email ini karena telah mendaftar melalui website Fasilkom Awarding Night 2026.
             </p>
-            <table width="100%" style="margin:0 auto;border-radius:18px;overflow:hidden;">
+            <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#EDE8DF;">
+              Silakan buka halaman tiket untuk melihat QR dan mengunduh tiket digital Anda.
+            </p>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
               <tr>
-                <td style="padding:22px;background:#ffffff;border:3px solid #FFB5E8;text-align:center;">
-                  <img src="${imgSrc}" alt="QR Undangan" width="260" height="260" style="display:block;margin:0 auto;" />
-                </td>
-              </tr>
-            </table>
-            <p style="margin:14px 0 24px;font-size:12px;color:#FFB5E8;font-family:monospace;letter-spacing:1px;">
-              ${qrToken}
-            </p>
-            <table width="100%" style="margin:0 auto;">
-              <tr>
-                <td style="text-align:center;">
-                  <a href="${ticketUrl}" style="display:inline-block;background:#FFB5E8;color:#061811;font-weight:bold;font-size:14px;text-decoration:none;padding:14px 28px;border-radius:14px;">
-                    Lihat & Unduh Tiket Digital
+                <td align="center" style="background:#FFB5E8;border-radius:10px;">
+                  <a href="${safeTicketUrl}" style="display:inline-block;background:#FFB5E8;color:#061811;font-weight:bold;font-size:14px;line-height:1.5;text-decoration:none;padding:14px 24px;border:1px solid #FFB5E8;border-radius:10px;">
+                    Lihat &amp; Unduh Tiket
                   </a>
                 </td>
               </tr>
             </table>
+            <p style="margin:0 0 6px;font-size:12px;line-height:1.7;color:#EDE8DF;">
+              Jika tombol tidak dapat dibuka, salin tautan berikut ke browser:
+            </p>
+            <p style="margin:0 0 18px;font-size:12px;line-height:1.7;word-break:break-all;">
+              <a href="${safeTicketUrl}" style="color:#FFB5E8;text-decoration:underline;word-break:break-all;">${safeTicketUrl}</a>
+            </p>
+            <p style="margin:0;font-size:13px;line-height:1.7;color:#EDE8DF;">
+              Unduh dan simpan tiket di perangkat Anda, lalu tunjukkan QR kepada panitia saat check-in. Jangan bagikan tautan tiket ini kepada orang lain.
+            </p>
           </td>
         </tr>
         <tr>
-          <td style="padding:18px 28px;border-top:1px solid rgba(255,181,232,0.2);text-align:center;">
-            <table width="100%" style="margin:0 auto;">
-              <tr><td style="padding:0 0 4px;">
-                <p style="margin:0;font-size:12px;color:#EDE8DF;">
-                  📅 ${EVENT.date}
-                </p>
-              </td></tr>
-              <tr><td style="padding:0;">
-                <p style="margin:0;font-size:12px;color:#EDE8DF;">
-                  📍 ${EVENT.venue}
-                </p>
-              </td></tr>
-              <tr><td style="padding:16px 0 0;">
-                <p style="margin:0;font-size:11px;color:rgba(237,232,223,0.4);">
-                  Tunjukkan QR Code ini kepada panitia di pintu masuk.
-                  ${categoryLine}${batchLine ? `<br/>${batchLine}` : ''}
-                </p>
-              </td></tr>
-            </table>
+          <td style="padding:18px 24px;border-top:1px solid #315044;">
+            <p style="margin:0 0 6px;font-size:12px;line-height:1.7;color:#EDE8DF;">
+              ${EVENT.date}<br />${EVENT.venue}
+            </p>
+            <p style="margin:0;font-size:12px;line-height:1.7;color:#EDE8DF;">
+              ${categoryLine}${batchLine}
+            </p>
           </td>
         </tr>
       </table>
     </td></tr>
-  </table>`;
+  </table>
+  </body>
+  </html>`;
 }
 
-async function generateQrBuffer(qrToken: string): Promise<Buffer> {
-  return QRCode.toBuffer(qrToken, { margin: 5, width: 600, errorCorrectionLevel: 'H', color: { dark: '#000000', light: '#ffffff' } });
+function buildText({ name, category, batch, ticketUrl }: InvitationContent): string {
+  const batchLine = batch && batch !== '-' ? ` • Angkatan: ${batch}` : '';
+
+  return [
+    `Konfirmasi Pendaftaran — ${EVENT.title}`,
+    EVENT.tagline,
+    '',
+    `Halo, ${name}.`,
+    '',
+    'Pendaftaran Anda berhasil. Anda menerima email ini karena telah mendaftar melalui website Fasilkom Awarding Night 2026.',
+    '',
+    'Silakan buka halaman tiket untuk melihat QR dan mengunduh tiket digital Anda:',
+    ticketUrl,
+    '',
+    'Unduh dan simpan tiket di perangkat Anda, lalu tunjukkan QR kepada panitia saat check-in.',
+    'Jangan bagikan tautan tiket ini kepada orang lain.',
+    '',
+    EVENT.date,
+    EVENT.venue,
+    `${category}${batchLine}`,
+  ].join('\n');
 }
 
 export async function sendInvitationEmail({ to, name, qrToken, category, batch }: { to: string; name: string; qrToken: string; category: string; batch: string }): Promise<{ sent: boolean }> {
@@ -149,19 +165,18 @@ export async function sendInvitationEmail({ to, name, qrToken, category, batch }
     return { sent: false };
   }
 
-  const mode = (process.env.QR_EMAIL_MODE as 'cid' | 'url') || 'cid';
   const baseUrl = resolveBaseUrl();
-  const ticketUrl = `${baseUrl}/ticket/${qrToken}`;
-  const imgSrc = mode === 'cid' ? 'cid:qr-invitation' : `${baseUrl}/api/qr/${qrToken}`;
+  const ticketUrl = `${baseUrl}/ticket/${encodeURIComponent(qrToken)}`;
+  const content = { name, category, batch, ticketUrl };
 
-  const qrBuffer = await generateQrBuffer(qrToken);
-
+  // Link-only confirmation: QR images stay on the ticket page. Legacy
+  // QR_EMAIL_MODE values are intentionally ignored; no attachments are sent.
   await transport.sendMail({
     from: `"Fasilkom Awarding Night 2026" <${process.env.GMAIL_USER}>`,
     to,
-    subject: 'Tiket Undangan — Fasilkom Awarding Night 2026',
-    html: buildHtml({ name, category, batch, qrToken, imgSrc, ticketUrl }),
-    attachments: mode === 'cid' ? [{ filename: 'qr-invitation.png', content: qrBuffer, cid: 'qr-invitation' }] : [],
+    subject: `Konfirmasi Pendaftaran — ${EVENT.title}`,
+    text: buildText(content),
+    html: buildHtml(content),
   });
 
   return { sent: true };

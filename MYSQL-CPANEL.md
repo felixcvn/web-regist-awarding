@@ -140,7 +140,7 @@ Set **hanya setelah rilis baru siap**. Nilai dashboard mentah, tanpa tanda kutip
 | `MYSQL_SSL_CA_FILE` | Kosong untuk CA publik/default; path CA resmi bila diperlukan |
 
 Pertahankan environment lain seperti `ADMIN_PIN_HASH`, `NEXT_PUBLIC_APP_URL`,
-`QR_EMAIL_MODE`, Gmail, dan `TRUSTED_PROXY` sesuai panduan deployment. Hash/PIN dan
+Gmail, dan `TRUSTED_PROXY` sesuai panduan deployment. Hash/PIN dan
 kredensial yang sebelumnya terungkap perlu diganti. Restart aplikasi setelah
 mengubah konfigurasi runtime; pool dan pilihan provider dibaca proses aplikasi.
 

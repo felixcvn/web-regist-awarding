@@ -74,7 +74,7 @@ Preview expired dibersihkan saat preview valid berikutnya disimpan. Bucket rate 
 - Tiket publik dan respons registrasi memakai allowlist: ID, NIM, nama, peran, kategori, angkatan, prodi, token QR, dan status check-in. Email, telepon, serta timestamp internal tetap hanya tersedia pada alur admin yang memerlukannya.
 - Halaman tiket dinamis. Respons admin, registrasi, dan QR diberi `Cache-Control: private, no-store`; CDN harus menghormati header ini dan melewatkan cache untuk rute sensitif. Jika sebelumnya ada cache di hosting, purge varian HTML/RSC terkait saat deployment.
 - Kuota email adalah dua **percobaan pengiriman** per alamat ternormalisasi per jam. Hanya pembuatan peserta yang berhasil mengonsumsi kuota. Kegagalan validasi atau registrasi duplikat tidak menghabiskannya. Jika kuota habis atau pengiriman gagal, tiket tetap diterbitkan dengan `emailSent: false`.
-- Isi `NEXT_PUBLIC_APP_URL` dengan origin HTTPS publik yang benar. SMTP menggunakan `GMAIL_USER` dan `GMAIL_APP_PASSWORD`. Mode `QR_EMAIL_MODE=cid` menyematkan QR ke email; mode `url` memakai endpoint QR publik yang juga memiliki rate limit.
+- Isi `NEXT_PUBLIC_APP_URL` dengan origin HTTPS publik yang benar. SMTP menggunakan `GMAIL_USER` dan `GMAIL_APP_PASSWORD`. Email konfirmasi menyediakan HTML dan teks biasa dengan tombol/tautan tiket, tanpa gambar QR atau lampiran. Nilai `QR_EMAIL_MODE` lama diabaikan. QR dan unduhan tiket tetap tersedia pada halaman tiket; tautan ini bersifat bearer dan tidak boleh dibagikan. `emailSent: true` berarti pesan diterima SMTP, bukan jaminan Inbox/notifikasi.
 - Turnstile diaktifkan dengan mengisi key server/client dan allowed hostname pada Cloudflare. Pemeriksaan hostname/action di helper masih merupakan tindak lanjut audit.
 
 ## Token historis dan risiko yang masih terbuka
@@ -102,6 +102,12 @@ node scripts/security-review.cjs
 ```
 
 Full run sudah mencakup helper, PostgreSQL bersama, build produksi `--webpack`, serta HTTP. Mode terfokus berguna saat mengubah komponen terkait. Runner mencetak lokasi `observations.json`/log, mengembalikan exit nonzero saat assertion gagal, dan membersihkan cluster uji saat selesai. Observasi SEC-01/SEC-10 dan hostname/action Turnstile dicatat sebagai tindak lanjut, bukan dinyatakan tertutup.
+
+Uji helper mencakup `scripts/review-mailer.cjs`: email tanpa QR/lampiran meskipun
+environment lama masih memakai `cid`/`url`, escaping HTML dan path token, MIME
+`multipart/alternative`, serta keberhasilan registrasi ketika SMTP/kuota gagal.
+Preview HTML, teks, dan `.eml` memakai data sintetis dan disimpan bersama hasil
+runner. Tidak ada email nyata atau koneksi database pada uji email tersebut.
 
 Untuk MySQL, gunakan executable MySQL 8+ yang sudah tersedia (bukan datadir existing):
 

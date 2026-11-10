@@ -13,9 +13,9 @@ Web registrasi FAN 2026 saat ini menerima pendaftaran civitas Fasilkom dan mener
 
 1. **Pendaftaran ganda.** Satu orang berisiko terdaftar beberapa kali di kategori berbeda, sehingga rekap kehadiran dan distribusi konsumsi tidak akurat.
 2. **Data kategori tidak terstruktur.** Panitia butuh tahu peserta "datang sebagai apa" (BPM/BEM/HIMASIF/HIMATIF, angkatan 2023–2026, Mahasiswa Fasilkom). Kolom yang ada hanya `role` (Mahasiswa/Dosen/Tenaga Pendidik/Tamu) dan `prodi`, tidak cukup untuk rekap per organisasi/angkatan.
-3. **Distribusi tiket manual.** Peserta harus menyimpan/mengunduh sendiri tiket dari halaman. Panitia ingin mengirim QR undangan langsung ke email yang didaftarkan.
+3. **Distribusi tiket manual.** Panitia ingin mengirim konfirmasi serta tautan tiket otomatis ke email yang didaftarkan. Peserta dapat membuka QR dan menyimpan PNG dari halaman tiket.
 
-**Tujuan:** mencegah duplikasi NIM, menambah dimensi kategori civitas untuk rekap panitia, dan mengirim QR undangan otomatis via email.
+**Tujuan:** mencegah duplikasi NIM, menambah dimensi kategori civitas untuk rekap panitia, dan mengirim konfirmasi pendaftaran serta tautan tiket otomatis via email.
 
 **Non-tujuan:** perubahan autentikasi admin, sistem pembayaran, redesign visual halaman.
 
@@ -26,7 +26,7 @@ Web registrasi FAN 2026 saat ini menerima pendaftaran civitas Fasilkom dan mener
 ### In-scope
 - Validasi "satu NIM = satu registrasi" di sisi DB (sudah ada) + UX (endpoint cek real-time + inline error + tombol disable).
 - Dua dropdown baru: **Kategori Civitas** dan **Angkatan**.
-- Pengiriman email berisi QR inline + link tiket setelah registrasi sukses.
+- Pengiriman email konfirmasi tanpa gambar/lampiran QR, dengan tombol dan tautan tiket setelah registrasi sukses.
 - Penyesuaian rekap CSV admin (kolom baru).
 
 ### Out-of-scope
@@ -121,7 +121,7 @@ Dua dropdown baru di `RegistrationForm` mengikuti pola komponen dropdown `prodi`
 
 ---
 
-## 5. Requirement 3 — Kirim QR Undangan ke Email
+## 5. Requirement 3 — Kirim Konfirmasi & Tautan Tiket ke Email
 
 ### 5.1 Dependensi & Konfigurasi
 - Dependensi baru: `nodemailer`, `@types/nodemailer`, `qrcode`, `@types/qrcode`.
@@ -131,28 +131,28 @@ Dua dropdown baru di `RegistrationForm` mengikuti pola komponen dropdown `prodi`
   - `NEXT_PUBLIC_APP_URL` — base URL publik, untuk membentuk link `/ticket/[token]`.
 
 ### 5.2 Modul `src/lib/mailer.ts`
-- Membuat QR Code server-side dari `qrToken` (lib `qrcode`, output PNG data-URL).
-- Menyusun HTML email: sapaan, nama peserta, QR inline, tombol link tiket (`${NEXT_PUBLIC_APP_URL}/ticket/${qrToken}`), detail event.
+- Tidak membuat atau melampirkan gambar QR untuk email; QR tetap tersedia di halaman tiket.
+- Menyusun HTML dan teks biasa: sapaan, nama peserta, konteks konfirmasi pendaftaran, tombol/tautan tiket (`${NEXT_PUBLIC_APP_URL}/ticket/${qrToken}`), detail event. Token di-encode sebagai satu segmen path URL dan nilai dinamis di-escape pada HTML.
 - Transport: `nodemailer.createTransport` dengan Gmail SMTP (`service: 'gmail'`, auth user + app password).
-- Ekspor fungsi `sendInvitationEmail({ to, name, qrToken, category })`.
+- Ekspor fungsi `sendInvitationEmail({ to, name, qrToken, category, batch })`.
 
 ### 5.3 Trigger
-- Dipanggil dari `POST /api/register` **setelah** `createParticipant` sukses (`src/app/api/register/route.ts:36-40`).
-- **Non-blocking:** pembungkus `try/catch`; kegagalan kirim email **tidak** menggagalkan registrasi. Tiket tetap terbit, error di-`console.error` dan (opsional) dikembalikan sebagai flag `emailSent: false` pada respons.
+- Dipanggil dari `POST /api/register` **setelah** `createParticipant` sukses dan kuota penerima mengizinkan percobaan pengiriman.
+- SMTP tetap ditunggu dalam request, tetapi dibungkus `try/catch`; kegagalan kirim email atau kuota **tidak** menggagalkan registrasi. Tiket tetap terbit dan respons memuat `emailSent: false`.
 - Jika env Gmail tidak diset, kirim di-skip dengan log peringatan (agar dev tanpa kredensial tetap bisa jalan).
 
 ### 5.4 Isi Email
-- Subjek: "Tiket Undangan — Fasilkom Awarding Night 2026".
-- Body HTML: QR inline (data-URL) + teks token + tombol menuju halaman tiket + detail waktu/tempat.
+- Subjek: "Konfirmasi Pendaftaran — Fasilkom Awarding Night 2026".
+- Body HTML dan teks biasa: konfirmasi serta alasan penerimaan email, tombol **Lihat & Unduh Tiket**, tautan cadangan, detail waktu/tempat, dan instruksi menyimpan tiket untuk check-in. Tidak ada gambar atau lampiran QR.
 
 ### 5.5 Acceptance Criteria
-- Registrasi sukses → email terkirim ke alamat terdaftar dalam <30 detik (SMTP normal).
-- Email berisi QR yang valid (dapat di-scan) dan link tiket yang membuka halaman benar.
+- Jika kuota tersedia dan SMTP menerima pesan, registrasi sukses mengembalikan `emailSent: true`; ini tidak menjamin folder Inbox atau notifikasi penerima.
+- Tombol dan tautan cadangan membuka halaman tiket peserta yang benar; QR dan unduhan PNG tersedia di halaman tersebut.
 - Kegagalan SMTP tidak menyebabkan registrasi gagal atau error 500 ke user.
 - Tanpa kredensial Gmail (dev), registrasi tetap sukses.
 
 ### 5.6 Catatan implementasi
-- `ponytail:` SMTP langsung (synchronous di request handler). Upgrade path: pindah ke queue/background job atau layanan (Resend) bila volume naik atau Gmail rate-limit (batas Gmail ~500 email/hari).
+- SMTP langsung (synchronous di request handler). Kuota penerima tetap dua percobaan/alamat/jam dan tidak ada retry otomatis. Periksa batas jenis akun Gmail dan pola pengiriman sebelum pengiriman volume besar; queue atau migrasi provider memerlukan keputusan terpisah.
 
 ---
 
@@ -205,7 +205,7 @@ EDIT src/lib/mailer.ts          warna email (inline, manual)
 
 | Risiko | Dampak | Mitigasi |
 |--------|--------|----------|
-| Gmail SMTP rate-limit (~500/hari) | Email tidak terkirim saat puncak | Non-blocking + log; upgrade ke queue/Resend bila perlu |
+| Kuota dan reputasi Gmail | Email ditolak atau masuk Spam saat volume tinggi | Tiket tetap terbit; periksa log/kuota, uji penerimaan terkontrol; queue/provider baru diputuskan terpisah |
 | App Password bocor | Penyalahgunaan akun | Simpan hanya di env, jangan commit `.env.local` |
 | QR server-side butuh lib baru | Bundle/dep tambahan | Pakai `qrcode` ringan, hanya di server |
 | Data lama tanpa kategori | Rekap kosong untuk baris lama | Kolom nullable + default `'-'` |
@@ -221,7 +221,7 @@ EDIT src/lib/mailer.ts          warna email (inline, manual)
 ### Verifikasi
 - `npm run lint` hijau.
 - `npm run build` hijau.
-- Uji manual: NIM duplikat diblokir di UI; kategori+angkatan tersimpan & tampil di CSV; email terkirim berisi QR + link tiket valid.
+- Uji manual: NIM duplikat diblokir di UI; kategori+angkatan tersimpan & tampil di CSV; tombol/tautan email membuka tiket yang benar, tanpa gambar/lampiran QR; QR dan unduhan PNG tetap berfungsi di halaman tiket.
 
 ---
 

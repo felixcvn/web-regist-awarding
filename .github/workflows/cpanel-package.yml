@@ -28,6 +28,10 @@ jobs:
           cache: npm
       - name: Install build dependencies
         run: npm ci --include=dev
+      - name: Verify helpers and link-only email
+        env:
+          SECURITY_REVIEW_TEMP: ${{ runner.temp }}
+        run: node scripts/security-review.cjs --helpers-only
       - name: Build and package
         env:
           CPANEL_APP_URL: ${{ inputs.app_url }}

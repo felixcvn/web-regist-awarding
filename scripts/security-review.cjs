@@ -763,16 +763,14 @@ async function main() {
     });
   });
 
-  await check('HELPER-04', 'HTML email output using a capturing SMTP transport', async () => {
-    let captured;
-    const mailer = transpiledModule('src/lib/mailer.ts', { nodemailer: { createTransport: () => ({ sendMail: async (mail) => { captured = mail; } }) } }, {
-      process: { env: { NODE_ENV: 'production', GMAIL_USER: 'sender@example.test', GMAIL_APP_PASSWORD: 'synthetic', NEXT_PUBLIC_APP_URL: 'https://event.example.test' } },
-    });
-    await mailer.sendInvitationEmail({ to: 'receiver@example.test', name: '<img src=x onerror=alert(1)>', qrToken: `FAN26-${crypto.randomUUID()}`, category: 'A&B', batch: '2023' });
-    assert.equal(captured.html.includes('<img src=x onerror=alert(1)>'), false);
-    assert.ok(captured.html.includes('&lt;img src=x onerror=alert(1)&gt;'));
-    assert.equal(captured.attachments.length, 1);
-    record('HELPER-04', 'HTML escaping', { rawPayloadPresent: captured.html.includes('<img src=x onerror=alert(1)>'), escapedPayloadPresent: captured.html.includes('&lt;img src=x onerror=alert(1)&gt;'), attachmentCount: captured.attachments.length, deliveredExternally: false });
+  await check('HELPER-04', 'Link-only email using capturing and MIME stream transports', async () => {
+    const evidence = await require('./review-mailer.cjs').checkMailer({ load: transpiledModule, outputDirectory: runDir });
+    record('HELPER-04', 'Text/HTML confirmation, safe ticket links, and no QR attachments', evidence);
+  });
+
+  await check('MAIL-REGISTER', 'Mail outcomes preserve registration and recipient quotas', async () => {
+    const evidence = await require('./review-mailer.cjs').checkRegistrationMailOutcomes({ load: transpiledModule });
+    record('MAIL-REGISTER', 'SMTP and quota failures still return the issued public ticket', evidence);
   });
 
   await check('HELPER-05', 'Trust only configured ingress and fail closed in production', async () => {
