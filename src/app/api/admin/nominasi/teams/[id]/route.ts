@@ -28,7 +28,7 @@ export async function GET(
       return NextResponse.json({ error: 'Akses ditolak. Silakan login PIN panitia.' }, { status: 401 });
     }
 
-    if (!validateOrigin(request) || !validateCsrf(request)) {
+    if (!validateOrigin(request)) {
       return forbiddenResponse();
     }
 
