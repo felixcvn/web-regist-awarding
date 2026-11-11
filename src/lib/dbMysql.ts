@@ -624,6 +624,7 @@ export async function getNominasiTeamByQrToken(qrToken: string): Promise<Nominas
 }
 
 export async function createNominasiTeam(input: CreateNominasiTeamInput): Promise<NominasiTeam> {
+  await ensureSchema();
   return transaction(async (connection) => {
     const id = 'NOM-' + crypto.randomBytes(4).toString('hex').toUpperCase();
     const qrToken = 'FAN26-NOM-' + crypto.randomUUID();
@@ -655,6 +656,7 @@ export async function updateNominasiTeam(
   id: string,
   input: { namaTeam?: string; memberNims?: string[] }
 ): Promise<NominasiTeam> {
+  await ensureSchema();
   return transaction(async (connection) => {
     const existing = await execute<RowDataPacket[]>(connection,
       `SELECT id FROM nominasi_teams WHERE id = ? LIMIT 1`, [id.trim()]);
@@ -699,6 +701,7 @@ export async function checkInNominasiTeam(qrToken: string): Promise<{
   team?: NominasiTeam;
   newlyCheckedIn: NominasiTeamMember[];
 }> {
+  await ensureSchema();
   return transaction(async (connection) => {
     const teams = await execute<NominasiTeamRow[]>(connection,
       `SELECT * FROM nominasi_teams WHERE qr_token = ? LIMIT 1 FOR UPDATE`, [qrToken.trim()]);
