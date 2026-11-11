@@ -188,6 +188,39 @@ function waitForHttp(url, timeoutMs = 120_000) {
       await verify2.end();
       check('rescan backfills missing participant rows', rows2.length === 2 && rows2.every((r) => Boolean(r.is_checked_in) && r.checked_in_at),
         JSON.stringify(rows2));
+
+      // Door scanner (/api/admin/checkin) must accept a team token too.
+      const reset2 = await mysql.createConnection({
+        host: '127.0.0.1', port: MYSQL_PORT, user: 'reviewer', password: db.dbPassword, database: 'security_review',
+      });
+      await reset2.query(`UPDATE participants SET is_checked_in = FALSE, checked_in_at = NULL WHERE nim_nip IN (?, ?)`, memberNims);
+      await reset2.end();
+
+      const team2 = await fetch(APP_ORIGIN + '/api/admin/nominasi/teams', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ namaTeam: 'Tim Scan Pintu', memberNims }),
+      });
+      const team2Body = await team2.json();
+      const door = await fetch(APP_ORIGIN + '/api/admin/checkin', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ qrToken: team2Body.team?.qrToken }),
+      });
+      const doorBody = await door.text();
+      check('door scanner accepts team token', door.ok && /berhasil/i.test(doorBody) && /Tim Nominasi/.test(doorBody),
+        `${door.status} ${doorBody.slice(0, 300)}`);
+
+      const verify3 = await mysql.createConnection({
+        host: '127.0.0.1', port: MYSQL_PORT, user: 'reviewer', password: db.dbPassword, database: 'security_review',
+      });
+      const [rows3] = await verify3.query(
+        'SELECT nim_nip, is_checked_in, checked_in_at FROM participants WHERE nim_nip IN (?, ?) ORDER BY nim_nip',
+        memberNims,
+      );
+      await verify3.end();
+      check('door team scan marks participants present', rows3.length === 2 && rows3.every((r) => Boolean(r.is_checked_in) && r.checked_in_at),
+        JSON.stringify(rows3));
     }
   } catch (error) {
     failures.push('harness');
