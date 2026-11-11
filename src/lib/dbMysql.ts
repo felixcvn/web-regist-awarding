@@ -699,6 +699,17 @@ export async function deleteNominasiTeam(id: string): Promise<void> {
   });
 }
 
+// Team check-in also marks each member's own registration row as present so the
+// participant table agrees. Idempotent: an existing individual check-in time wins.
+async function syncMembersToParticipants(connection: PoolConnection, members: NominasiMemberRow[], at: Date): Promise<void> {
+  for (const m of members) {
+    await execute(connection,
+      `UPDATE participants SET is_checked_in = TRUE, checked_in_at = ?
+       WHERE nim_nip = ? AND is_checked_in = FALSE`,
+      [at, m.nim_nip.trim()]);
+  }
+}
+
 export async function checkInNominasiTeam(qrToken: string): Promise<{
   success: boolean;
   message: string;
@@ -717,6 +728,8 @@ export async function checkInNominasiTeam(qrToken: string): Promise<{
     if (Boolean(team.is_checked_in)) {
       const members = await execute<NominasiMemberRow[]>(connection,
         `SELECT * FROM nominasi_team_members WHERE team_id = ? ORDER BY nama`, [team.id]);
+      // Backfill teams checked in before this sync existed.
+      await syncMembersToParticipants(connection, members, team.checked_in_at || new Date());
       return {
         success: false,
         message: `Tim "${team.nama_team}" sudah pernah check-in!`,
@@ -747,13 +760,10 @@ export async function checkInNominasiTeam(qrToken: string): Promise<{
           `UPDATE nominasi_team_members SET is_checked_in = TRUE, checked_in_at = ? WHERE id = ?`,
           [now, m.id]);
       }
-      // Team check-in also marks each member's own registration row as present,
-      // so the participant table shows the same attendance.
-      await execute(connection,
-        `UPDATE participants SET is_checked_in = TRUE, checked_in_at = ?
-         WHERE nim_nip = ? AND is_checked_in = FALSE`,
-        [now, m.nim_nip.trim()]);
     }
+    // Team check-in also marks each member's own registration row as present,
+    // so the participant table shows the same attendance.
+    await syncMembersToParticipants(connection, members, now);
 
     const fullTeam = await loadNominasiTeam(connection, team.id);
     if (!fullTeam) throw new Error('Gagal memuat tim setelah check-in.');

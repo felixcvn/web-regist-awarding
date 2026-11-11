@@ -1378,7 +1378,15 @@ export async function checkInNominasiTeam(qrToken: string): Promise<{
            FROM nominasi_team_members WHERE team_id = $1 ORDER BY nama`,
           [team.id]
         );
-        await client.query('ROLLBACK');
+        // Backfill teams checked in before member/participant sync existed.
+        for (const m of memberRes.rows) {
+          await client.query(
+            `UPDATE participants SET is_checked_in = TRUE, checked_in_at = NOW()
+             WHERE nim_nip = $1 AND is_checked_in = FALSE`,
+            [m.nimNip.trim()]
+          );
+        }
+        await client.query('COMMIT');
         return {
           success: false,
           message: `Tim "${team.namaTeam}" sudah pernah check-in!`,

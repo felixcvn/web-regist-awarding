@@ -161,6 +161,33 @@ function waitForHttp(url, timeoutMs = 120_000) {
       await verify.end();
       check('member registrations marked present', rows.length === 2 && rows.every((r) => Boolean(r.is_checked_in) && r.checked_in_at),
         JSON.stringify(rows));
+
+      // Re-scan: the "already checked in" branch must still backfill rows that
+      // were never synced (teams created/checked in before this fix).
+      const reset = await mysql.createConnection({
+        host: '127.0.0.1', port: MYSQL_PORT, user: 'reviewer', password: db.dbPassword, database: 'security_review',
+      });
+      await reset.query(`UPDATE participants SET is_checked_in = FALSE, checked_in_at = NULL WHERE nim_nip IN (?, ?)`, memberNims);
+      await reset.end();
+
+      const rescan = await fetch(APP_ORIGIN + '/api/admin/nominasi/checkin', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ qrToken: body.team.qrToken }),
+      });
+      const rescanBody = await rescan.text();
+      check('rescan reports already checked in', rescan.ok && /sudah pernah check-in/i.test(rescanBody), `${rescan.status} ${rescanBody.slice(0, 200)}`);
+
+      const verify2 = await mysql.createConnection({
+        host: '127.0.0.1', port: MYSQL_PORT, user: 'reviewer', password: db.dbPassword, database: 'security_review',
+      });
+      const [rows2] = await verify2.query(
+        'SELECT nim_nip, is_checked_in, checked_in_at FROM participants WHERE nim_nip IN (?, ?) ORDER BY nim_nip',
+        memberNims,
+      );
+      await verify2.end();
+      check('rescan backfills missing participant rows', rows2.length === 2 && rows2.every((r) => Boolean(r.is_checked_in) && r.checked_in_at),
+        JSON.stringify(rows2));
     }
   } catch (error) {
     failures.push('harness');
