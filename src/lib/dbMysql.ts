@@ -647,7 +647,10 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
     }
 
     const team = await getNominasiTeamById(id);
-    if (!team) throw new Error('Gagal memuat tim setelah dibuat.');
+    if (!team) {
+      console.error('[Nominasi] Team not found after creation:', { id, namaTeam: input.namaTeam, qrToken });
+      throw new Error('Gagal memuat tim setelah dibuat. ID: ' + id);
+    }
     return team;
   });
 }
