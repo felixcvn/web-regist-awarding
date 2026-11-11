@@ -60,6 +60,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ team }, { status: 201 });
   } catch (error) {
-    return apiErrorResponse(error, 'Gagal membuat tim nominasi.');
+    console.error('[Nominasi] Create team error:', error);
+    return NextResponse.json({ 
+      error: 'Gagal membuat tim nominasi.',
+      detail: (error as Error).message 
+    }, { status: 500 });
   }
 }
