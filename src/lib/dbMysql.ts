@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { createPool, type Pool, type PoolConnection, type RowDataPacket, type ResultSetHeader, type QueryResult, type ExecuteValues } from 'mysql2/promise';
-import type { CreateNominasiTeamInput } from './db';
+import type { CreateNominasiTeamInput, StudentMasterSearchResult } from './db';
 import { getMysqlOptions, assertMysqlServer } from './mysqlConfig.cjs';
 import { MYSQL_SCHEMA, MYSQL_TABLE_NAMES } from './mysqlSchema';
 import { ApiError, DatabaseUnavailableError } from './apiErrors';
@@ -335,6 +335,19 @@ export async function validateStudentIdentity(nim: string, name: string): Promis
       return rows[0] && normalizeName(name) === normalizeName(rows[0].official_name) ? 'valid' : 'invalid';
     });
   } catch { return 'unavailable'; }
+}
+
+export async function searchStudentMaster(q: string, limit: number): Promise<StudentMasterSearchResult[]> {
+  return read('Student master search', async (connection) => {
+    const rows = await execute<(RowDataPacket & { nim: string; nama: string; prodi: string })[]>(connection,
+      `SELECT nim, official_name AS nama, prodi
+       FROM student_master
+       WHERE is_active = TRUE AND (LOWER(nim) LIKE ? OR LOWER(official_name) LIKE ?)
+       ORDER BY nim
+       LIMIT ?`,
+      [`%${q.toLowerCase().trim()}%`, `%${q.toLowerCase().trim()}%`, limit]);
+    return rows.map((r) => ({ nim: r.nim, nama: r.nama, prodi: r.prodi }));
+  });
 }
 
 export async function deleteParticipant(id: string): Promise<boolean> {

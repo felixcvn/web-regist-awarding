@@ -9,6 +9,7 @@ import { secureFetch } from '@/lib/csrfClient';
 import GardenFrame from '@/components/GardenFrame';
 import Dialog from '@/components/Dialog';
 import OrderingSettingsPanel from '@/components/OrderingSettingsPanel';
+import { StudentMasterSearchResult } from '@/lib/db';
 
 interface NominasiTeam {
   id: string;
@@ -72,6 +73,8 @@ export default function AdminDashboardPage() {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [teamNama, setTeamNama] = useState('');
   const [teamMembers, setTeamMembers] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<StudentMasterSearchResult[]>([]);
   const [checkinResult, setCheckinResult] = useState<{
     status: 'idle' | 'success' | 'warning' | 'error';
     message: string;
@@ -302,6 +305,38 @@ export default function AdminDashboardPage() {
     setTeamNama(team.namaTeam);
     setTeamMembers(team.members.map((m) => m.nimNip));
     setShowNominasiDialog(true);
+  };
+
+  const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value.trim();
+    setSearchQuery(q);
+    if (!q) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      const res = await secureFetch(`/api/admin/student-master/search?q=${encodeURIComponent(q)}&limit=20`);
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+      if (!res.ok) return;
+      const data = await res.json();
+      setSearchResults(data.results || []);
+    } catch {
+      setSearchResults([]);
+    }
+  };
+
+  const handleSelectStudent = (student: StudentMasterSearchResult) => {
+    if (teamMembers.includes(student.nim)) return;
+    setTeamMembers([...teamMembers, student.nim]);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const handleRemoveStudent = (nim: string) => {
+    setTeamMembers(teamMembers.filter((n) => n !== nim));
   };
 
   const handleSaveTeam = async () => {
@@ -893,47 +928,77 @@ export default function AdminDashboardPage() {
               <div>
                 <label className="block text-xs font-bold text-gold mb-2">Anggota Tim <span className="text-red-400">*</span></label>
                 <p className="text-[10px] text-ink/50 mb-2">
-                  Pilih mahasiswa yang tergabung dalam tim nominasi ini. Satu mahasiswa bisa tergabung di banyak tim.
+                  Cari NIM atau nama mahasiswa, lalu pilih dari daftar. Satu mahasiswa bisa tergabung di banyak tim.
                 </p>
-                <div className="max-h-48 overflow-y-auto border border-bloom-pink/20 rounded-xl p-2 bg-field">
-                  {participants.length === 0 ? (
-                    <p className="text-[10px] text-ink/50 text-center">Tidak ada data mahasiswa. Unggah data mahasiswa terlebih dahulu.</p>
-                  ) : (
-                    participants.map((p) => {
-                      const isSelected = teamMembers.includes(p.nimNip);
-                      return (
-                        <label
-                          key={p.nimNip}
-                          onClick={() => {
-                            if (isSelected) {
-                              setTeamMembers(teamMembers.filter((n) => n !== p.nimNip));
-                            } else {
-                              setTeamMembers([...teamMembers, p.nimNip]);
-                            }
-                          }}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
-                            isSelected
-                              ? 'bg-bloom-pink/20 border-bloom-pink/50'
-                              : 'bg-white/5 border-white/10 hover:bg-surface-card/50'
-                          }`}
+
+                {/* Selected pills */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {teamMembers.map((nim) => {
+                    const found = searchResults.find((s) => s.nim === nim);
+                    return (
+                      <span
+                        key={nim}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-bloom-pink/10 border border-bloom-pink/30 text-[9px] font-bold text-bloom-pink"
+                      >
+                        {found?.nama || nim} ({nim})
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStudent(nim)}
+                          className="ml-1 p-0.5 text-bloom-pink hover:text-red-400"
+                          title="Hapus"
                         >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            readOnly
-                            className="w-4 h-4 text-bloom-pink border-bloom-pink rounded"
-                          />
-                          <div>
-                            <div className="text-[10px] font-bold text-ivory">{p.name}</div>
-                            <div className="text-[9px] text-ink/50 font-mono">{p.nimNip}</div>
-                            <div className="text-[9px] text-ink/40">{p.prodi}</div>
-                          </div>
-                        </label>
-                      );
-                    })
+                          ✕
+                        </button>
+                      </span>
+                    );
+                  })}
+                  {teamMembers.length > 0 && searchResults.length === 0 && (
+                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[9px] text-ink/50">
+                      …dan {teamMembers.length - searchResults.length} anggota lainnya
+                    </span>
                   )}
                 </div>
-                <p className="text-[10px] text-ink/50 mt-1">
+
+                {/* Type-ahead input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder="Ketik NIM atau nama mahasiswa…"
+                    disabled={nominasiLoading}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory placeholder-ink/40 outline-hidden focus:border-bloom-pink disabled:opacity-50"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-ink/40 hover:text-ink"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Search results dropdown */}
+                {searchQuery && searchResults.length > 0 && (
+                  <div className="absolute z-20 w-full mt-1 rounded-xl bg-surface-card border border-bloom-pink/30 shadow-xl overflow-hidden">
+                    {searchResults.map((s) => (
+                      <button
+                        key={s.nim}
+                        type="button"
+                        onClick={() => handleSelectStudent(s)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-[10px] hover:bg-bloom-pink/20 transition-colors"
+                      >
+                        <div className="font-mono font-semibold text-gold-ink">{s.nim}</div>
+                        <div className="text-ink">{s.nama}</div>
+                        {s.prodi && <div className="text-ink/40">{s.prodi}</div>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-[10px] text-ink/50 mt-2">
                   Terpilih: <span className="font-bold text-bloom-pink">{teamMembers.length}</span> anggota
                 </p>
               </div>

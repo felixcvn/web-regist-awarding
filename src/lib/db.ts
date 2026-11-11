@@ -1079,6 +1079,35 @@ export interface CreateNominasiTeamInput {
   memberNims: string[]; // NIM yang sudah divalidasi di frontend
 }
 
+export interface StudentMasterSearchResult {
+  nim: string;
+  nama: string;
+  prodi: string;
+}
+
+export async function searchStudentMaster(q: string, limit: number): Promise<StudentMasterSearchResult[]> {
+  if (USE_MYSQL) return mysqlStore.searchStudentMaster(q, limit);
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) throw new DatabaseUnavailableError();
+
+    const res = await p.query<StudentMasterSearchResult & { nim: string; nama: string; prodi: string }>(
+      `SELECT nim, official_name AS nama, prodi
+       FROM ${STUDENT_MASTER_TABLE}
+       WHERE is_active = TRUE AND (LOWER(nim) LIKE $1 OR LOWER(nama) LIKE $1)
+       ORDER BY nim
+       LIMIT $2`,
+      [`%${q.toLowerCase().trim()}%`, limit]
+    );
+    return res.rows;
+  } catch (error) {
+    console.error('[DB] searchStudentMaster error:', (error as Error).message);
+    throw new DatabaseUnavailableError();
+  }
+}
+
 export async function getNominasiTeams(): Promise<NominasiTeam[]> {
   if (USE_MYSQL) return mysqlStore.getNominasiTeams();
   const p = getPool();
