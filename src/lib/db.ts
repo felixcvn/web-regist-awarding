@@ -1410,6 +1410,12 @@ export async function checkInNominasiTeam(qrToken: string): Promise<{
             [m.id]
           );
         }
+        // Mirror team attendance onto the member's registration row.
+        await client.query(
+          `UPDATE participants SET is_checked_in = TRUE, checked_in_at = NOW()
+           WHERE nim_nip = $1 AND is_checked_in = FALSE`,
+          [m.nimNip.trim()]
+        );
       }
 
       await client.query('COMMIT');

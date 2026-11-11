@@ -111,10 +111,24 @@ function waitForHttp(url, timeoutMs = 120_000) {
       'x-csrf-token': CSRF,
     };
 
+    // Two registered participants whose NIMs will also join the team.
+    const seedParticipants = await mysql.createConnection({
+      host: '127.0.0.1', port: MYSQL_PORT, user: 'reviewer', password: db.dbPassword, database: 'security_review',
+    });
+    const memberNims = ['232410101001', '232410101002'];
+    for (const [index, nim] of memberNims.entries()) {
+      await seedParticipants.query(
+        `INSERT INTO participants (id, nim_nip, name, role, category, batch, prodi, email, phone, qr_token)
+         VALUES (?, ?, ?, 'Mahasiswa', 'UKM-O', '2023', 'Sistem Informasi', ?, '08120000000', ?)`,
+        [`TKT-E2E-${index}`, nim, `Peserta ${index}`, `peserta${index}@example.com`, `FAN26-E2E-${index}`],
+      );
+    }
+    await seedParticipants.end();
+
     const create = await fetch(APP_ORIGIN + '/api/admin/nominasi/teams', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ namaTeam: 'Tim Uji Regresi', memberNims: ['232410101001', '232410101002'] }),
+      body: JSON.stringify({ namaTeam: 'Tim Uji Regresi', memberNims }),
     });
     const bodyText = await create.text();
     let body = {};
@@ -135,6 +149,18 @@ function waitForHttp(url, timeoutMs = 120_000) {
       });
       const ciBody = await ci.text();
       check('team check-in succeeds', ci.ok && /berhasil/i.test(ciBody), `${ci.status} ${ciBody.slice(0, 300)}`);
+
+      // Team check-in must also mark the members' registration rows as present.
+      const verify = await mysql.createConnection({
+        host: '127.0.0.1', port: MYSQL_PORT, user: 'reviewer', password: db.dbPassword, database: 'security_review',
+      });
+      const [rows] = await verify.query(
+        'SELECT nim_nip, is_checked_in, checked_in_at FROM participants WHERE nim_nip IN (?, ?) ORDER BY nim_nip',
+        memberNims,
+      );
+      await verify.end();
+      check('member registrations marked present', rows.length === 2 && rows.every((r) => Boolean(r.is_checked_in) && r.checked_in_at),
+        JSON.stringify(rows));
     }
   } catch (error) {
     failures.push('harness');

@@ -747,6 +747,12 @@ export async function checkInNominasiTeam(qrToken: string): Promise<{
           `UPDATE nominasi_team_members SET is_checked_in = TRUE, checked_in_at = ? WHERE id = ?`,
           [now, m.id]);
       }
+      // Team check-in also marks each member's own registration row as present,
+      // so the participant table shows the same attendance.
+      await execute(connection,
+        `UPDATE participants SET is_checked_in = TRUE, checked_in_at = ?
+         WHERE nim_nip = ? AND is_checked_in = FALSE`,
+        [now, m.nim_nip.trim()]);
     }
 
     const fullTeam = await loadNominasiTeam(connection, team.id);
