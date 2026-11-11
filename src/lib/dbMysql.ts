@@ -601,15 +601,19 @@ export async function getNominasiTeams(): Promise<NominasiTeam[]> {
   });
 }
 
+// Reads through the caller's connection. Inside an open transaction a fresh
+// pool connection cannot see uncommitted rows, so transaction code must use this.
+async function loadNominasiTeam(connection: PoolConnection, id: string): Promise<NominasiTeam | null> {
+  const teams = await execute<NominasiTeamRow[]>(connection,
+    `SELECT * FROM nominasi_teams WHERE id = ? LIMIT 1`, [id.trim()]);
+  if (!teams.length) return null;
+  const members = await execute<NominasiMemberRow[]>(connection,
+    `SELECT * FROM nominasi_team_members WHERE team_id = ? ORDER BY nama`, [teams[0].id]);
+  return toNominasiTeam(teams[0], members);
+}
+
 export async function getNominasiTeamById(id: string): Promise<NominasiTeam | null> {
-  return read('Nominasi team by id', async (connection) => {
-    const teams = await execute<NominasiTeamRow[]>(connection,
-      `SELECT * FROM nominasi_teams WHERE id = ? LIMIT 1`, [id.trim()]);
-    if (!teams.length) return null;
-    const members = await execute<NominasiMemberRow[]>(connection,
-      `SELECT * FROM nominasi_team_members WHERE team_id = ? ORDER BY nama`, [teams[0].id]);
-    return toNominasiTeam(teams[0], members);
-  });
+  return read('Nominasi team by id', (connection) => loadNominasiTeam(connection, id));
 }
 
 export async function getNominasiTeamByQrToken(qrToken: string): Promise<NominasiTeam | null> {
@@ -646,11 +650,8 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
         [memberId, id, nim.trim(), nama, now]);
     }
 
-    const team = await getNominasiTeamById(id);
-    if (!team) {
-      console.error('[Nominasi] Team not found after creation:', { id, namaTeam: input.namaTeam, qrToken });
-      throw new Error('Gagal memuat tim setelah dibuat. ID: ' + id);
-    }
+    const team = await loadNominasiTeam(connection, id);
+    if (!team) throw new Error('Gagal memuat tim setelah dibuat. ID: ' + id);
     return team;
   });
 }
@@ -686,7 +687,7 @@ export async function updateNominasiTeam(
       }
     }
 
-    const team = await getNominasiTeamById(id);
+    const team = await loadNominasiTeam(connection, id);
     if (!team) throw new Error('Gagal memuat tim setelah diupdate.');
     return team;
   });
@@ -748,7 +749,7 @@ export async function checkInNominasiTeam(qrToken: string): Promise<{
       }
     }
 
-    const fullTeam = await getNominasiTeamById(team.id);
+    const fullTeam = await loadNominasiTeam(connection, team.id);
     if (!fullTeam) throw new Error('Gagal memuat tim setelah check-in.');
     return {
       success: true,
