@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { searchStudentMaster } from '@/lib/db';
 import { rateLimit, getClientIp, rateLimitResponse } from '@/lib/ratelimit';
 import { verifyAdminAuth } from '@/lib/auth';
-import { validateCsrf, validateOrigin, forbiddenResponse } from '@/lib/csrf';
+import { validateOrigin, forbiddenResponse } from '@/lib/csrf';
 
 export async function GET(request: Request) {
   const ip = getClientIp(request);
@@ -16,7 +16,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Akses ditolak.' }, { status: 401 });
     }
 
-    if (!validateOrigin(request) || !validateCsrf(request)) {
+    // GET adalah safe method; cukup verifikasi Origin. CSRF token tidak
+    // diperlukan untuk GET karena secureFetch tidak menyertakannya.
+    if (!validateOrigin(request)) {
       return forbiddenResponse();
     }
 
