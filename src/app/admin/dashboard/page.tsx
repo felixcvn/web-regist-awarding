@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Participant } from '@/lib/types';
-import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2, Upload, Plus, Edit3, Image, Copy, CheckCircle2, AlertCircle, LoaderCircle } from 'lucide-react';
+import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2, Upload, Plus, Edit3, Image, Copy, CheckCircle2, AlertCircle, LoaderCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { secureFetch } from '@/lib/csrfClient';
 import GardenFrame from '@/components/GardenFrame';
@@ -47,6 +47,7 @@ export default function AdminDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [target, setTarget] = useState<Participant | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -175,6 +176,13 @@ export default function AdminDashboardPage() {
 
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  // Client-side pagination: the API returns the full set because the summary
+  // cards and CSV export need every row. 25 rows per page keeps the table short.
+  const PAGE_SIZE = 25;
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedList = filteredList.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleLogout = async () => {
     await secureFetch('/api/admin/logout', { method: 'POST' });
@@ -723,7 +731,7 @@ export default function AdminDashboardPage() {
               type="text"
               placeholder="Cari berdasarkan Nama, NIM/NIP, atau Email..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
               className="w-full pl-10 pr-4 py-2 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory placeholder-ink/40 outline-hidden focus:border-bloom-pink"
             />
           </div>
@@ -733,7 +741,7 @@ export default function AdminDashboardPage() {
               <Filter className="w-3.5 h-3.5 text-bloom-pink" />
               <select
                 value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
+                onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
                 className="py-2 px-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory outline-hidden cursor-pointer"
               >
                 <option value="ALL">Semua Peran</option>
@@ -746,7 +754,7 @@ export default function AdminDashboardPage() {
 
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               className="py-2 px-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory outline-hidden cursor-pointer"
             >
               <option value="ALL">Semua Status</option>
@@ -780,7 +788,7 @@ export default function AdminDashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredList.map((p) => (
+                  pagedList.map((p) => (
                     <tr key={p.id} className="hover:bg-surface-card/60 transition-colors">
                       <td className="py-3.5 px-4 font-medium text-ivory">
                         {p.name}
@@ -842,6 +850,44 @@ export default function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
+
+          {filteredList.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-bloom-pink/20 bg-surface-card-2/60">
+              <span className="text-[11px] text-ink/60">
+                Menampilkan{' '}
+                <span className="font-semibold text-bloom-pink">
+                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filteredList.length)}
+                </span>{' '}
+                dari <span className="font-semibold text-ink/80">{filteredList.length}</span> peserta
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(Math.max(1, safePage - 1))}
+                  disabled={safePage <= 1}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-field border border-bloom-pink/20 text-[11px] font-semibold text-ink/80 hover:border-bloom-pink/60 hover:text-bloom-pink transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-bloom-pink/20 disabled:hover:text-ink/80"
+                  aria-label="Halaman sebelumnya"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Sebelumnya
+                </button>
+
+                <span className="text-[11px] text-ink/70 tabular-nums px-1">
+                  Halaman <span className="font-semibold text-bloom-pink">{safePage}</span> / {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                  disabled={safePage >= totalPages}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-field border border-bloom-pink/20 text-[11px] font-semibold text-ink/80 hover:border-bloom-pink/60 hover:text-bloom-pink transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-bloom-pink/20 disabled:hover:text-ink/80"
+                  aria-label="Halaman berikutnya"
+                >
+                  Berikutnya
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
