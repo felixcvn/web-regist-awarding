@@ -126,7 +126,7 @@ function main() {
     });
     copyTree(path.join(appDir, 'public'), path.join(releaseDir, 'public'));
     copyTree(path.join(appDir, 'next.config.mjs'), path.join(releaseDir, 'next.config.mjs'));
-    for (const name of ['server.js', 'package-lock.json', 'CPANEL-DEPLOY.md', 'MYSQL-CPANEL.md', 'SECURITY-DEPLOYMENT.md', 'index.html', 'scripts/hash-pin.cjs', 'scripts/check-mysql.cjs']) {
+    for (const name of ['server.js', 'package-lock.json', 'CPANEL-DEPLOY.md', 'MYSQL-CPANEL.md', 'SECURITY-DEPLOYMENT.md', 'index.html', 'index.php', 'scripts/hash-pin.cjs', 'scripts/check-mysql.cjs']) {
       const destination = path.join(releaseDir, name);
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       copyTree(path.join(source, name), destination);
