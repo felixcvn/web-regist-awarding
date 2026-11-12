@@ -627,6 +627,27 @@ export async function getNominasiTeamByQrToken(qrToken: string): Promise<Nominas
   });
 }
 
+// Team members are also registered attendees: create their participant row as
+// "belum hadir" so the registration table lists them before the team is scanned.
+// Existing registrations are left untouched.
+async function ensureMemberParticipants(
+  connection: PoolConnection,
+  members: { nimNip: string; nama: string }[],
+): Promise<void> {
+  for (const m of members) {
+    const nim = m.nimNip.trim();
+    const students = await execute<(RowDataPacket & { prodi: string; batch_year: string })[]>(connection,
+      `SELECT prodi, batch_year FROM student_master WHERE nim = ? LIMIT 1`, [nim]);
+    const id = 'TKT-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+    const qrToken = 'FAN26-' + crypto.randomUUID();
+    await execute(connection,
+      `INSERT INTO participants (id, nim_nip, name, role, category, batch, prodi, email, phone, qr_token)
+       VALUES (?, ?, ?, 'Mahasiswa', 'Nominasi', ?, ?, ?, NULL, ?)
+       ON DUPLICATE KEY UPDATE nim_nip = nim_nip`,
+      [id, nim, m.nama, students[0]?.batch_year || '-', students[0]?.prodi || null, `${nim}@nominasi.local`, qrToken]);
+  }
+}
+
 export async function createNominasiTeam(input: CreateNominasiTeamInput): Promise<NominasiTeam> {
   await ensureSchema();
   return transaction(async (connection) => {
@@ -652,6 +673,7 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
 
     const team = await loadNominasiTeam(connection, id);
     if (!team) throw new Error('Gagal memuat tim setelah dibuat. ID: ' + id);
+    await ensureMemberParticipants(connection, team.members);
     return team;
   });
 }
@@ -689,6 +711,7 @@ export async function updateNominasiTeam(
 
     const team = await loadNominasiTeam(connection, id);
     if (!team) throw new Error('Gagal memuat tim setelah diupdate.');
+    await ensureMemberParticipants(connection, team.members);
     return team;
   });
 }

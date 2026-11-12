@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool, type PoolClient } from 'pg';
 import { Participant, PublicTicket, RegistrationInput } from './types';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -1199,6 +1199,31 @@ export async function getNominasiTeamByQrToken(qrToken: string): Promise<Nominas
   }
 }
 
+// Team members are also registered attendees: create their participant row as
+// "belum hadir" so the registration table lists them before the team is scanned.
+// Existing registrations are left untouched.
+async function ensureMemberParticipantsPG(
+  client: PoolClient,
+  members: { nimNip: string; nama: string }[],
+): Promise<void> {
+  for (const m of members) {
+    const nim = m.nimNip.trim();
+    const student = await client.query(
+      `SELECT prodi, batch_year FROM ${STUDENT_MASTER_TABLE} WHERE nim = $1 LIMIT 1`,
+      [nim]
+    );
+    const id = 'TKT-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+    const qrToken = 'FAN26-' + crypto.randomUUID();
+    await client.query(
+      `INSERT INTO participants (id, nim_nip, name, role, category, batch, prodi, email, phone, qr_token)
+       VALUES ($1, $2, $3, 'Mahasiswa', 'Nominasi', $4, $5, $6, NULL, $7)
+       ON CONFLICT (nim_nip) DO NOTHING`,
+      [id, nim, m.nama, student.rows[0]?.batch_year || '-', student.rows[0]?.prodi || null,
+        `${nim}@nominasi.local`, qrToken]
+    );
+  }
+}
+
 export async function createNominasiTeam(input: CreateNominasiTeamInput): Promise<NominasiTeam> {
   if (USE_MYSQL) return mysqlStore.createNominasiTeam(input);
   const p = getPool();
@@ -1223,6 +1248,7 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
         [id, input.namaTeam.trim(), qrToken, createdAt]
       );
 
+      const teamMembers: { nimNip: string; nama: string }[] = [];
       for (const nim of input.memberNims) {
         const memberId = 'NOM-M-' + crypto.randomBytes(4).toString('hex').toUpperCase();
         // Ambil nama dari student_master jika ada, gunakan NIM sebagai fallback
@@ -1236,8 +1262,10 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
            VALUES ($1, $2, $3, $4)`,
           [memberId, id, nim.trim(), nama]
         );
+        teamMembers.push({ nimNip: nim.trim(), nama });
       }
 
+      await ensureMemberParticipantsPG(client, teamMembers);
       await client.query('COMMIT');
 
       // Kembalikan team lengkap dengan anggota
@@ -1292,6 +1320,7 @@ export async function updateNominasiTeam(
       if (input.memberNims !== undefined) {
         // Hapus anggota lama, tambah baru
         await client.query(`DELETE FROM nominasi_team_members WHERE team_id = $1`, [id.trim()]);
+        const teamMembers: { nimNip: string; nama: string }[] = [];
         for (const nim of input.memberNims) {
           const memberId = 'NOM-M-' + crypto.randomBytes(4).toString('hex').toUpperCase();
           const studentRes = await client.query(
@@ -1304,7 +1333,9 @@ export async function updateNominasiTeam(
              VALUES ($1, $2, $3, $4)`,
             [memberId, id.trim(), nim.trim(), nama]
           );
+          teamMembers.push({ nimNip: nim.trim(), nama });
         }
+        await ensureMemberParticipantsPG(client, teamMembers);
       }
 
       await client.query('COMMIT');

@@ -111,19 +111,7 @@ function waitForHttp(url, timeoutMs = 120_000) {
       'x-csrf-token': CSRF,
     };
 
-    // Two registered participants whose NIMs will also join the team.
-    const seedParticipants = await mysql.createConnection({
-      host: '127.0.0.1', port: MYSQL_PORT, user: 'reviewer', password: db.dbPassword, database: 'security_review',
-    });
     const memberNims = ['232410101001', '232410101002'];
-    for (const [index, nim] of memberNims.entries()) {
-      await seedParticipants.query(
-        `INSERT INTO participants (id, nim_nip, name, role, category, batch, prodi, email, phone, qr_token)
-         VALUES (?, ?, ?, 'Mahasiswa', 'UKM-O', '2023', 'Sistem Informasi', ?, '08120000000', ?)`,
-        [`TKT-E2E-${index}`, nim, `Peserta ${index}`, `peserta${index}@example.com`, `FAN26-E2E-${index}`],
-      );
-    }
-    await seedParticipants.end();
 
     const create = await fetch(APP_ORIGIN + '/api/admin/nominasi/teams', {
       method: 'POST',
@@ -136,6 +124,19 @@ function waitForHttp(url, timeoutMs = 120_000) {
     check('create team 200/201', create.ok, `${create.status} ${bodyText.slice(0, 300)}`);
     check('members persisted in response', Array.isArray(body.team?.members) && body.team.members.length === 2,
       JSON.stringify(body.team?.members));
+
+    // Creating the team must also register each member as an attendee, absent.
+    const autoCreated = await mysql.createConnection({
+      host: '127.0.0.1', port: MYSQL_PORT, user: 'reviewer', password: db.dbPassword, database: 'security_review',
+    });
+    const [autoRows] = await autoCreated.query(
+      'SELECT nim_nip, name, category, is_checked_in, checked_in_at FROM participants WHERE nim_nip IN (?, ?) ORDER BY nim_nip',
+      memberNims,
+    );
+    await autoCreated.end();
+    check('members auto-registered as absent participants',
+      autoRows.length === 2 && autoRows.every((r) => !r.is_checked_in && r.checked_in_at === null && r.category === 'Nominasi'),
+      JSON.stringify(autoRows));
 
     const list = await fetch(APP_ORIGIN + '/api/admin/nominasi/teams', { headers: { origin: APP_ORIGIN, cookie: cookies } });
     const listBody = await list.json();
