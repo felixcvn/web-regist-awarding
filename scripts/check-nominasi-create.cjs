@@ -130,13 +130,16 @@ function waitForHttp(url, timeoutMs = 120_000) {
       host: '127.0.0.1', port: MYSQL_PORT, user: 'reviewer', password: db.dbPassword, database: 'security_review',
     });
     const [autoRows] = await autoCreated.query(
-      'SELECT nim_nip, name, category, is_checked_in, checked_in_at FROM participants WHERE nim_nip IN (?, ?) ORDER BY nim_nip',
+      'SELECT nim_nip, name, category, email, is_checked_in, checked_in_at FROM participants WHERE nim_nip IN (?, ?) ORDER BY nim_nip',
       memberNims,
     );
     await autoCreated.end();
     check('members auto-registered as absent participants',
       autoRows.length === 2 && autoRows.every((r) => !r.is_checked_in && r.checked_in_at === null && r.category === 'Nominasi'),
       JSON.stringify(autoRows));
+    check('auto-registered email uses NIM@mail.unej.ac.id',
+      autoRows.length === 2 && autoRows.every((r) => r.email === `${r.nim_nip}@mail.unej.ac.id`),
+      JSON.stringify(autoRows.map((r) => r.email)));
 
     const list = await fetch(APP_ORIGIN + '/api/admin/nominasi/teams', { headers: { origin: APP_ORIGIN, cookie: cookies } });
     const listBody = await list.json();

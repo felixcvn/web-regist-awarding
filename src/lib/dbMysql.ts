@@ -644,7 +644,7 @@ async function ensureMemberParticipants(
       `INSERT INTO participants (id, nim_nip, name, role, category, batch, prodi, email, phone, qr_token)
        VALUES (?, ?, ?, 'Mahasiswa', 'Nominasi', ?, ?, ?, NULL, ?)
        ON DUPLICATE KEY UPDATE nim_nip = nim_nip`,
-      [id, nim, m.nama, students[0]?.batch_year || '-', students[0]?.prodi || null, `${nim}@nominasi.local`, qrToken]);
+      [id, nim, m.nama, students[0]?.batch_year || '-', students[0]?.prodi || null, `${nim}@mail.unej.ac.id`, qrToken]);
   }
 }
 

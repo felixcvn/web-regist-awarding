@@ -1219,7 +1219,7 @@ async function ensureMemberParticipantsPG(
        VALUES ($1, $2, $3, 'Mahasiswa', 'Nominasi', $4, $5, $6, NULL, $7)
        ON CONFLICT (nim_nip) DO NOTHING`,
       [id, nim, m.nama, student.rows[0]?.batch_year || '-', student.rows[0]?.prodi || null,
-        `${nim}@nominasi.local`, qrToken]
+        `${nim}@mail.unej.ac.id`, qrToken]
     );
   }
 }
