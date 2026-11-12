@@ -127,7 +127,7 @@ async function main() {
   assert.equal(digest(archive), fs.readFileSync(`${archive}.sha256`, 'utf8').trim().split(/\s+/)[0], 'Archive checksum mismatch');
   const entries = execFileSync('tar', ['-tzf', archive], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 })
     .split(/\r?\n/).filter(Boolean).map((entry) => entry.replace(/^\.\//, '')).filter(Boolean);
-  const allowedRoots = new Set(['.next', 'public', 'scripts', 'server.js', 'next.config.mjs', 'package.json', 'package-lock.json', 'maintenance.html', 'CPANEL-DEPLOY.md', 'MYSQL-CPANEL.md', 'SECURITY-DEPLOYMENT.md', 'cpanel-release.json']);
+  const allowedRoots = new Set(['.next', 'public', 'scripts', 'server.js', 'next.config.mjs', 'package.json', 'package-lock.json', 'maintenance.html', 'maintenance-htaccess.txt', 'CPANEL-DEPLOY.md', 'MYSQL-CPANEL.md', 'SECURITY-DEPLOYMENT.md', 'cpanel-release.json']);
   for (const entry of entries) {
     assert.ok(allowedRoots.has(entry.split('/')[0]), `Unexpected archive path: ${entry}`);
     assert.doesNotMatch(entry, /(?:^|\/)\.\.(?:\/|$)|\\/);
@@ -153,6 +153,8 @@ async function main() {
   assert.equal(manifest.buildId, fs.readFileSync(path.join(runtime, '.next/BUILD_ID'), 'utf8').trim());
   assert.ok(fs.existsSync(path.join(runtime, 'next.config.mjs')));
   assert.ok(fs.existsSync(path.join(runtime, 'maintenance.html')), 'Maintenance page maintenance.html missing');
+  assert.ok(fs.existsSync(path.join(runtime, 'scripts/maintenance.cjs')), 'Maintenance toggle script missing');
+  assert.ok(fs.existsSync(path.join(runtime, 'maintenance-htaccess.txt')), 'Maintenance htaccess fragment missing');
   assert.equal(fs.existsSync(path.join(runtime, 'next.config.ts')), false);
   assert.equal(JSON.parse(fs.readFileSync(path.join(runtime, 'package.json'), 'utf8')).scripts.start, 'node server.js');
   checks.push('build manifest and JavaScript runtime config');

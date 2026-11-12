@@ -264,31 +264,40 @@ Jika database tidak tersedia, menu disembunyikan sampai pengaturan dapat dibaca.
 ## Halaman pemeliharaan
 
 `maintenance.html` di paket adalah halaman statis bergaya Secret Garden. Jangan
-menyalinnya sebagai `index.html` atau `index.php` ke document root: Apache akan
-menyajikan file itu lebih dulu dan aplikasi Node tidak pernah diakses meski
-statusnya Start.
+menyalinnya sebagai `index.html` permanen ke document root tanpa mencopotnya lagi:
+Apache/LiteSpeed menyajikan file itu lebih dulu, sehingga aplikasi Node tidak
+pernah diakses meski statusnya Start.
 
-Pasang sebagai error page, sehingga hanya muncul saat aplikasi berhenti:
+Pakai skrip bawaan paket (jalankan dari Application Root):
 
-1. Salin `maintenance.html` ke document root (`public_html`).
-2. Tambahkan ke `public_html/.htaccess` (jangan hapus baris Passenger yang sudah ada):
-
-```apache
-ErrorDocument 500 /maintenance.html
-ErrorDocument 503 /maintenance.html
+```bash
+node scripts/maintenance.cjs status   # kondisi sekarang
+node scripts/maintenance.cjs on       # pasang halaman + verifikasi
+node scripts/maintenance.cjs off      # copot halaman
 ```
 
-3. Hapus/rename `index.php` dan `index.html` bawaan di document root.
+Urutan yang benar:
 
-Saat aplikasi Start, Passenger menangani `/` dan halaman pemeliharaan tidak
-dipakai. Saat Stop, Passenger membalas 503 dan Apache menampilkan
-`maintenance.html`.
+1. `node scripts/maintenance.cjs on`
+2. cPanel → Setup NodeJS App → **Stop**
+3. Selesai maintenance: `node scripts/maintenance.cjs off`
+4. cPanel → Setup NodeJS App → **Start**
+
+Skrip memverifikasi ukuran file, penanda halaman, dan blok Passenger pada
+`.htaccess`; kegagalan keluar dengan kode 1, bukan sukses palsu.
+
+Untuk menutup directory listing dan menyiapkan error page, salin isi
+`maintenance-htaccess.txt` ke `public_html/.htaccess`. Jangan hapus blok
+`CLOUDLINUX PASSENGER CONFIGURATION` yang sudah ada. ErrorDocument hanya berlaku
+kalau Passenger membalas kode error; saat aplikasi dihentikan penuh, LiteSpeed
+menyajikan file statis sehingga `maintenance.cjs on` tetap diperlukan.
 
 ## Pemecahan masalah
 
 | Gejala | Periksa |
 | --- | --- |
-| Halaman maintenance muncul padahal aplikasi Start | Ada `index.php`/`index.html` di document root; hapus, lalu pasang `maintenance.html` sebagai `ErrorDocument` |
+| Halaman maintenance muncul padahal aplikasi Start | Ada `index.html` di document root; jalankan `node scripts/maintenance.cjs off` |
+| 404 besar setelah maintenance ON | `index.html` tidak terbentuk; jalankan `node scripts/maintenance.cjs status` lalu `on` |
 | `Production build missing` | `.next/BUILD_ID` ada langsung di Application Root; ekstraksi tidak bersarang |
 | Build ID baru tetapi halaman masih versi lama | Stop aplikasi, pindahkan `.next/server/route-cache`, lalu Start; untuk update berikutnya ganti `.next` secara utuh |
 | `Cannot find module` | Environment Node.js benar dan instalasi pada langkah 5 berhasil |
