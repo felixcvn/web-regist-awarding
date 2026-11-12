@@ -80,8 +80,9 @@ paket mencatat platform build. Gunakan hasil build **Linux** untuk hosting Linux
   build. Ini memungkinkan instalasi dependency produksi tanpa TypeScript di hosting.
 - `scripts/hash-pin.cjs`, diagnostic read-only `scripts/check-mysql.cjs` beserta
   config-nya, panduan deployment/MySQL, dan `cpanel-release.json`.
-- `index.html`, halaman pemeliharaan statis yang tampil dari Application Root saat
-  aplikasi Node dihentikan (Stop). Halaman ini memuat ulang otomatis tiap 60 detik.
+- `maintenance.html`, halaman pemeliharaan statis. Jangan ditaruh sebagai
+  `index.html`/`index.php` di document root: Apache akan selalu menyajikannya dan
+  aplikasi Node tidak pernah diakses. Pasang sebagai error page (lihat bagian 8).
 
 Pembuat paket bekerja di salinan bersih dengan daftar file yang ditentukan.
 `.env.local`, `.git`, `node_modules`, log, file peserta lokal, dan cache build tidak
@@ -260,10 +261,34 @@ pengaturan yang sudah tersimpan tidak direset saat startup. Halaman publik memba
 ulang saat dibuka, saat kembali ke tab, dan setiap satu menit selama tab terlihat.
 Jika database tidak tersedia, menu disembunyikan sampai pengaturan dapat dibaca.
 
+## Halaman pemeliharaan
+
+`maintenance.html` di paket adalah halaman statis bergaya Secret Garden. Jangan
+menyalinnya sebagai `index.html` atau `index.php` ke document root: Apache akan
+menyajikan file itu lebih dulu dan aplikasi Node tidak pernah diakses meski
+statusnya Start.
+
+Pasang sebagai error page, sehingga hanya muncul saat aplikasi berhenti:
+
+1. Salin `maintenance.html` ke document root (`public_html`).
+2. Tambahkan ke `public_html/.htaccess` (jangan hapus baris Passenger yang sudah ada):
+
+```apache
+ErrorDocument 500 /maintenance.html
+ErrorDocument 503 /maintenance.html
+```
+
+3. Hapus/rename `index.php` dan `index.html` bawaan di document root.
+
+Saat aplikasi Start, Passenger menangani `/` dan halaman pemeliharaan tidak
+dipakai. Saat Stop, Passenger membalas 503 dan Apache menampilkan
+`maintenance.html`.
+
 ## Pemecahan masalah
 
 | Gejala | Periksa |
 | --- | --- |
+| Halaman maintenance muncul padahal aplikasi Start | Ada `index.php`/`index.html` di document root; hapus, lalu pasang `maintenance.html` sebagai `ErrorDocument` |
 | `Production build missing` | `.next/BUILD_ID` ada langsung di Application Root; ekstraksi tidak bersarang |
 | Build ID baru tetapi halaman masih versi lama | Stop aplikasi, pindahkan `.next/server/route-cache`, lalu Start; untuk update berikutnya ganti `.next` secara utuh |
 | `Cannot find module` | Environment Node.js benar dan instalasi pada langkah 5 berhasil |
