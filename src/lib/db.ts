@@ -1096,7 +1096,7 @@ export async function searchStudentMaster(q: string, limit: number): Promise<Stu
     const res = await p.query<StudentMasterSearchResult & { nim: string; nama: string; prodi: string }>(
       `SELECT nim, official_name AS nama, prodi
        FROM ${STUDENT_MASTER_TABLE}
-       WHERE is_active = TRUE AND (LOWER(nim) LIKE $1 OR LOWER(nama) LIKE $1)
+       WHERE is_active = TRUE AND (LOWER(nim) LIKE $1 OR LOWER(official_name) LIKE $1)
        ORDER BY nim
        LIMIT $2`,
       [`%${q.toLowerCase().trim()}%`, limit]
