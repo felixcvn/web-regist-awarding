@@ -80,6 +80,8 @@ paket mencatat platform build. Gunakan hasil build **Linux** untuk hosting Linux
   build. Ini memungkinkan instalasi dependency produksi tanpa TypeScript di hosting.
 - `scripts/hash-pin.cjs`, diagnostic read-only `scripts/check-mysql.cjs` beserta
   config-nya, panduan deployment/MySQL, dan `cpanel-release.json`.
+- `index.html`, halaman pemeliharaan statis yang tampil dari Application Root saat
+  aplikasi Node dihentikan (Stop). Halaman ini memuat ulang otomatis tiap 60 detik.
 
 Pembuat paket bekerja di salinan bersih dengan daftar file yang ditentukan.
 `.env.local`, `.git`, `node_modules`, log, file peserta lokal, dan cache build tidak
