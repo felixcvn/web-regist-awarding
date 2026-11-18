@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     const normalizedEmail = email.trim().toLowerCase();
 
     const resolvedBatch: BatchType =
-      category === 'Mahasiswa Fasilkom' && BATCH_OPTIONS.includes(batch as BatchType) ? (batch as BatchType) : '-';
+      category === 'Perwakilan Angkatan' && BATCH_OPTIONS.includes(batch as BatchType) ? (batch as BatchType) : '-';
 
     const result = await createParticipant({
       nimNip,

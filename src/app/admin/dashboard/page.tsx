@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Participant } from '@/lib/types';
+import { Participant, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/types';
 import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2, Upload, Plus, Edit3, Image, Copy, CheckCircle2, AlertCircle, LoaderCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { secureFetch } from '@/lib/csrfClient';
@@ -45,7 +45,8 @@ export default function AdminDashboardPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [yearFilter, setYearFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -168,13 +169,17 @@ export default function AdminDashboardPage() {
       p.nimNip.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesRole = roleFilter === 'ALL' || p.role === roleFilter;
+    const matchesCategory = categoryFilter === 'ALL' || p.category === categoryFilter;
+    const matchesYear =
+      categoryFilter !== 'Perwakilan Angkatan' ||
+      yearFilter === 'ALL' ||
+      p.batch === yearFilter;
     const matchesStatus =
       statusFilter === 'ALL' ||
       (statusFilter === 'CHECKED_IN' && p.isCheckedIn) ||
       (statusFilter === 'NOT_CHECKED_IN' && !p.isCheckedIn);
 
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesCategory && matchesYear && matchesStatus;
   });
 
   // Client-side pagination: the API returns the full set because the summary
@@ -740,17 +745,34 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-2">
               <Filter className="w-3.5 h-3.5 text-bloom-pink" />
               <select
-                value={roleFilter}
-                onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setYearFilter('ALL');
+                  setPage(1);
+                }}
                 className="py-2 px-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory outline-hidden cursor-pointer"
               >
-                <option value="ALL">Semua Peran</option>
-                <option value="Mahasiswa">Mahasiswa</option>
-                <option value="Dosen">Dosen</option>
-                <option value="Tenaga Pendidik">Tendik</option>
-                <option value="Tamu Undangan">Tamu Undangan</option>
+                <option value="ALL">Semua Kategori</option>
+                {CATEGORY_OPTIONS.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+                <option value="Nominasi">Nominasi</option>
               </select>
             </div>
+
+            {categoryFilter === 'Perwakilan Angkatan' && (
+              <select
+                value={yearFilter}
+                onChange={(e) => { setYearFilter(e.target.value); setPage(1); }}
+                className="py-2 px-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory outline-hidden cursor-pointer"
+              >
+                <option value="ALL">Semua Tahun</option>
+                {BATCH_OPTIONS.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            )}
 
             <select
               value={statusFilter}
@@ -773,7 +795,7 @@ export default function AdminDashboardPage() {
                 <tr>
                   <th className="py-3.5 px-4">Nama Lengkap</th>
                   <th className="py-3.5 px-4">NIM / NIP</th>
-                  <th className="py-3.5 px-4">Peran & Prodi</th>
+                  <th className="py-3.5 px-4">Kategori & Prodi</th>
                   <th className="py-3.5 px-4">Kontak</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4">Waktu Check-In</th>
@@ -796,7 +818,7 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="py-3.5 px-4 font-mono text-bloom-pink">{p.nimNip}</td>
                       <td className="py-3.5 px-4">
-                        <span className="font-bold text-ink">{p.role}</span>
+                        <span className="font-bold text-ink">{p.category || p.role}</span>
                         <span className="block text-[10px] text-ink/60">{p.prodi}</span>
                         <span className="block text-[10px] text-bloom-pink/70">
                           {p.category || '-'}{p.batch && p.batch !== '-' ? ` • ${p.batch}` : ''}

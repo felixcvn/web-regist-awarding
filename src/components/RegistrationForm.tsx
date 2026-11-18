@@ -206,6 +206,11 @@ export default function RegistrationForm() {
       return;
     }
 
+    if (formData.category === 'Perwakilan Angkatan' && formData.batch === '-') {
+      setErrorMsg('Silakan pilih angkatan Anda terlebih dahulu.');
+      return;
+    }
+
     if (!formData.prodi) {
       setErrorMsg('Silakan pilih program studi Anda terlebih dahulu.');
       return;
@@ -430,14 +435,18 @@ export default function RegistrationForm() {
                   {openDropdown === 'category' && (
                     <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 py-1.5 rounded-2xl bg-surface-card-2/95 backdrop-blur-xl border border-bloom-pink/40 shadow-[0_12px_40px_rgba(0,0,0,0.8)] overflow-y-auto max-h-64">
                       <div className="divide-y divide-bloom-pink/10">
-                        {CATEGORY_OPTIONS.map((c) => {
+                        {CATEGORY_OPTIONS.filter((c) => c !== 'Mahasiswa Fasilkom').map((c) => {
                           const isSelected = formData.category === c;
                           return (
                             <button
                               key={c}
                               type="button"
                               onClick={() => {
-                                setFormData((prev) => ({ ...prev, category: c }));
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  category: c,
+                                  batch: c === 'Perwakilan Angkatan' ? prev.batch : '-',
+                                }));
                                 setOpenDropdown(null);
                               }}
                               className={optionClass(isSelected)}
@@ -453,6 +462,7 @@ export default function RegistrationForm() {
                 </div>
               </div>
 
+              {formData.category === 'Perwakilan Angkatan' && (
               <div className="relative" data-dropdown>
                 <label className="mb-2 block text-xs uppercase tracking-widest text-gold font-semibold">
                   Angkatan <span className="text-bloom-pink">*</span>
@@ -501,6 +511,7 @@ export default function RegistrationForm() {
                   )}
                 </div>
               </div>
+              )}
             </div>
 
             {/* Program Studi */}
