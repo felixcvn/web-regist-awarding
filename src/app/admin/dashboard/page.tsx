@@ -75,6 +75,7 @@ export default function AdminDashboardPage() {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [teamNama, setTeamNama] = useState('');
   const [teamMembers, setTeamMembers] = useState<string[]>([]);
+  const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StudentMasterSearchResult[]>([]);
   const [checkinResult, setCheckinResult] = useState<{
@@ -158,12 +159,15 @@ export default function AdminDashboardPage() {
     return () => window.clearTimeout(timer);
   }, [fetchParticipants, fetchActiveBatch, fetchNominasiTeams]);
 
-  const totalRegistered = participants.length;
-  const totalCheckedIn = participants.filter((p) => p.isCheckedIn).length;
-  const totalRemaining = totalRegistered - totalCheckedIn;
-  const attendanceRate = totalRegistered > 0 ? Math.round((totalCheckedIn / totalRegistered) * 100) : 0;
+  const hasActiveFilter =
+    searchTerm.trim() !== '' ||
+    categoryFilter !== 'ALL' ||
+    yearFilter !== 'ALL';
 
-  const filteredList = participants.filter((p) => {
+  // Rows that match the search/category/year filters. The status filter is
+  // applied afterwards so the summary cards keep counting the whole scoped
+  // group even while the table shows only "Hadir" or "Belum Hadir".
+  const scopedList = participants.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.nimNip.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -174,13 +178,20 @@ export default function AdminDashboardPage() {
       categoryFilter !== 'Perwakilan Angkatan' ||
       yearFilter === 'ALL' ||
       p.batch === yearFilter;
-    const matchesStatus =
-      statusFilter === 'ALL' ||
-      (statusFilter === 'CHECKED_IN' && p.isCheckedIn) ||
-      (statusFilter === 'NOT_CHECKED_IN' && !p.isCheckedIn);
 
-    return matchesSearch && matchesCategory && matchesYear && matchesStatus;
+    return matchesSearch && matchesCategory && matchesYear;
   });
+
+  const filteredList = scopedList.filter((p) =>
+    statusFilter === 'ALL' ||
+    (statusFilter === 'CHECKED_IN' && p.isCheckedIn) ||
+    (statusFilter === 'NOT_CHECKED_IN' && !p.isCheckedIn)
+  );
+
+  const totalRegistered = scopedList.length;
+  const totalCheckedIn = scopedList.filter((p) => p.isCheckedIn).length;
+  const totalRemaining = totalRegistered - totalCheckedIn;
+  const attendanceRate = totalRegistered > 0 ? Math.round((totalCheckedIn / totalRegistered) * 100) : 0;
 
   // Client-side pagination: the API returns the full set because the summary
   // cards and CSV export need every row. 25 rows per page keeps the table short.
@@ -309,6 +320,7 @@ export default function AdminDashboardPage() {
     setEditingTeamId(null);
     setTeamNama('');
     setTeamMembers([]);
+    setMemberNames({});
     setShowNominasiDialog(true);
   };
 
@@ -317,12 +329,16 @@ export default function AdminDashboardPage() {
     setEditingTeamId(team.id);
     setTeamNama(team.namaTeam);
     setTeamMembers(team.members.map((m) => m.nimNip));
+    setMemberNames(Object.fromEntries(team.members.map((m) => [m.nimNip, m.nama])));
     setShowNominasiDialog(true);
   };
 
   const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const q = e.target.value.trim();
-    setSearchQuery(q);
+    const raw = e.target.value;
+    setSearchQuery(raw);
+    // Trim only for the query, never for the controlled input value: trimming
+    // the state would make it impossible to type a space in a full name.
+    const q = raw.trim();
     if (!q) {
       setSearchResults([]);
       return;
@@ -344,12 +360,18 @@ export default function AdminDashboardPage() {
   const handleSelectStudent = (student: StudentMasterSearchResult) => {
     if (teamMembers.includes(student.nim)) return;
     setTeamMembers([...teamMembers, student.nim]);
+    setMemberNames((prev) => ({ ...prev, [student.nim]: student.nama }));
     setSearchQuery('');
     setSearchResults([]);
   };
 
   const handleRemoveStudent = (nim: string) => {
     setTeamMembers(teamMembers.filter((n) => n !== nim));
+    setMemberNames((prev) => {
+      const next = { ...prev };
+      delete next[nim];
+      return next;
+    });
   };
 
   const handleSaveTeam = async () => {
@@ -689,7 +711,9 @@ export default function AdminDashboardPage() {
             <div className="font-cinzel text-3xl sm:text-4xl font-black text-ivory">
               {totalRegistered}
             </div>
-            <span className="text-[11px] text-ink/50 block mt-1">Akumulasi seluruh civitas</span>
+            <span className="text-[11px] text-ink/50 block mt-1">
+              {hasActiveFilter ? 'Sesuai filter aktif' : 'Akumulasi seluruh civitas'}
+            </span>
           </div>
 
           <div className="rounded-3xl p-5 bg-gradient-to-b from-surface-card to-surface-card-2 border border-bloom-pink/25 shadow-[0_0_30px_rgba(183,156,232,0.15)]">
@@ -1001,30 +1025,24 @@ export default function AdminDashboardPage() {
 
                 {/* Selected pills */}
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  {teamMembers.map((nim) => {
-                    const found = searchResults.find((s) => s.nim === nim);
-                    return (
-                      <span
-                        key={nim}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-bloom-pink/10 border border-bloom-pink/30 text-[9px] font-bold text-bloom-pink"
-                      >
-                        {found?.nama || nim} ({nim})
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveStudent(nim)}
-                          className="ml-1 p-0.5 text-bloom-pink hover:text-red-400"
-                          title="Hapus"
-                        >
-                          ✕
-                        </button>
+                  {teamMembers.map((nim) => (
+                    <span
+                      key={nim}
+                      className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 rounded-lg bg-bloom-pink/10 border border-bloom-pink/30 text-[9px] font-bold text-bloom-pink"
+                    >
+                      <span className="truncate">
+                        {memberNames[nim] || nim} ({nim})
                       </span>
-                    );
-                  })}
-                  {teamMembers.length > 0 && searchResults.length === 0 && (
-                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[9px] text-ink/50">
-                      …dan {teamMembers.length - searchResults.length} anggota lainnya
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveStudent(nim)}
+                        className="ml-1 p-0.5 shrink-0 text-bloom-pink hover:text-red-400"
+                        title="Hapus"
+                      >
+                        ✕
+                      </button>
                     </span>
-                  )}
+                  ))}
                 </div>
 
                 {/* Type-ahead input */}
@@ -1048,9 +1066,10 @@ export default function AdminDashboardPage() {
                   )}
                 </div>
 
-                {/* Search results dropdown */}
-                {searchQuery && searchResults.length > 0 && (
-                  <div className="absolute z-20 w-full mt-1 rounded-xl bg-surface-card border border-bloom-pink/30 shadow-xl overflow-hidden">
+                {/* Search results: rendered inline so it follows the field width
+                    and can never spill outside the dialog. */}
+                {searchQuery.trim() && searchResults.length > 0 && (
+                  <div className="mt-1 max-h-48 overflow-y-auto rounded-xl bg-surface-card border border-bloom-pink/30 shadow-xl divide-y divide-white/5">
                     {searchResults.map((s) => (
                       <button
                         key={s.nim}
@@ -1058,9 +1077,11 @@ export default function AdminDashboardPage() {
                         onClick={() => handleSelectStudent(s)}
                         className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-[10px] hover:bg-bloom-pink/20 transition-colors"
                       >
-                        <div className="font-mono font-semibold text-gold-ink">{s.nim}</div>
-                        <div className="text-ink">{s.nama}</div>
-                        {s.prodi && <div className="text-ink/40">{s.prodi}</div>}
+                        <span className="font-mono font-semibold text-gold-ink shrink-0">{s.nim}</span>
+                        <span className="text-ink truncate flex-1 min-w-0">{s.nama}</span>
+                        {s.prodi && (
+                          <span className="text-ink/40 shrink-0 max-w-[38%] truncate">{s.prodi}</span>
+                        )}
                       </button>
                     ))}
                   </div>
