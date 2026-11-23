@@ -30,6 +30,13 @@ export default function TicketCard({ participant }: TicketCardProps) {
 
       if (!ctx) throw new Error('Canvas context not available');
 
+      // Make sure the display font is ready before drawing; fall back to Georgia
+      // if the webfont is slow or blocked so the export never hangs.
+      await Promise.race([
+        document.fonts.load('700 42px "Cormorant Garamond"'),
+        new Promise((resolve) => setTimeout(resolve, 1500)),
+      ]);
+
       // 1. Wisteria-plum background gradient (matches .bg-garden)
       const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
       bgGrad.addColorStop(0, '#160f22');
@@ -150,7 +157,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
       ctx.fillStyle = 'rgba(237, 232, 223, 0.7)';
       ctx.fillText('NAMA LENGKAP MAHASISWA', width / 2, 315);
 
-      ctx.font = 'bold 36px serif';
+      ctx.font = 'bold 42px "Cormorant Garamond", Georgia, serif';
       ctx.fillStyle = '#FFB5E8';
       ctx.shadowColor = 'rgba(255, 181, 232, 0.5)';
       ctx.shadowBlur = 15;
@@ -345,7 +352,7 @@ export default function TicketCard({ participant }: TicketCardProps) {
               <span className="text-[10px] uppercase font-bold tracking-widest text-ink/60 block mb-1">
                 Nama Lengkap Mahasiswa
               </span>
-              <h3 className="font-cinzel text-xl sm:text-2xl font-bold text-gold">
+              <h3 className="font-display text-2xl sm:text-3xl font-bold text-gold tracking-wide">
                 {participant.name}
               </h3>
               <div className="flex items-center justify-center gap-2 mt-2">

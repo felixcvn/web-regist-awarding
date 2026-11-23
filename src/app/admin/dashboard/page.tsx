@@ -9,6 +9,7 @@ import { secureFetch } from '@/lib/csrfClient';
 import GardenFrame from '@/components/GardenFrame';
 import Dialog from '@/components/Dialog';
 import OrderingSettingsPanel from '@/components/OrderingSettingsPanel';
+import TeamQrCard from '@/components/TeamQrCard';
 import { StudentMasterSearchResult } from '@/lib/db';
 
 interface NominasiTeam {
@@ -71,11 +72,13 @@ export default function AdminDashboardPage() {
   const [nominasiTeams, setNominasiTeams] = useState<NominasiTeam[]>([]);
   const [nominasiLoading, setNominasiLoading] = useState(false);
   const [showNominasiDialog, setShowNominasiDialog] = useState(false);
+  const [qrTeam, setQrTeam] = useState<NominasiTeam | null>(null);
   const [nominasiDialogMode, setNominasiDialogMode] = useState<'create' | 'edit'>('create');
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [teamNama, setTeamNama] = useState('');
   const [teamMembers, setTeamMembers] = useState<string[]>([]);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
+  const [checkinId, setCheckinId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StudentMasterSearchResult[]>([]);
   const [checkinResult, setCheckinResult] = useState<{
@@ -158,6 +161,15 @@ export default function AdminDashboardPage() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [fetchParticipants, fetchActiveBatch, fetchNominasiTeams]);
+
+  useEffect(() => {
+    if (!qrTeam) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setQrTeam(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [qrTeam]);
 
   const hasActiveFilter =
     searchTerm.trim() !== '' ||
@@ -451,6 +463,32 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleParticipantCheckIn = async (participant: Participant) => {
+    setCheckinId(participant.id);
+    try {
+      const res = await secureFetch('/api/admin/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qrToken: participant.qrToken }),
+      });
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setNotice(data.message || `${participant.name} berhasil dihadirkan.`);
+        await fetchParticipants();
+      } else {
+        setNotice(data.message || data.error || 'Gagal menghadirkan peserta.');
+      }
+    } catch {
+      setNotice('Koneksi gagal saat memproses check-in.');
+    } finally {
+      setCheckinId(null);
+    }
+  };
+
   const handleTeamCheckIn = async (qrToken: string, namaTeam: string) => {
     setNominasiLoading(true);
     try {
@@ -600,12 +638,20 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          <img
-                            src={`/api/qr/${team.qrToken}`}
-                            alt={`QR ${team.namaTeam}`}
-                            className="w-10 h-10 rounded-lg border border-bloom-pink/30"
-                            loading="lazy"
-                          />
+                          <button
+                            type="button"
+                            onClick={() => setQrTeam(team)}
+                            className="shrink-0 rounded-lg border border-bloom-pink/30 hover:border-bloom-pink transition-colors"
+                            title="Lihat kartu QR tim"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={`/api/qr/${team.qrToken}`}
+                              alt={`QR ${team.namaTeam}`}
+                              className="w-10 h-10 rounded-lg"
+                              loading="lazy"
+                            />
+                          </button>
                           <span className="text-[10px] font-mono text-ink/60 truncate max-w-xs" title={team.qrToken}>
                             {team.qrToken}
                           </span>
@@ -868,6 +914,19 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => handleParticipantCheckIn(p)}
+                            disabled={p.isCheckedIn || checkinId === p.id}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gold/40 bg-surface-card text-gold text-[11px] font-bold hover:bg-surface-card transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={p.isCheckedIn ? 'Peserta sudah hadir' : 'Hadirkan peserta tanpa scan QR'}
+                          >
+                            {checkinId === p.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <QrCode className="w-3.5 h-3.5" />
+                            )}
+                            {p.isCheckedIn ? 'Hadir' : 'Scan'}
+                          </button>
                           <Link
                             href={`/ticket/${p.qrToken}`}
                             target="_blank"
@@ -1113,6 +1172,44 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Team QR Card Dialog */}
+      {qrTeam && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-surface-base/80 backdrop-blur-sm"
+            onClick={() => setQrTeam(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Kartu QR ${qrTeam.namaTeam}`}
+            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base shadow-[0_0_60px_rgba(0,0,0,0.85)] animate-[dialogIn_180ms_cubic-bezier(0.16,1,0.3,1)]"
+            style={{ borderColor: 'rgba(183, 156, 232, 0.4)' }}
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-bloom-pink to-transparent" />
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-cinzel text-lg font-bold text-ivory tracking-wide">Kartu QR Tim</h3>
+                <button
+                  type="button"
+                  onClick={() => setQrTeam(null)}
+                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-ink transition-colors"
+                  title="Tutup"
+                >
+                  ✕
+                </button>
+              </div>
+              <TeamQrCard
+                namaTeam={qrTeam.namaTeam}
+                qrToken={qrTeam.qrToken}
+                members={qrTeam.members}
+                isCheckedIn={qrTeam.isCheckedIn}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Student Import Dialog */}
             {/* Student Import Dialog */}
