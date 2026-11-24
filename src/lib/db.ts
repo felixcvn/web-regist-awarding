@@ -1,5 +1,5 @@
 import { Pool, type PoolClient } from 'pg';
-import { Participant, PublicTicket, RegistrationInput } from './types';
+import { Participant, PublicTicket, RegistrationInput, type NominasiCategoryType } from './types';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -364,11 +364,13 @@ async function initPostgresTable(p: Pool): Promise<boolean> {
       CREATE TABLE IF NOT EXISTS nominasi_teams (
         id VARCHAR(64) PRIMARY KEY,
         nama_team VARCHAR(120) NOT NULL,
+        category VARCHAR(40),
         qr_token VARCHAR(64) UNIQUE NOT NULL,
         is_checked_in BOOLEAN DEFAULT FALSE,
         checked_in_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE nominasi_teams ADD COLUMN IF NOT EXISTS category VARCHAR(40);
       CREATE TABLE IF NOT EXISTS nominasi_team_members (
         id VARCHAR(64) PRIMARY KEY,
         team_id VARCHAR(64) NOT NULL,
@@ -1059,6 +1061,7 @@ export async function getActiveStudentImportBatch(): Promise<{
 export interface NominasiTeam {
   id: string;
   namaTeam: string;
+  category: NominasiCategoryType | null;
   qrToken: string;
   isCheckedIn: boolean;
   checkedInAt: string | null;
@@ -1076,6 +1079,7 @@ export interface NominasiTeamMember {
 
 export interface CreateNominasiTeamInput {
   namaTeam: string;
+  category: NominasiCategoryType;
   memberNims: string[]; // NIM yang sudah divalidasi di frontend
 }
 
@@ -1117,7 +1121,7 @@ export async function getNominasiTeams(): Promise<NominasiTeam[]> {
     if (!ready) throw new DatabaseUnavailableError();
 
     const teamRes = await p.query(
-      `SELECT id, nama_team AS "namaTeam", qr_token AS "qrToken",
+      `SELECT id, nama_team AS "namaTeam", category, qr_token AS "qrToken",
               is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt",
               created_at AS "createdAt"
        FROM nominasi_teams ORDER BY created_at DESC`
@@ -1148,7 +1152,7 @@ export async function getNominasiTeamById(id: string): Promise<NominasiTeam | nu
     if (!ready) throw new DatabaseUnavailableError();
 
     const teamRes = await p.query(
-      `SELECT id, nama_team AS "namaTeam", qr_token AS "qrToken",
+      `SELECT id, nama_team AS "namaTeam", category, qr_token AS "qrToken",
               is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt",
               created_at AS "createdAt"
        FROM nominasi_teams WHERE id = $1 LIMIT 1`,
@@ -1178,7 +1182,7 @@ export async function getNominasiTeamByQrToken(qrToken: string): Promise<Nominas
     if (!ready) throw new DatabaseUnavailableError();
 
     const teamRes = await p.query(
-      `SELECT id, nama_team AS "namaTeam", qr_token AS "qrToken",
+      `SELECT id, nama_team AS "namaTeam", category, qr_token AS "qrToken",
               is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt",
               created_at AS "createdAt"
        FROM nominasi_teams WHERE qr_token = $1 LIMIT 1`,
@@ -1243,9 +1247,9 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
       await client.query("SELECT pg_advisory_xact_lock(hashtext('nominasi-team'))");
 
       await client.query(
-        `INSERT INTO nominasi_teams (id, nama_team, qr_token, created_at)
-         VALUES ($1, $2, $3, $4)`,
-        [id, input.namaTeam.trim(), qrToken, createdAt]
+        `INSERT INTO nominasi_teams (id, nama_team, category, qr_token, created_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, input.namaTeam.trim(), input.category, qrToken, createdAt]
       );
 
       const teamMembers: { nimNip: string; nama: string }[] = [];
@@ -1286,7 +1290,7 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
 
 export async function updateNominasiTeam(
   id: string,
-  input: { namaTeam?: string; memberNims?: string[] }
+  input: { namaTeam?: string; category?: NominasiCategoryType; memberNims?: string[] }
 ): Promise<NominasiTeam> {
   if (USE_MYSQL) return mysqlStore.updateNominasiTeam(id, input);
   const p = getPool();
@@ -1314,6 +1318,13 @@ export async function updateNominasiTeam(
         await client.query(
           `UPDATE nominasi_teams SET nama_team = $1 WHERE id = $2`,
           [input.namaTeam.trim(), id.trim()]
+        );
+      }
+
+      if (input.category !== undefined) {
+        await client.query(
+          `UPDATE nominasi_teams SET category = $1 WHERE id = $2`,
+          [input.category, id.trim()]
         );
       }
 
@@ -1389,7 +1400,7 @@ export async function checkInNominasiTeam(qrToken: string): Promise<{
       await client.query('BEGIN');
 
       const teamRes = await client.query(
-        `SELECT id, nama_team AS "namaTeam", qr_token AS "qrToken",
+        `SELECT id, nama_team AS "namaTeam", category, qr_token AS "qrToken",
                 is_checked_in AS "isCheckedIn", checked_in_at AS "checkedInAt",
                 created_at AS "createdAt"
          FROM nominasi_teams WHERE qr_token = $1 LIMIT 1 FOR UPDATE`,

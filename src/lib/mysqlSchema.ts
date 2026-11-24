@@ -114,6 +114,7 @@ export const MYSQL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS nominasi_teams (
     id VARCHAR(64) PRIMARY KEY,
     nama_team VARCHAR(120) NOT NULL,
+    category VARCHAR(40) NULL,
     qr_token VARCHAR(64) NOT NULL UNIQUE,
     is_checked_in BOOLEAN NOT NULL DEFAULT FALSE,
     checked_in_at DATETIME(3) NULL,

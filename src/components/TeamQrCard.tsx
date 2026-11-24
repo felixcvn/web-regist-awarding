@@ -11,6 +11,7 @@ export interface TeamQrMember {
 
 interface TeamQrCardProps {
   namaTeam: string;
+  category?: string | null;
   qrToken: string;
   members: TeamQrMember[];
   isCheckedIn?: boolean;
@@ -30,7 +31,7 @@ function truncateToWidth(ctx: CanvasRenderingContext2D, value: string, maxWidth:
   return `${text}…`;
 }
 
-export default function TeamQrCard({ namaTeam, qrToken, members, isCheckedIn = false }: TeamQrCardProps) {
+export default function TeamQrCard({ namaTeam, category, qrToken, members, isCheckedIn = false }: TeamQrCardProps) {
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -192,7 +193,11 @@ export default function TeamQrCard({ namaTeam, qrToken, members, isCheckedIn = f
 
     ctx.font = '600 18px sans-serif';
     ctx.fillStyle = '#EDE8DF';
-    ctx.fillText(`Nominasi Tim  •  ${members.length} Anggota`, width / 2, 405);
+    ctx.fillText(
+      truncateToWidth(ctx, `${category || 'Nominasi Tim'}  •  ${members.length} Anggota`, width - 200),
+      width / 2,
+      405
+    );
 
     // Member list box
     const membersX = (width - membersBoxW) / 2;
@@ -398,9 +403,9 @@ export default function TeamQrCard({ namaTeam, qrToken, members, isCheckedIn = f
             <h3 className="font-display text-2xl sm:text-3xl font-bold text-gold tracking-wide break-words">
               {namaTeam}
             </h3>
-            <div className="flex items-center justify-center gap-2 mt-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
               <span className="px-3 py-0.5 rounded-full bg-surface-card text-bloom-pink text-xs font-bold border border-bloom-pink/40">
-                Nominasi Tim
+                {category || 'Nominasi Tim'}
               </span>
               <span className="text-xs text-ink/80 font-medium">{members.length} Anggota</span>
             </div>

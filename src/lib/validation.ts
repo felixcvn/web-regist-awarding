@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isTallyFormUrl } from './orderingSettings';
+import { NOMINASI_CATEGORY_OPTIONS } from './types';
 
 // CSV formula-injection guard: values starting with = + - @ can execute in spreadsheets.
 export function csvSafe(value: unknown): string {
@@ -43,15 +44,19 @@ export const orderingSettingsUpdateSchema = z.object({
   message: 'Pilih pengaturan Pemesanan yang ingin diubah.',
 });
 
+export const nominasiCategorySchema = z.enum(NOMINASI_CATEGORY_OPTIONS);
+
 export const nominasiTeamSchema = z.object({
   namaTeam: z.string().trim().min(1).max(120),
+  category: nominasiCategorySchema,
   memberNims: z.array(z.string().trim().min(1)).min(1, 'Pilih minimal satu anggota tim.'),
 }).strict();
 
 export const nominasiTeamUpdateSchema = z.object({
   namaTeam: z.string().trim().min(1).max(120).optional(),
+  category: nominasiCategorySchema.optional(),
   memberNims: z.array(z.string().trim().min(1)).optional(),
-}).strict().refine((value) => value.namaTeam !== undefined || value.memberNims !== undefined, {
+}).strict().refine((value) => value.namaTeam !== undefined || value.category !== undefined || value.memberNims !== undefined, {
   message: 'Pilih pengaturan yang ingin diubah.',
 });
 

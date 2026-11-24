@@ -37,6 +37,31 @@ export const CATEGORY_OPTIONS: CategoryType[] = [
 
 export const BATCH_OPTIONS: BatchType[] = ['2023', '2024', '2025', '2026'];
 
+// Award categories for nomination teams. Separate from CategoryType, which
+// describes a registrant's unit of origin.
+export const NOMINASI_CATEGORY_OPTIONS = [
+  'Anugerah Inovasi Bisnis',
+  'Anugerah Tata Kelola Unggul',
+  'Anugerah Bintang Prestasi',
+  'Anugerah Mahakarya Audiovisual',
+  'Anugerah Ketangkasan Digital',
+  'Anugerah Mahakarya Intelektual',
+  'Anugerah Organisasi Terbaik',
+  'Anugerah Bintang Muda',
+  'Anugerah Atlet Tangguh',
+  'Terlahir Viral',
+  'Anugerah Karsa Gemilang',
+  'Anugerah Karya Desain Antarmuka Digital',
+  'Anugerah Prestasi Unggulan',
+  'Anugerah Dedikasi Unggul',
+  'Anugerah Pejuang Tangguh',
+  'Anugerah Lentera Nada',
+  'Anugerah Kesatria Arena',
+  'Anugerah Lumbung Prestasi',
+] as const;
+
+export type NominasiCategoryType = typeof NOMINASI_CATEGORY_OPTIONS[number];
+
 export interface Participant {
   id: string;
   nimNip: string;

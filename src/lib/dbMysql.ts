@@ -8,7 +8,7 @@ import { isTicketRevoked } from './revokedTickets';
 import { toPublicTicket } from './publicTicket';
 import { normalizeName, normalizeNim, parseStudentImportFiles, type ImportedStudent, type StudentImportResult } from './studentImportParser';
 import { MAX_STUDENT_IMPORT_ROWS, type StudentImportFiles } from './studentImportFiles';
-import type { Participant, PublicTicket, RegistrationInput } from './types';
+import type { Participant, PublicTicket, RegistrationInput, NominasiCategoryType } from './types';
 import { isOrderingSettings, orderingAuditDetail, type OrderingSettings, type OrderingSettingsUpdate } from './orderingSettings';
 
 const QUERY_TIMEOUT_MS = 15_000;
@@ -101,6 +101,14 @@ async function ensureSchema(): Promise<void> {
         'SELECT VERSION() AS version, @@max_allowed_packet AS maxAllowedPacket');
       assertMysqlServer(servers[0]);
       for (const sql of MYSQL_SCHEMA) await execute(connection, sql);
+      // MySQL 8 has no ADD COLUMN IF NOT EXISTS; probe first so upgrades from a
+      // schema without the nomination category stay idempotent.
+      const categoryColumn = await execute<(RowDataPacket & { name: string })[]>(connection,
+        `SELECT COLUMN_NAME AS name FROM information_schema.columns
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'nominasi_teams' AND COLUMN_NAME = 'category'`);
+      if (!categoryColumn.length) {
+        await execute(connection, `ALTER TABLE nominasi_teams ADD COLUMN category VARCHAR(40) NULL AFTER nama_team`);
+      }
       const tables = await execute<(RowDataPacket & { tableName: string; engine: string })[]>(connection,
         `SELECT TABLE_NAME AS tableName, ENGINE AS engine FROM information_schema.tables
          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (${MYSQL_TABLE_NAMES.map(() => '?').join(',')})`, MYSQL_TABLE_NAMES);
@@ -535,6 +543,7 @@ export async function getActiveStudentImportBatch(): Promise<{ batchId: string; 
 interface NominasiTeam {
   id: string;
   namaTeam: string;
+  category: NominasiCategoryType | null;
   qrToken: string;
   isCheckedIn: boolean;
   checkedInAt: string | null;
@@ -553,6 +562,7 @@ interface NominasiTeamMember {
 type NominasiTeamRow = RowDataPacket & {
   id: string;
   nama_team: string;
+  category: string | null;
   qr_token: string;
   is_checked_in: number;
   checked_in_at: Date | null;
@@ -573,6 +583,7 @@ function toNominasiTeam(row: NominasiTeamRow, members: NominasiMemberRow[]): Nom
   return {
     id: row.id,
     namaTeam: row.nama_team,
+    category: (row.category as NominasiTeam['category']) ?? null,
     qrToken: row.qr_token,
     isCheckedIn: Boolean(row.is_checked_in),
     checkedInAt: row.checked_in_at ? row.checked_in_at.toISOString() : null,
@@ -656,9 +667,9 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
     const now = new Date();
 
     await execute(connection,
-      `INSERT INTO nominasi_teams (id, nama_team, qr_token, created_at)
-       VALUES (?, ?, ?, ?)`,
-      [id, input.namaTeam.trim(), qrToken, now]);
+      `INSERT INTO nominasi_teams (id, nama_team, category, qr_token, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [id, input.namaTeam.trim(), input.category, qrToken, now]);
 
     for (const nim of input.memberNims) {
       const memberId = 'NOM-M-' + crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -680,7 +691,7 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
 
 export async function updateNominasiTeam(
   id: string,
-  input: { namaTeam?: string; memberNims?: string[] }
+  input: { namaTeam?: string; category?: NominasiTeam['category']; memberNims?: string[] }
 ): Promise<NominasiTeam> {
   await ensureSchema();
   return transaction(async (connection) => {
@@ -692,6 +703,12 @@ export async function updateNominasiTeam(
       await execute(connection,
         `UPDATE nominasi_teams SET nama_team = ? WHERE id = ?`,
         [input.namaTeam.trim(), id.trim()]);
+    }
+
+    if (input.category !== undefined) {
+      await execute(connection,
+        `UPDATE nominasi_teams SET category = ? WHERE id = ?`,
+        [input.category, id.trim()]);
     }
 
     if (input.memberNims !== undefined) {

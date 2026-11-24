@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Participant, CATEGORY_OPTIONS, BATCH_OPTIONS } from '@/lib/types';
+import { Participant, CATEGORY_OPTIONS, BATCH_OPTIONS, NOMINASI_CATEGORY_OPTIONS } from '@/lib/types';
 import { Users, UserCheck, UserX, Download, Search, QrCode, LogOut, RefreshCw, Sparkles, Filter, Trash2, Loader2, Upload, Plus, Edit3, Image, Copy, CheckCircle2, AlertCircle, LoaderCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { secureFetch } from '@/lib/csrfClient';
@@ -15,6 +15,7 @@ import { StudentMasterSearchResult } from '@/lib/db';
 interface NominasiTeam {
   id: string;
   namaTeam: string;
+  category: string | null;
   qrToken: string;
   isCheckedIn: boolean;
   checkedInAt: string | null;
@@ -76,6 +77,7 @@ export default function AdminDashboardPage() {
   const [nominasiDialogMode, setNominasiDialogMode] = useState<'create' | 'edit'>('create');
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [teamNama, setTeamNama] = useState('');
+  const [teamCategory, setTeamCategory] = useState('');
   const [teamMembers, setTeamMembers] = useState<string[]>([]);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [checkinId, setCheckinId] = useState<string | null>(null);
@@ -331,6 +333,7 @@ export default function AdminDashboardPage() {
     setNominasiDialogMode('create');
     setEditingTeamId(null);
     setTeamNama('');
+    setTeamCategory('');
     setTeamMembers([]);
     setMemberNames({});
     setShowNominasiDialog(true);
@@ -340,6 +343,7 @@ export default function AdminDashboardPage() {
     setNominasiDialogMode('edit');
     setEditingTeamId(team.id);
     setTeamNama(team.namaTeam);
+    setTeamCategory(team.category ?? '');
     setTeamMembers(team.members.map((m) => m.nimNip));
     setMemberNames(Object.fromEntries(team.members.map((m) => [m.nimNip, m.nama])));
     setShowNominasiDialog(true);
@@ -391,6 +395,10 @@ export default function AdminDashboardPage() {
       setNotice('Nama tim harus diisi.');
       return;
     }
+    if (!teamCategory) {
+      setNotice('Pilih kategori nominasi.');
+      return;
+    }
     if (teamMembers.length === 0) {
       setNotice('Pilih minimal satu anggota tim.');
       return;
@@ -402,7 +410,7 @@ export default function AdminDashboardPage() {
         const res = await secureFetch('/api/admin/nominasi/teams', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ namaTeam: teamNama.trim(), memberNims: teamMembers }),
+          body: JSON.stringify({ namaTeam: teamNama.trim(), category: teamCategory, memberNims: teamMembers }),
         });
         if (res.status === 401) {
           router.push('/admin/login');
@@ -419,7 +427,7 @@ export default function AdminDashboardPage() {
         const res = await secureFetch(`/api/admin/nominasi/teams/${editingTeamId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ namaTeam: teamNama.trim(), memberNims: teamMembers }),
+          body: JSON.stringify({ namaTeam: teamNama.trim(), category: teamCategory, memberNims: teamMembers }),
         });
         if (res.status === 401) {
           router.push('/admin/login');
@@ -607,6 +615,7 @@ export default function AdminDashboardPage() {
               <thead className="bg-surface-card text-gold uppercase tracking-wider font-semibold border-b border-bloom-pink/20">
                 <tr>
                   <th className="py-3 px-4">Nama Tim</th>
+                  <th className="py-3 px-4">Kategori</th>
                   <th className="py-3 px-4">Jumlah Anggota</th>
                   <th className="py-3 px-4">QR Code</th>
                   <th className="py-3 px-4">Status</th>
@@ -616,13 +625,13 @@ export default function AdminDashboardPage() {
               <tbody className="divide-y divide-white/5">
                 {nominasiLoading ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-ink/50">
+                    <td colSpan={6} className="py-12 text-center text-ink/50">
                       Memuat data tim nominasi...
                     </td>
                   </tr>
                 ) : nominasiTeams.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-ink/50">
+                    <td colSpan={6} className="py-12 text-center text-ink/50">
                       Belum ada tim nominasi. Klik &quot;Buat Tim&quot; untuk memulai.
                     </td>
                   </tr>
@@ -632,6 +641,15 @@ export default function AdminDashboardPage() {
                       <td className="py-3 px-4 font-medium text-ivory">
                         {team.namaTeam}
                         <span className="block text-[10px] font-mono text-ink/50">{team.id}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {team.category ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-wisteria/15 text-lavender border border-wisteria/30">
+                            {team.category}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-ink/40 italic">Belum diatur</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 font-mono text-bloom-pink">
                         {team.members.length}
@@ -1077,6 +1095,21 @@ export default function AdminDashboardPage() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-gold mb-2">Kategori Nominasi <span className="text-red-400">*</span></label>
+                <select
+                  value={teamCategory}
+                  onChange={(e) => setTeamCategory(e.target.value)}
+                  disabled={nominasiLoading}
+                  className="w-full px-4 py-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory outline-hidden focus:border-bloom-pink disabled:opacity-50 cursor-pointer"
+                >
+                  <option value="">Pilih kategori…</option>
+                  {NOMINASI_CATEGORY_OPTIONS.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-gold mb-2">Anggota Tim <span className="text-red-400">*</span></label>
                 <p className="text-[10px] text-ink/50 mb-2">
                   Cari NIM atau nama mahasiswa, lalu pilih dari daftar. Satu mahasiswa bisa tergabung di banyak tim.
@@ -1162,7 +1195,7 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={nominasiLoading || !teamNama.trim() || teamMembers.length === 0}
+                  disabled={nominasiLoading || !teamNama.trim() || !teamCategory || teamMembers.length === 0}
                   className="flex-1 px-4 py-3 rounded-xl bg-gold text-ink text-xs font-bold hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
                   {nominasiLoading ? 'Menyimpan...' : nominasiDialogMode === 'create' ? 'Buat Tim' : 'Simpan Perubahan'}
@@ -1202,6 +1235,7 @@ export default function AdminDashboardPage() {
               </div>
               <TeamQrCard
                 namaTeam={qrTeam.namaTeam}
+                category={qrTeam.category}
                 qrToken={qrTeam.qrToken}
                 members={qrTeam.members}
                 isCheckedIn={qrTeam.isCheckedIn}
