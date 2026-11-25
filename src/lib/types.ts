@@ -16,7 +16,7 @@ export type CategoryType =
   | 'Perwakilan Angkatan'
   | 'Mahasiswa Fasilkom';
 
-export type BatchType = '2023' | '2024' | '2025' | '2026' | '-';
+export type BatchType = '2022' | '2023' | '2024' | '2025' | '2026' | '-';
 
 export const CATEGORY_OPTIONS: CategoryType[] = [
   'BPM',
@@ -35,7 +35,7 @@ export const CATEGORY_OPTIONS: CategoryType[] = [
   'Mahasiswa Fasilkom',
 ];
 
-export const BATCH_OPTIONS: BatchType[] = ['2023', '2024', '2025', '2026'];
+export const BATCH_OPTIONS: BatchType[] = ['2022', '2023', '2024', '2025', '2026'];
 
 // Award categories for nomination teams. Separate from CategoryType, which
 // describes a registrant's unit of origin.

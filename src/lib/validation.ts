@@ -9,7 +9,7 @@ export function csvSafe(value: unknown): string {
   return /^[\s\u0000-\u001f]*[=+\-@]/.test(escaped) ? `'${escaped}` : escaped;
 }
 
-export const studentNimSchema = z.string().trim().regex(/^2[2-6]\d{6}(?:1[01]|2[01]|3[01])\d{2}$/, 'NIM harus 12 digit dengan angkatan dan kode prodi yang valid');
+export const studentNimSchema = z.string().trim().regex(/^2[1-6]\d{6}(?:1[01]|2[01]|3[01])\d{2}$/, 'NIM harus 12 digit dengan angkatan dan kode prodi yang valid');
 
 export const registrationSchema = z.object({
   nimNip: studentNimSchema,
@@ -47,7 +47,7 @@ export const orderingSettingsUpdateSchema = z.object({
 export const nominasiCategorySchema = z.enum(NOMINASI_CATEGORY_OPTIONS);
 
 export const nominasiTeamSchema = z.object({
-  namaTeam: z.string().trim().min(1).max(120),
+  namaTeam: z.string().trim().max(120).optional().default(''),
   category: nominasiCategorySchema,
   memberNims: z.array(z.string().trim().min(1)).min(1, 'Pilih minimal satu anggota tim.'),
 }).strict();

@@ -1078,7 +1078,7 @@ export interface NominasiTeamMember {
 }
 
 export interface CreateNominasiTeamInput {
-  namaTeam: string;
+  namaTeam?: string;
   category: NominasiCategoryType;
   memberNims: string[]; // NIM yang sudah divalidasi di frontend
 }
@@ -1249,7 +1249,7 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
       await client.query(
         `INSERT INTO nominasi_teams (id, nama_team, category, qr_token, created_at)
          VALUES ($1, $2, $3, $4, $5)`,
-        [id, input.namaTeam.trim(), input.category, qrToken, createdAt]
+        [id, (input.namaTeam ?? '').trim(), input.category, qrToken, createdAt]
       );
 
       const teamMembers: { nimNip: string; nama: string }[] = [];

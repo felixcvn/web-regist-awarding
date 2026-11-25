@@ -669,7 +669,7 @@ export async function createNominasiTeam(input: CreateNominasiTeamInput): Promis
     await execute(connection,
       `INSERT INTO nominasi_teams (id, nama_team, category, qr_token, created_at)
        VALUES (?, ?, ?, ?, ?)`,
-      [id, input.namaTeam.trim(), input.category, qrToken, now]);
+      [id, (input.namaTeam ?? '').trim(), input.category, qrToken, now]);
 
     for (const nim of input.memberNims) {
       const memberId = 'NOM-M-' + crypto.randomBytes(4).toString('hex').toUpperCase();

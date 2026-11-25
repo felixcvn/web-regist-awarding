@@ -391,10 +391,6 @@ export default function AdminDashboardPage() {
   };
 
   const handleSaveTeam = async () => {
-    if (!teamNama.trim()) {
-      setNotice('Nama tim harus diisi.');
-      return;
-    }
     if (!teamCategory) {
       setNotice('Pilih kategori nominasi.');
       return;
@@ -421,7 +417,13 @@ export default function AdminDashboardPage() {
           throw new Error(data.error || 'Gagal membuat tim.');
         }
         const data = await res.json();
-        setCheckinResult({ status: 'success', message: `Tim "${data.team.namaTeam}" berhasil dibuat.`, team: data.team });
+        setCheckinResult({
+          status: 'success',
+          message: data.team.namaTeam
+            ? `Tim "${data.team.namaTeam}" berhasil dibuat.`
+            : 'Tim nominasi berhasil dibuat.',
+          team: data.team,
+        });
       } else {
         if (!editingTeamId) throw new Error('ID tim tidak valid.');
         const res = await secureFetch(`/api/admin/nominasi/teams/${editingTeamId}`, {
@@ -438,7 +440,13 @@ export default function AdminDashboardPage() {
           throw new Error(data.error || 'Gagal memperbarui tim.');
         }
         const data = await res.json();
-        setCheckinResult({ status: 'success', message: `Tim "${data.team.namaTeam}" berhasil diperbarui.`, team: data.team });
+        setCheckinResult({
+          status: 'success',
+          message: data.team.namaTeam
+            ? `Tim "${data.team.namaTeam}" berhasil diperbarui.`
+            : 'Tim nominasi berhasil diperbarui.',
+          team: data.team,
+        });
       }
       setShowNominasiDialog(false);
       await fetchNominasiTeams();
@@ -450,7 +458,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteTeam = async (id: string, namaTeam: string) => {
-    if (!confirm(`Hapus tim "${namaTeam}"? Semua anggota dan QR-nya akan hilang.`)) return;
+    if (!confirm(`Hapus tim${namaTeam ? ` "${namaTeam}"` : ' ini'}? Semua anggota dan QR-nya akan hilang.`)) return;
     setNominasiLoading(true);
     try {
       const res = await secureFetch(`/api/admin/nominasi/teams/${id}`, { method: 'DELETE' });
@@ -463,7 +471,7 @@ export default function AdminDashboardPage() {
         throw new Error(data.error || 'Gagal menghapus tim.');
       }
       await fetchNominasiTeams();
-      setNotice(`Tim "${namaTeam}" berhasil dihapus.`);
+      setNotice(namaTeam ? `Tim "${namaTeam}" berhasil dihapus.` : 'Tim nominasi berhasil dihapus.');
     } catch (err) {
       setNotice((err as Error).message || 'Gagal menghapus tim nominasi.');
     } finally {
@@ -665,7 +673,7 @@ export default function AdminDashboardPage() {
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={`/api/qr/${team.qrToken}`}
-                              alt={`QR ${team.namaTeam}`}
+                              alt={`QR ${team.namaTeam || team.category || 'tim nominasi'}`}
                               className="w-10 h-10 rounded-lg"
                               loading="lazy"
                             />
@@ -1083,12 +1091,12 @@ export default function AdminDashboardPage() {
 
             <form onSubmit={(e) => { e.preventDefault(); handleSaveTeam(); }} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-gold mb-2">Nama Tim <span className="text-red-400">*</span></label>
+                <label className="block text-xs font-bold text-gold mb-2">Nama Tim</label>
                 <input
                   type="text"
                   value={teamNama}
                   onChange={(e) => setTeamNama(e.target.value)}
-                  placeholder="Contoh: Tim Inovasi Fasilkom 2026"
+                  placeholder="Opsional — kosongkan jika tidak perlu"
                   disabled={nominasiLoading}
                   className="w-full px-4 py-3 rounded-xl bg-field border border-bloom-pink/20 text-xs text-ivory placeholder-ink/40 outline-hidden focus:border-bloom-pink"
                 />
@@ -1195,7 +1203,7 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={nominasiLoading || !teamNama.trim() || !teamCategory || teamMembers.length === 0}
+                  disabled={nominasiLoading || !teamCategory || teamMembers.length === 0}
                   className="flex-1 px-4 py-3 rounded-xl bg-gold text-ink text-xs font-bold hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
                   {nominasiLoading ? 'Menyimpan...' : nominasiDialogMode === 'create' ? 'Buat Tim' : 'Simpan Perubahan'}
@@ -1216,7 +1224,7 @@ export default function AdminDashboardPage() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label={`Kartu QR ${qrTeam.namaTeam}`}
+            aria-label={`Kartu QR ${qrTeam.namaTeam || 'tim nominasi'}`}
             className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border bg-gradient-to-b from-surface-card via-surface-card-2 to-surface-base shadow-[0_0_60px_rgba(0,0,0,0.85)] animate-[dialogIn_180ms_cubic-bezier(0.16,1,0.3,1)]"
             style={{ borderColor: 'rgba(183, 156, 232, 0.4)' }}
           >

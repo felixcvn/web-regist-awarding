@@ -144,9 +144,9 @@ export async function parseStudentImportFiles(files: StudentImportFiles): Promis
       }
 
       const yearDigit = nim.slice(0, 2);
-      if (!['23', '24', '25', '26'].includes(yearDigit)) {
+      if (!['21', '22', '23', '24', '25', '26'].includes(yearDigit)) {
         invalidNims++;
-        addError(`${rowLabel}: NIM tidak memiliki angkatan valid (2023–2026).`);
+        addError(`${rowLabel}: NIM tidak memiliki angkatan valid (2021–2026).`);
         continue;
       }
 

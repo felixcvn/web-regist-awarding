@@ -179,17 +179,19 @@ export default function TeamQrCard({ namaTeam, category, qrToken, members, isChe
     ctx.lineTo(width - 100, 265);
     ctx.stroke();
 
-    // Team name
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillStyle = 'rgba(237, 232, 223, 0.7)';
-    ctx.fillText('NAMA TIM NOMINASI', width / 2, 315);
+    // Team name (omitted entirely when the admin leaves it blank)
+    if (namaTeam.trim()) {
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillStyle = 'rgba(237, 232, 223, 0.7)';
+      ctx.fillText('NAMA TIM NOMINASI', width / 2, 315);
 
-    ctx.font = 'bold 40px "Cormorant Garamond", Georgia, serif';
-    ctx.fillStyle = '#FFB5E8';
-    ctx.shadowColor = 'rgba(255, 181, 232, 0.5)';
-    ctx.shadowBlur = 15;
-    ctx.fillText(truncateToWidth(ctx, namaTeam, width - 200), width / 2, 365);
-    ctx.shadowBlur = 0;
+      ctx.font = 'bold 40px "Cormorant Garamond", Georgia, serif';
+      ctx.fillStyle = '#FFB5E8';
+      ctx.shadowColor = 'rgba(255, 181, 232, 0.5)';
+      ctx.shadowBlur = 15;
+      ctx.fillText(truncateToWidth(ctx, namaTeam, width - 200), width / 2, 365);
+      ctx.shadowBlur = 0;
+    }
 
     ctx.font = '600 18px sans-serif';
     ctx.fillStyle = '#EDE8DF';
@@ -397,12 +399,16 @@ export default function TeamQrCard({ namaTeam, category, qrToken, members, isChe
         {/* Body */}
         <div className="py-5 space-y-4 relative z-10">
           <div className="text-center">
-            <span className="text-[10px] uppercase font-bold tracking-widest text-ink/60 block mb-1">
-              Nama Tim Nominasi
-            </span>
-            <h3 className="font-display text-2xl sm:text-3xl font-bold text-gold tracking-wide break-words">
-              {namaTeam}
-            </h3>
+            {namaTeam.trim() && (
+              <>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-ink/60 block mb-1">
+                  Nama Tim Nominasi
+                </span>
+                <h3 className="font-display text-2xl sm:text-3xl font-bold text-gold tracking-wide break-words">
+                  {namaTeam}
+                </h3>
+              </>
+            )}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
               <span className="px-3 py-0.5 rounded-full bg-surface-card text-bloom-pink text-xs font-bold border border-bloom-pink/40">
                 {category || 'Nominasi Tim'}
