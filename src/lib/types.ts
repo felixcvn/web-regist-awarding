@@ -8,7 +8,7 @@ export type CategoryType =
   | 'HMIF'
   | 'UKM LAOS'
   | 'UKM-O MACO'
-  | 'UKM-P BALWANA'
+  | 'UKM Mapala Balwana'
   | 'UKM-K ETALASE'
   | 'UKM-P BINARY'
   | 'UKM-KI AL AZHAR'
@@ -26,7 +26,7 @@ export const CATEGORY_OPTIONS: CategoryType[] = [
   'HMIF',
   'UKM LAOS',
   'UKM-O MACO',
-  'UKM-P BALWANA',
+  'UKM Mapala Balwana',
   'UKM-K ETALASE',
   'UKM-P BINARY',
   'UKM-KI AL AZHAR',

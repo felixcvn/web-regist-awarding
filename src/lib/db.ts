@@ -371,6 +371,7 @@ async function initPostgresTable(p: Pool): Promise<boolean> {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       ALTER TABLE nominasi_teams ADD COLUMN IF NOT EXISTS category VARCHAR(40);
+      UPDATE participants SET category = 'UKM Mapala Balwana' WHERE category = 'UKM-P BALWANA';
       CREATE TABLE IF NOT EXISTS nominasi_team_members (
         id VARCHAR(64) PRIMARY KEY,
         team_id VARCHAR(64) NOT NULL,

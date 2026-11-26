@@ -109,6 +109,8 @@ async function ensureSchema(): Promise<void> {
       if (!categoryColumn.length) {
         await execute(connection, `ALTER TABLE nominasi_teams ADD COLUMN category VARCHAR(40) NULL AFTER nama_team`);
       }
+      // Category labels are stored verbatim; migrate the corrected UKM name.
+      await execute(connection, `UPDATE participants SET category = 'UKM Mapala Balwana' WHERE category = 'UKM-P BALWANA'`);
       const tables = await execute<(RowDataPacket & { tableName: string; engine: string })[]>(connection,
         `SELECT TABLE_NAME AS tableName, ENGINE AS engine FROM information_schema.tables
          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (${MYSQL_TABLE_NAMES.map(() => '?').join(',')})`, MYSQL_TABLE_NAMES);
