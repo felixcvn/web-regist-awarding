@@ -8,7 +8,7 @@ import { isTicketRevoked } from './revokedTickets';
 import { toPublicTicket } from './publicTicket';
 import { normalizeName, normalizeNim, parseStudentImportFiles, type ImportedStudent, type StudentImportResult } from './studentImportParser';
 import { MAX_STUDENT_IMPORT_ROWS, type StudentImportFiles } from './studentImportFiles';
-import type { Participant, PublicTicket, RegistrationInput, NominasiCategoryType } from './types';
+import type { Participant, PublicTicket, RegistrationInput, NominasiCategoryType, UnregisteredStudent } from './types';
 import { isOrderingSettings, orderingAuditDetail, type OrderingSettings, type OrderingSettingsUpdate } from './orderingSettings';
 
 const QUERY_TIMEOUT_MS = 15_000;
@@ -357,6 +357,20 @@ export async function searchStudentMaster(q: string, limit: number): Promise<Stu
        LIMIT ?`,
       [`%${q.toLowerCase().trim()}%`, `%${q.toLowerCase().trim()}%`, limit]);
     return rows.map((r) => ({ nim: r.nim, nama: r.nama, prodi: r.prodi }));
+  });
+}
+
+export async function getUnregisteredStudents(): Promise<UnregisteredStudent[]> {
+  return read('Unregistered students', async (connection) => {
+    const rows = await execute<(RowDataPacket & UnregisteredStudent)[]>(connection,
+      `SELECT m.nim, m.official_name AS nama, m.prodi, m.batch_year AS batchYear
+       FROM student_master m
+       LEFT JOIN participants p ON p.nim_nip = m.nim
+       WHERE m.is_active = TRUE
+         AND m.batch_year IN ('2023', '2024', '2025', '2026')
+         AND p.id IS NULL
+       ORDER BY m.batch_year, m.nim`);
+    return rows.map((r) => ({ nim: r.nim, nama: r.nama, prodi: r.prodi, batchYear: r.batchYear }));
   });
 }
 

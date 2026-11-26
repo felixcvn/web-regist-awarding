@@ -569,6 +569,14 @@ export default function AdminDashboardPage() {
               Export CSV
             </a>
 
+            <Link
+              href="/admin/unregistered"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-surface-card border border-gold/40 text-gold text-xs font-bold hover:bg-surface-card transition-colors shadow-md"
+            >
+              <UserX className="w-3.5 h-3.5" />
+              Belum Registrasi
+            </Link>
+
             <button
               onClick={() => setShowImportDialog(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-surface-card border border-gold/40 text-gold text-xs font-bold hover:bg-surface-card transition-colors shadow-md"

@@ -1,5 +1,5 @@
 import { Pool, type PoolClient } from 'pg';
-import { Participant, PublicTicket, RegistrationInput, type NominasiCategoryType } from './types';
+import { Participant, PublicTicket, RegistrationInput, type NominasiCategoryType, type UnregisteredStudent } from './types';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -1109,6 +1109,30 @@ export async function searchStudentMaster(q: string, limit: number): Promise<Stu
     return res.rows;
   } catch (error) {
     console.error('[DB] searchStudentMaster error:', (error as Error).message);
+    throw new DatabaseUnavailableError();
+  }
+}
+
+export async function getUnregisteredStudents(): Promise<UnregisteredStudent[]> {
+  if (USE_MYSQL) return mysqlStore.getUnregisteredStudents();
+  const p = getPool();
+  if (!p) throw new DatabaseUnavailableError();
+  try {
+    const ready = await initPostgresTable(p);
+    if (!ready) throw new DatabaseUnavailableError();
+    await initStudentImportTables(p);
+    const res = await p.query<UnregisteredStudent>(
+      `SELECT m.nim, m.official_name AS nama, m.prodi, m.batch_year AS "batchYear"
+       FROM ${STUDENT_MASTER_TABLE} m
+       LEFT JOIN participants p ON LOWER(p.nim_nip) = LOWER(m.nim)
+       WHERE m.is_active = TRUE
+         AND m.batch_year IN ('2023', '2024', '2025', '2026')
+         AND p.id IS NULL
+       ORDER BY m.batch_year, m.nim`
+    );
+    return res.rows;
+  } catch (error) {
+    console.error('[DB] getUnregisteredStudents error:', (error as Error).message);
     throw new DatabaseUnavailableError();
   }
 }

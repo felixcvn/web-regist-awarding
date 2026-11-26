@@ -78,6 +78,13 @@ export interface Participant {
   createdAt: string;
 }
 
+export interface UnregisteredStudent {
+  nim: string;
+  nama: string;
+  prodi: string;
+  batchYear: string;
+}
+
 export type PublicTicket = Pick<Participant,
   'id' | 'nimNip' | 'name' | 'role' | 'category' | 'batch' | 'prodi' | 'qrToken' | 'isCheckedIn'
 >;
