@@ -140,7 +140,7 @@ export default function Navbar() {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-bloom-pink to-bloom-pink-deep text-on-accent font-semibold text-sm tracking-wide shadow-[0_0_20px_rgba(255, 181, 232,0.4)] hover:shadow-[0_0_30px_rgba(255, 181, 232,0.7)] hover:scale-105 active:scale-95 transition-all"
           >
             <Ticket className="w-4 h-4" />
-            Registrasi Tiket
+            Pendaftaran Ditutup
           </a>
         </div>
 
@@ -199,7 +199,7 @@ export default function Navbar() {
             onClick={() => setMobileMenuOpen(false)}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-bloom-pink text-on-accent font-bold text-center mt-3 shadow-md"
           >
-            <Ticket className="w-4 h-4" /> Ambil Undangan & Tiket
+            <Ticket className="w-4 h-4" /> Pendaftaran Ditutup
           </a>
         </nav>
       )}

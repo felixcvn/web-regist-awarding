@@ -72,7 +72,7 @@ export default function Hero() {
             className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-bloom-pink hover:bg-bloom-pink-deep text-on-accent font-bold text-base tracking-wide shadow-[0_0_30px_rgba(255, 181, 232,0.6)] hover:shadow-[0_0_50px_rgba(255, 181, 232,0.9)] hover:scale-105 active:scale-95 transition-all duration-300"
           >
             <Ticket className="w-5 h-5 text-on-accent" />
-            Konfirmasi Kehadiran & Ambil Tiket
+            Pendaftaran Ditutup
           </a>
 
           <a
