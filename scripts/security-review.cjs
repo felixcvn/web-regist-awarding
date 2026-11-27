@@ -883,6 +883,7 @@ async function main() {
   appEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => /^(PATH|PATHEXT|SYSTEMROOT|WINDIR|COMSPEC|USERPROFILE|APPDATA|LOCALAPPDATA|TEMP|TMP|HOME|NUMBER_OF_PROCESSORS|PROCESSOR_ARCHITECTURE)$/i.test(key)));
   Object.assign(appEnv, {
     NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1', ...databaseEnv, TRUSTED_PROXY: 'reverse-proxy',
+    REGISTRATION_OPEN: 'true',
     ADMIN_PIN_HASH: await bcrypt.hash(pin, 12), ADMIN_PIN: '', GMAIL_USER: '', GMAIL_APP_PASSWORD: '',
     TURNSTILE_SECRET_KEY: '', NEXT_PUBLIC_TURNSTILE_SITE_KEY: '', NEXT_PUBLIC_APP_URL: `http://127.0.0.1:${appPort}`, QR_EMAIL_MODE: 'cid',
   });

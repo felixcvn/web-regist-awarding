@@ -8,14 +8,14 @@ import { verifyTurnstile } from '@/lib/turnstile';
 import { readJsonBody } from '@/lib/requestBody';
 import { apiErrorResponse } from '@/lib/apiErrors';
 import { toPublicTicket } from '@/lib/publicTicket';
-import { REGISTRATION_OPEN, REGISTRATION_CLOSED_MESSAGE } from '@/lib/registrationStatus';
+import { isRegistrationOpen, REGISTRATION_CLOSED_MESSAGE } from '@/lib/registrationStatus';
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
   const limit = await rateLimit(`register:${ip}`, 5, 60_000);
   if (!limit.allowed) return rateLimitResponse(limit);
 
-  if (!REGISTRATION_OPEN) {
+  if (!isRegistrationOpen()) {
     return NextResponse.json({ error: REGISTRATION_CLOSED_MESSAGE }, { status: 403 });
   }
 

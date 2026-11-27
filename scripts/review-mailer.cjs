@@ -208,7 +208,7 @@ async function checkRegistrationMailOutcomes({ load }) {
         },
         rateLimitResponse: () => { throw new Error('Unexpected IP quota failure'); },
       },
-    }, { process: { env: { NODE_ENV: 'production' } }, console: { ...console, error: (...values) => errors.push(values) } });
+    }, { process: { env: { NODE_ENV: 'production', REGISTRATION_OPEN: 'true' } }, console: { ...console, error: (...values) => errors.push(values) } });
     const request = new Request(`${origin}/api/register`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...sample, nimNip: scenario.invalid ? 'invalid' : sample.nimNip, email: ' Receiver@Example.test ' }),
